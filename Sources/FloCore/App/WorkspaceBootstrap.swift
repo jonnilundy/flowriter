@@ -8,7 +8,7 @@ public struct PendingOpen: Equatable {
 
     /// `open_target.rs::resolve_path`: a directory → workspace payload; an
     /// openable file → file payload; anything else → nil. Paths canonicalized.
-    /// Plain-text files Flo State registers for with the OS (Info.plist `CFBundleDocumentTypes`): opened from
+    /// Plain-text files Flowriter registers for with the OS (Info.plist `CFBundleDocumentTypes`): opened from
     /// Finder / "Open With" even when `files.associations` (the sidebar's listing filter) doesn't include them.
     public static let registeredTextExtensions: Set<String> = ["md", "mdx", "markdown", "mdown", "mkd", "mkdn", "mdwn", "txt", "text", "csv", "log"]
 

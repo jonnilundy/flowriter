@@ -1,10 +1,10 @@
-# Willkommen bei Flo State
+# Willkommen bei Flowriter
 
 Dieses Notizbuch ist einfach ein Ordner mit reinen Markdown-Dateien in deinem Ordner „Dokumente“. Jede App kann sie öffnen, und nichts ist eingesperrt.
 
 ## Schreiben
 
-Markdown wird beim Tippen dargestellt. Die Syntax erscheint in der Zeile, die du bearbeitest, und verschwindet überall sonst: **fett**, _kursiv_, `Code`, [Links](https://flocrivello.com/flostate/).
+Markdown wird beim Tippen dargestellt. Die Syntax erscheint in der Zeile, die du bearbeitest, und verschwindet überall sonst: **fett**, _kursiv_, `Code`, [Links](https://github.com/jonnilundy/flowriter).
 
 - Listen werden beim Drücken des Zeilenschalters fortgesetzt
 - [ ] Checkboxen auch

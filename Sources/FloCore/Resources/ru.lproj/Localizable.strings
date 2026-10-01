@@ -1,4 +1,4 @@
-/* Flo State UI strings. Key = English source text (base language).
+/* Flowriter UI strings. Key = English source text (base language).
  * Generated from the sources; translations live in <lang>.lproj/Localizable.strings. */
 
 /* EditorModel.swift; TabStripView.swift; Tab title / tooltip of the + button (new empty tab). */
@@ -188,31 +188,31 @@
 "Command Line Tool Removed" = "Инструмент командной строки удален";
 
 /* FloStateCLI.swift */
-"The `flostate` command has been removed from %@." = "Команда `flostate` удалена из %@.";
+"The `flowriter` command has been removed from %@." = "Команда `flowriter` удалена из %@.";
 
 /* FloStateCLI.swift */
 "Command Line Tool Installed" = "Инструмент командной строки установлен";
 
 /* FloStateCLI.swift */
-"The `flostate` command is now installed at %@." = "Команда `flostate` установлена в %@.";
+"The `flowriter` command is now installed at %@." = "Команда `flowriter` установлена в %@.";
 
 /* FloStateCLI.swift */
-"Run `flostate .` from any terminal to open the current folder." = "Выполните `flostate .` в любом терминале, чтобы открыть текущую папку.";
+"Run `flowriter .` from any terminal to open the current folder." = "Выполните `flowriter .` в любом терминале, чтобы открыть текущую папку.";
 
 /* FloStateCLI.swift */
-"Flo State Command Line Tool" = "Инструмент командной строки Flo State";
+"Flowriter Command Line Tool" = "Инструмент командной строки Flowriter";
 
 /* FloStateCLI.swift */
-"Could not remove the flostate command." = "Не удалось удалить команду flostate.";
+"Could not remove the flowriter command." = "Не удалось удалить команду flowriter.";
 
 /* FloStateCLI.swift */
-"Could not install the flostate command." = "Не удалось установить команду flostate.";
+"Could not install the flowriter command." = "Не удалось установить команду flowriter.";
 
-/* FloStateCLI.swift (app menu; keep `flostate` as is) */
-"Install 'flostate' Command Line Tool…" = "Установить инструмент командной строки «flostate»…";
+/* FloStateCLI.swift (app menu; keep `flowriter` as is) */
+"Install 'flowriter' Command Line Tool…" = "Установить инструмент командной строки «flowriter»…";
 
-/* FloStateCLI.swift (app menu; keep `flostate` as is) */
-"Uninstall 'flostate' Command Line Tool…" = "Удалить инструмент командной строки «flostate»…";
+/* FloStateCLI.swift (app menu; keep `flowriter` as is) */
+"Uninstall 'flowriter' Command Line Tool…" = "Удалить инструмент командной строки «flowriter»…";
 
 /* FrontmatterPanel.swift; Placeholder in a frontmatter property name field. */
 "key" = "ключ";
@@ -744,7 +744,7 @@
 "Jump to bottom after (minutes)" = "Переход в конец через (мин)";
 
 /* Settings description / tooltip (editor.jump-to-bottom-after-minutes) */
-"On returning to Flo State after this long away, jump to the end of the document. 0 disables it." = "При возврате в Flo State после такого перерыва переходить в конец документа. 0 — выключено.";
+"On returning to Flowriter after this long away, jump to the end of the document. 0 disables it." = "При возврате в Flowriter после такого перерыва переходить в конец документа. 0 — выключено.";
 
 /* Settings label (editor.heading-space-before) */
 "Space before headings" = "Отступ перед заголовками";
@@ -899,8 +899,8 @@
 /* Theme preset name; Theme preset name. */
 "Warm Paper" = "Теплая бумага";
 
-/* Theme preset name; App / theme name: keep "Flo State" untranslated. */
-"Flo State" = "Flo State";
+/* Theme preset name; App / theme name: keep "Flowriter" untranslated. */
+"Flowriter" = "Flowriter";
 
 /* ShellMenus.swift (Format menu) */
 "Inline Code" = "Встроенный код";

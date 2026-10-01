@@ -447,7 +447,7 @@ final class AppEditorStoreTests: XCTestCase {
     }
 
     func testTitles() async {
-        XCTAssertEqual(store.windowTitle(), "Flo State")
+        XCTAssertEqual(store.windowTitle(), ForkIdentity.appName)
         files.contents["/n/note.md"] = "# Heading"
         await store.openFile("/n/note.md")
         XCTAssertEqual(store.windowTitle(), "Heading")

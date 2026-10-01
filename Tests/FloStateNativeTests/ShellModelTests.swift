@@ -854,8 +854,8 @@ final class ShellGeometryTests: XCTestCase {
         XCTAssertEqual(SettingControl.sentenceCase("UI font"), "UI font")
         XCTAssertEqual(SettingsPanes.optionTitle("appearance.theme", "system"), "Match System")
         XCTAssertEqual(SettingsPanes.optionTitle("appearance.editor-width", "full"), "Wide")
-        XCTAssertEqual(SettingsPanes.presetTitle("Writer"), "Flo State")
-        XCTAssertEqual(SettingsPanes.presetName("Flo State"), "Writer")
+        XCTAssertEqual(SettingsPanes.presetTitle("Writer"), "Flowriter")
+        XCTAssertEqual(SettingsPanes.presetName("Flowriter"), "Writer")
     }
 
 
@@ -948,7 +948,7 @@ final class FloStateCLITests: XCTestCase {
         XCTAssertTrue(titles.contains(FloStateCLI.installLabel) || titles.contains(FloStateCLI.uninstallLabel))
         XCTAssertFalse(titles.contains("Check for Updates…"), "no update feed: no dead item")
         let i = titles.firstIndex(of: "Settings…")!
-        XCTAssertTrue(titles[i + 1].contains("'flostate' Command Line Tool"), "right after Settings… like legacy")
+        XCTAssertTrue(titles[i + 1].contains("'flowriter' Command Line Tool"), "right after Settings… like legacy")
         // with an updater (bundled app): right after About, like legacy
         let item = NSMenuItem(title: MainMenu.checkForUpdatesTitle, action: nil, keyEquivalent: "")
         let withUpdates = MainMenu.build(target: MenuRouter(), updateItem: item).items[0].submenu!.items.map { $0.title }

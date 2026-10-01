@@ -1,4 +1,4 @@
-/* Flo State UI strings. Key = English source text (base language).
+/* Flowriter UI strings. Key = English source text (base language).
  * Generated from the sources; translations live in <lang>.lproj/Localizable.strings. */
 
 /* EditorModel.swift; TabStripView.swift; Tab title / tooltip of the + button (new empty tab). */
@@ -188,31 +188,31 @@
 "Command Line Tool Removed" = "تمت إزالة أداة سطر الأوامر";
 
 /* FloStateCLI.swift */
-"The `flostate` command has been removed from %@." = "تمت إزالة الأمر `flostate` من %@.";
+"The `flowriter` command has been removed from %@." = "تمت إزالة الأمر `flowriter` من %@.";
 
 /* FloStateCLI.swift */
 "Command Line Tool Installed" = "تم تثبيت أداة سطر الأوامر";
 
 /* FloStateCLI.swift */
-"The `flostate` command is now installed at %@." = "تم تثبيت الأمر `flostate` في %@.";
+"The `flowriter` command is now installed at %@." = "تم تثبيت الأمر `flowriter` في %@.";
 
 /* FloStateCLI.swift */
-"Run `flostate .` from any terminal to open the current folder." = "شغّل `flostate .` من أي طرفية لفتح المجلد الحالي.";
+"Run `flowriter .` from any terminal to open the current folder." = "شغّل `flowriter .` من أي طرفية لفتح المجلد الحالي.";
 
 /* FloStateCLI.swift */
-"Flo State Command Line Tool" = "أداة سطر الأوامر لـ Flo State";
+"Flowriter Command Line Tool" = "أداة سطر الأوامر لـ Flowriter";
 
 /* FloStateCLI.swift */
-"Could not remove the flostate command." = "تعذرت إزالة الأمر flostate.";
+"Could not remove the flowriter command." = "تعذرت إزالة الأمر flowriter.";
 
 /* FloStateCLI.swift */
-"Could not install the flostate command." = "تعذر تثبيت الأمر flostate.";
+"Could not install the flowriter command." = "تعذر تثبيت الأمر flowriter.";
 
-/* FloStateCLI.swift (app menu; keep `flostate` as is) */
-"Install 'flostate' Command Line Tool…" = "تثبيت أداة سطر الأوامر 'flostate'…";
+/* FloStateCLI.swift (app menu; keep `flowriter` as is) */
+"Install 'flowriter' Command Line Tool…" = "تثبيت أداة سطر الأوامر 'flowriter'…";
 
-/* FloStateCLI.swift (app menu; keep `flostate` as is) */
-"Uninstall 'flostate' Command Line Tool…" = "إلغاء تثبيت أداة سطر الأوامر 'flostate'…";
+/* FloStateCLI.swift (app menu; keep `flowriter` as is) */
+"Uninstall 'flowriter' Command Line Tool…" = "إلغاء تثبيت أداة سطر الأوامر 'flowriter'…";
 
 /* FrontmatterPanel.swift; Placeholder in a frontmatter property name field. */
 "key" = "المفتاح";
@@ -744,7 +744,7 @@
 "Jump to bottom after (minutes)" = "الانتقال إلى الأسفل بعد (دقائق)";
 
 /* Settings description / tooltip (editor.jump-to-bottom-after-minutes) */
-"On returning to Flo State after this long away, jump to the end of the document. 0 disables it." = "عند العودة إلى Flo State بعد غياب بهذه المدة، الانتقال إلى نهاية المستند. القيمة 0 تعطّل ذلك.";
+"On returning to Flowriter after this long away, jump to the end of the document. 0 disables it." = "عند العودة إلى Flowriter بعد غياب بهذه المدة، الانتقال إلى نهاية المستند. القيمة 0 تعطّل ذلك.";
 
 /* Settings label (editor.heading-space-before) */
 "Space before headings" = "المسافة قبل العناوين";
@@ -899,8 +899,8 @@
 /* Theme preset name; Theme preset name. */
 "Warm Paper" = "ورق دافئ";
 
-/* Theme preset name; App / theme name: keep "Flo State" untranslated. */
-"Flo State" = "Flo State";
+/* Theme preset name; App / theme name: keep "Flowriter" untranslated. */
+"Flowriter" = "Flowriter";
 
 /* ShellMenus.swift (Format menu) */
 "Inline Code" = "شيفرة مضمّنة";

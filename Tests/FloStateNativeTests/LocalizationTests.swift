@@ -128,13 +128,13 @@ final class LocalizationTests: XCTestCase {
     func testWelcomeNotes() throws {
         let english = StarterNotebook.welcome
         let glyphs = ["⌘K", "⌘O", "⌘⇧F", "⌘N", "⌘T", "⌘\\\\", "⌘⇧D", "⌘⌥←", "⌘⌥→", "⌘,", "⌘+", "⌘−", "[[", "$e^{i\\pi} + 1 = 0$",
-                      "```mermaid", "- [ ] ", "- [x] ", "`attachments`", "](https://flocrivello.com/flostate/)", "| --- | --- |"]
+                      "```mermaid", "- [ ] ", "- [x] ", "`attachments`", "](https://github.com/jonnilundy/flowriter)", "| --- | --- |"]
         for g in glyphs { XCTAssertTrue(english.contains(g), "english: \(g)") }
         for lang in L10n.languages where lang != "en" {
             let b = try XCTUnwrap(L10n.languageBundle(lang))
             let url = try XCTUnwrap(b.url(forResource: "Welcome", withExtension: "md"), lang)
             let note = try String(contentsOf: url, encoding: .utf8)
-            XCTAssertTrue(note.hasPrefix("# ") && note.contains("Flo State"), "\(lang): heading")
+            XCTAssertTrue(note.hasPrefix("# ") && note.contains("Flowriter"), "\(lang): heading")
             for g in glyphs { XCTAssertTrue(note.contains(g), "\(lang): \(g)") }
             let stem = LinkPaths.getFileStem(table(lang)["Welcome.md"]!)
             XCTAssertTrue(note.contains("[[\(stem)]]"), "\(lang): self-link [[\(stem)]]")

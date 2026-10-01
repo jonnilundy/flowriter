@@ -317,7 +317,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         openWorkspaceWindow(url.path, file: nil, keepSession: true)
     }
 
-    /// Once per install, from the installed app only: make Flo State the default app for Markdown and plain
+    /// Once per install, from the installed app only: make Flowriter the default app for Markdown and plain
     /// text (.txt). Never repeated, so a user who switches back to another editor keeps their choice.
     /// CSV / .log are registered (Open With) but not claimed: those usually belong to other apps.
     private func claimDefaultTextHandlersOnce() {
@@ -328,7 +328,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let app = Bundle.main.bundleURL
         for type in [UTType("net.daringfireball.markdown"), UTType.plainText].compactMap({ $0 }) {
             NSWorkspace.shared.setDefaultApplication(at: app, toOpen: type) { error in
-                if let error { NSLog("Flo State: couldn't become default for \(type.identifier): \(error.localizedDescription)") }
+                if let error { NSLog("Flowriter: couldn't become default for \(type.identifier): \(error.localizedDescription)") }
             }
         }
     }

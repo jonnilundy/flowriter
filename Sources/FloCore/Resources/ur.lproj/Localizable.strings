@@ -1,4 +1,4 @@
-/* Flo State UI strings. Key = English source text (base language).
+/* Flowriter UI strings. Key = English source text (base language).
  * Generated from the sources; translations live in <lang>.lproj/Localizable.strings. */
 
 /* EditorModel.swift; TabStripView.swift; Tab title / tooltip of the + button (new empty tab). */
@@ -188,31 +188,31 @@
 "Command Line Tool Removed" = "کمانڈ لائن ٹول ہٹا دیا گیا";
 
 /* FloStateCLI.swift */
-"The `flostate` command has been removed from %@." = "`flostate` کمانڈ %@ سے ہٹا دی گئی ہے۔";
+"The `flowriter` command has been removed from %@." = "`flowriter` کمانڈ %@ سے ہٹا دی گئی ہے۔";
 
 /* FloStateCLI.swift */
 "Command Line Tool Installed" = "کمانڈ لائن ٹول انسٹال ہو گیا";
 
 /* FloStateCLI.swift */
-"The `flostate` command is now installed at %@." = "`flostate` کمانڈ اب %@ پر انسٹال ہے۔";
+"The `flowriter` command is now installed at %@." = "`flowriter` کمانڈ اب %@ پر انسٹال ہے۔";
 
 /* FloStateCLI.swift */
-"Run `flostate .` from any terminal to open the current folder." = "موجودہ فولڈر کھولنے کے لیے کسی بھی ٹرمینل سے `flostate .` چلائیں۔";
+"Run `flowriter .` from any terminal to open the current folder." = "موجودہ فولڈر کھولنے کے لیے کسی بھی ٹرمینل سے `flowriter .` چلائیں۔";
 
 /* FloStateCLI.swift */
-"Flo State Command Line Tool" = "Flo State کمانڈ لائن ٹول";
+"Flowriter Command Line Tool" = "Flowriter کمانڈ لائن ٹول";
 
 /* FloStateCLI.swift */
-"Could not remove the flostate command." = "flostate کمانڈ ہٹائی نہیں جا سکی۔";
+"Could not remove the flowriter command." = "flowriter کمانڈ ہٹائی نہیں جا سکی۔";
 
 /* FloStateCLI.swift */
-"Could not install the flostate command." = "flostate کمانڈ انسٹال نہیں ہو سکی۔";
+"Could not install the flowriter command." = "flowriter کمانڈ انسٹال نہیں ہو سکی۔";
 
-/* FloStateCLI.swift (app menu; keep `flostate` as is) */
-"Install 'flostate' Command Line Tool…" = "‘flostate’ کمانڈ لائن ٹول انسٹال کریں…";
+/* FloStateCLI.swift (app menu; keep `flowriter` as is) */
+"Install 'flowriter' Command Line Tool…" = "‘flowriter’ کمانڈ لائن ٹول انسٹال کریں…";
 
-/* FloStateCLI.swift (app menu; keep `flostate` as is) */
-"Uninstall 'flostate' Command Line Tool…" = "‘flostate’ کمانڈ لائن ٹول ان انسٹال کریں…";
+/* FloStateCLI.swift (app menu; keep `flowriter` as is) */
+"Uninstall 'flowriter' Command Line Tool…" = "‘flowriter’ کمانڈ لائن ٹول ان انسٹال کریں…";
 
 /* FrontmatterPanel.swift; Placeholder in a frontmatter property name field. */
 "key" = "کلید";
@@ -744,7 +744,7 @@
 "Jump to bottom after (minutes)" = "آخر پر جائیں، اتنے منٹ بعد";
 
 /* Settings description / tooltip (editor.jump-to-bottom-after-minutes) */
-"On returning to Flo State after this long away, jump to the end of the document. 0 disables it." = "اتنی دیر بعد Flo State پر واپس آنے پر دستاویز کے آخر پر جائیں۔ 0 اسے غیر فعال کرتا ہے۔";
+"On returning to Flowriter after this long away, jump to the end of the document. 0 disables it." = "اتنی دیر بعد Flowriter پر واپس آنے پر دستاویز کے آخر پر جائیں۔ 0 اسے غیر فعال کرتا ہے۔";
 
 /* Settings label (editor.heading-space-before) */
 "Space before headings" = "سرخیوں سے پہلے جگہ";
@@ -899,8 +899,8 @@
 /* Theme preset name; Theme preset name. */
 "Warm Paper" = "گرم کاغذ";
 
-/* Theme preset name; App / theme name: keep "Flo State" untranslated. */
-"Flo State" = "Flo State";
+/* Theme preset name; App / theme name: keep "Flowriter" untranslated. */
+"Flowriter" = "Flowriter";
 
 /* ShellMenus.swift (Format menu) */
 "Inline Code" = "ان لائن کوڈ";

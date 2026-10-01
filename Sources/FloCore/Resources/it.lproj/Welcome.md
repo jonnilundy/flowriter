@@ -1,10 +1,10 @@
-# Benvenuto in Flo State
+# Benvenuto in Flowriter
 
 Questo taccuino è solo una cartella di semplici file markdown nella cartella Documenti. Qualsiasi app può aprirli e niente resta bloccato.
 
 ## Scrivere
 
-Il markdown viene visualizzato mentre scrivi. La sintassi compare sulla riga che stai modificando e sparisce ovunque altrove: **grassetto**, _corsivo_, `codice`, [link](https://flocrivello.com/flostate/).
+Il markdown viene visualizzato mentre scrivi. La sintassi compare sulla riga che stai modificando e sparisce ovunque altrove: **grassetto**, _corsivo_, `codice`, [link](https://github.com/jonnilundy/flowriter).
 
 - Gli elenchi continuano quando premi A capo
 - [ ] Anche le caselle di controllo

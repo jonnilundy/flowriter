@@ -1,10 +1,10 @@
-# Te damos la bienvenida a Flo State
+# Te damos la bienvenida a Flowriter
 
 Este cuaderno no es más que una carpeta de archivos Markdown de texto plano dentro de tu carpeta Documentos. Cualquier app puede abrirlos y nada queda bloqueado.
 
 ## Escribir
 
-El Markdown se muestra con formato mientras escribes. La sintaxis aparece en la línea que estás editando y desaparece en el resto: **negrita**, _cursiva_, `código`, [enlaces](https://flocrivello.com/flostate/).
+El Markdown se muestra con formato mientras escribes. La sintaxis aparece en la línea que estás editando y desaparece en el resto: **negrita**, _cursiva_, `código`, [enlaces](https://github.com/jonnilundy/flowriter).
 
 - Las listas continúan al pulsar Retorno
 - [ ] Las casillas también

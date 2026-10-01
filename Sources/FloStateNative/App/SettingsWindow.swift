@@ -98,8 +98,8 @@ enum SettingsPanes {
     ]
 
     /// Theme preset display names ("Writer" is the legacy preset id, kept in config).
-    static func presetTitle(_ name: String) -> String { name == "Writer" ? "Flo State" : name }
-    static func presetName(_ title: String) -> String { title == "Flo State" ? "Writer" : title }
+    static func presetTitle(_ name: String) -> String { name == "Writer" ? "Flowriter" : name }
+    static func presetName(_ title: String) -> String { title == "Flowriter" ? "Writer" : title }
 
     static var allKeys: [String] { all.flatMap { $0.groups.flatMap { $0.1 } } }
 

@@ -1,10 +1,10 @@
-# Boas-vindas ao Flo State
+# Boas-vindas ao Flowriter
 
 Este caderno é apenas uma pasta de arquivos markdown simples na sua pasta Documentos. Qualquer app pode abri-los, e nada fica preso.
 
 ## Escrever
 
-O Markdown é formatado enquanto você digita. A sintaxe aparece na linha que você está editando e sai do caminho em todo o resto: **negrito**, _itálico_, `código`, [links](https://flocrivello.com/flostate/).
+O Markdown é formatado enquanto você digita. A sintaxe aparece na linha que você está editando e sai do caminho em todo o resto: **negrito**, _itálico_, `código`, [links](https://github.com/jonnilundy/flowriter).
 
 - As listas continuam quando você pressiona Return
 - [ ] Caixas de seleção também

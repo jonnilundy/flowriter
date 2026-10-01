@@ -32,7 +32,7 @@ def main():
     a.add_argument("appcast"); a.add_argument("--version", required=True); a.add_argument("--build", required=True)
     a.add_argument("--url", required=True); a.add_argument("--ed-signature", required=True); a.add_argument("--length", required=True)
     a.add_argument("--notes-url"); a.add_argument("--notes-file"); a.add_argument("--min-system", default="14.0")
-    a.add_argument("--title", default="Flo State"); a.add_argument("--link", default="https://github.com/Altimor/flo-state")
+    a.add_argument("--title", default="Flowriter"); a.add_argument("--link", default="https://github.com/jonnilundy/flowriter")
     o = a.parse_args()
     if os.path.exists(o.appcast):
         tree = ET.parse(o.appcast); channel = tree.getroot().find("channel")

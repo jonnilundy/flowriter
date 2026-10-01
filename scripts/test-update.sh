@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$PWD
-SRC="${SRC:-$ROOT/build/Flo State Native.app}"
+SRC="${SRC:-$ROOT/build/Flowriter.app}"
 SPARKLE_BIN="$ROOT/.build-release/artifacts/sparkle/Sparkle/bin"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/flostate-update-test.XXXXXX")
 trap '[[ -n "${SERVER:-}" ]] && kill $SERVER 2>/dev/null; [[ -n "${KEEP:-}" ]] && echo "kept $WORK" || rm -rf "$WORK"' EXIT

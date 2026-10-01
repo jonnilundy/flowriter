@@ -1,23 +1,23 @@
 import AppKit
 import FloCore
 
-/// The `flostate` shell command (port of legacy's `writer_cli.rs` +
+/// The `flowriter` shell command (port of legacy's `writer_cli.rs` +
 /// `shell_install.rs`, renamed so it can coexist with the legacy app's
-/// `writer`). The app binary is itself the CLI: when invoked as `flostate`
+/// `writer`). The app binary is itself the CLI: when invoked as `flowriter`
 /// (argv[0] basename), it opens its argument in the app and exits. "Install"
-/// symlinks /usr/local/bin/flostate → the running binary inside the bundle.
+/// symlinks /usr/local/bin/flowriter → the running binary inside the bundle.
 enum FloStateCLI {
     static let installTarget = "/usr/local/bin/" + ForkIdentity.cliName
     static let exitSuccess: Int32 = 0, exitUsage: Int32 = 2, exitRuntime: Int32 = 3
 
     static let usage = """
-    Usage: flostate [PATH]
+    Usage: flowriter [PATH]
 
-    Open a folder or markdown file in the Flo State desktop app.
+    Open a folder or markdown file in the Flowriter desktop app.
 
     Arguments:
       PATH              Directory or .md/.markdown file to open. If omitted,
-                        Flo State launches with no target.
+                        Flowriter launches with no target.
 
     Options:
       -h, --help        Print this help and exit.
@@ -76,24 +76,24 @@ enum FloStateCLI {
         switch parse(argv) {
         case .success(.help): out(usage); return exitSuccess
         case .success(.version):
-            out("flostate \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1")")
+            out("flowriter \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1")")
             return exitSuccess
         case let .failure(e):
-            err("flostate: \(e)\n\n\(usage)")
+            err("flowriter: \(e)\n\n\(usage)")
             return exitUsage
         case let .success(.open(path)):
             var target: String?
             if let p = path {
                 let abs = p.hasPrefix("/") ? p : (cwd as NSString).appendingPathComponent(p)
                 let std = (abs as NSString).standardizingPath
-                guard FileManager.default.fileExists(atPath: std) else { err("flostate: no such file or directory: \(std)"); return exitRuntime }
-                guard let pending = PendingOpen.resolve(std) else { err("flostate: not a folder or markdown file: \(std)"); return exitRuntime }
+                guard FileManager.default.fileExists(atPath: std) else { err("flowriter: no such file or directory: \(std)"); return exitRuntime }
+                guard let pending = PendingOpen.resolve(std) else { err("flowriter: not a folder or markdown file: \(std)"); return exitRuntime }
                 target = pending.file ?? pending.workspace
             }
             let app = env["FLOSTATE_APP_PATH"] ?? bundlePath(forBinary: argv.first.map(resolveArgv0) ?? "") ?? ForkIdentity.appName
             var args = ["-a", app]
             if let t = target { args.append(t) }
-            guard launch(args) else { err("flostate: could not launch Flo State (\(app)). Set FLOSTATE_APP_PATH."); return exitRuntime }
+            guard launch(args) else { err("flowriter: could not launch Flowriter (\(app)). Set FLOSTATE_APP_PATH."); return exitRuntime }
             return exitSuccess
         }
     }
@@ -131,7 +131,7 @@ enum FloStateCLI {
         case occupied(String), failed(String)
         var description: String {
             switch self {
-            case let .occupied(p): return "\(p) already exists and is not a symlink. Remove it manually if you want Flo State to manage it."
+            case let .occupied(p): return "\(p) already exists and is not a symlink. Remove it manually if you want Flowriter to manage it."
             case let .failed(m): return m
             }
         }
@@ -172,8 +172,8 @@ enum FloStateCLI {
         return error == nil
     }
 
-    static let installLabel = "Install 'flostate' Command Line Tool…"
-    static let uninstallLabel = "Uninstall 'flostate' Command Line Tool…"
+    static let installLabel = "Install 'flowriter' Command Line Tool…"
+    static let uninstallLabel = "Uninstall 'flowriter' Command Line Tool…"
 }
 
 /// The app-menu item that toggles the CLI install (label follows the state).
@@ -198,16 +198,16 @@ final class CLIMenuItem: NSMenuItem {
             if installed {
                 try FloStateCLI.uninstall(source: src)
                 alert.messageText = L("Command Line Tool Removed")
-                alert.informativeText = L("The `flostate` command has been removed from %@.", FloStateCLI.installTarget)
+                alert.informativeText = L("The `flowriter` command has been removed from %@.", FloStateCLI.installTarget)
             } else {
                 try FloStateCLI.install(source: src)
                 alert.messageText = L("Command Line Tool Installed")
-                alert.informativeText = L("The `flostate` command is now installed at %@.", FloStateCLI.installTarget) + "\n\n" + L("Run `flostate .` from any terminal to open the current folder.")
+                alert.informativeText = L("The `flowriter` command is now installed at %@.", FloStateCLI.installTarget) + "\n\n" + L("Run `flowriter .` from any terminal to open the current folder.")
             }
         } catch {
             alert.alertStyle = .warning
-            alert.messageText = L("Flo State Command Line Tool")
-            alert.informativeText = (installed ? L("Could not remove the flostate command.") : L("Could not install the flostate command.")) + "\n\n\(error)"
+            alert.messageText = L("Flowriter Command Line Tool")
+            alert.informativeText = (installed ? L("Could not remove the flowriter command.") : L("Could not install the flowriter command.")) + "\n\n\(error)"
         }
         refresh()
         alert.runModal()
