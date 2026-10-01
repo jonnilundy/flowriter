@@ -965,3 +965,62 @@ final class FloStateCLITests: XCTestCase {
         XCTAssertFalse(AppUpdater.isConfigured(.main), "test runner is not an updatable app")
     }
 }
+
+@MainActor
+final class ShellDefaultLocationTests: XCTestCase {
+    func createItem(_ f: ShellFixture, _ q: String) -> (heading: String?, empty: String?, path: String?) {
+        f.model.palette = PaletteState(intent: .createFile, query: q)
+        let v = f.model.paletteView()!
+        var path: String?
+        if case let .create(p)? = v.items.first?.kind { path = p }
+        return (v.heading, v.empty, path)
+    }
+
+    func testUnsetCreatesInTheWorkspaceRoot() async {
+        let f = ShellFixture(files: ["a.md": "x"])
+        await f.open()
+        let r = createItem(f, "Idea")
+        XCTAssertEqual(r.path, f.root + "/Idea.md")
+        XCTAssertEqual(r.heading, "Create note")
+    }
+
+    func testSetFolderOutsideTheWorkspaceReceivesTheNote() async {
+        let f = ShellFixture(files: ["a.md": "x"])
+        let dest = TFS.tempDir("dest")
+        f.model.setSetting("files.default-note-location", .string(dest))
+        await f.open()
+        let r = createItem(f, "drafts/Idea")
+        XCTAssertEqual(r.path, dest + "/drafts/Idea.md")
+        XCTAssertEqual(r.heading, "Create note in \((dest as NSString).lastPathComponent)")
+        XCTAssertNil(createItem(f, "../escape").path)
+        f.model.palette = PaletteState(intent: .createFile, query: "Idea")
+        f.model.runPaletteItem(f.model.paletteView()!.items[0])
+        for _ in 0..<100 where !TFS.exists(dest + "/Idea.md") { try? await Task.sleep(nanoseconds: 20_000_000) }
+        XCTAssertTrue(TFS.exists(dest + "/Idea.md"))
+        XCTAssertFalse(TFS.exists(f.root + "/Idea.md"))
+    }
+
+    func testMissingFolderFallsBackAndSaysWhy() async {
+        let f = ShellFixture(files: ["a.md": "x"])
+        let gone = TFS.tempDir("dest") + "/gone"
+        f.model.setSetting("files.default-note-location", .string(gone))
+        await f.open()
+        let r = createItem(f, "Idea")
+        XCTAssertEqual(r.path, f.root + "/Idea.md", "the typed name is kept, in today's folder")
+        XCTAssertEqual(r.heading, "The default folder \"gone\" is missing. Using \((f.root as NSString).lastPathComponent).")
+        let empty = createItem(f, "")
+        XCTAssertEqual(empty.empty, r.heading)
+        XCTAssertNil(empty.path)
+    }
+
+    func testCompactWindowUsesTheDefaultFolderToo() async {
+        let f = ShellFixture(files: ["a.md": "x"])
+        let dest = TFS.tempDir("dest")
+        f.model.setSetting("files.default-note-location", .string(dest))
+        await f.model.editor.openCompactFile(f.p("a.md"))
+        XCTAssertTrue(f.model.isCompact)
+        f.model.perform(.newNote)
+        XCTAssertEqual(f.model.palette?.intent, .createFile)
+        XCTAssertEqual(createItem(f, "Idea").path, dest + "/Idea.md")
+    }
+}

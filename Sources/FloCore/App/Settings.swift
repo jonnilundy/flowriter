@@ -256,6 +256,7 @@ public struct SettingsValues {
     public func themeContrast(_ mode: ThemeMode) -> Double { num("theme.\(mode.rawValue).contrast") }
     // Files
     public var filesAssociations: [String] { list("files.associations") }
+    public var filesDefaultNoteLocation: String { str("files.default-note-location") }
     public var filesDefaultEncoding: String { str("files.default-encoding") }
     public var filesInsertFinalNewline: Bool { bool("files.insert-final-newline") }
     public var filesTrimTrailingWhitespace: Bool { bool("files.trim-trailing-whitespace") }

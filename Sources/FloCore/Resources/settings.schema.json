@@ -365,6 +365,14 @@
       "default": 16
     },
     {
+      "key": "files.default-note-location",
+      "label": "Default location for new notes",
+      "description": "The folder every new note is created in. Empty: next to the open note, or in the workspace folder.",
+      "category": "Files",
+      "type": "string",
+      "default": ""
+    },
+    {
       "key": "files.associations",
       "label": "File Associations",
       "description": "File patterns to include in the workspace",

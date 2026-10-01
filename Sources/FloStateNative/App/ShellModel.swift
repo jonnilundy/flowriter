@@ -655,8 +655,8 @@ final class ShellModel {
         switch action {
         case .openPreferences: openSettingsWindow()
         case .newNote:
-            if root != nil && !isCompact || isCompact && editor.activeFilePath != nil {
-                palette = PaletteState(intent: .createFile)   // compact: created next to the open file
+            if root != nil && !isCompact || isCompact && (editor.activeFilePath != nil || hasDefaultNoteLocation) {
+                palette = PaletteState(intent: .createFile)   // compact: created next to the open file, or in the default location
             } else if root == nil {
                 newNoteWithoutFolder()
             }
@@ -849,7 +849,7 @@ final class ShellModel {
         let compact = isCompact
         if root != nil && !compact { add("toggle-sidebar", "Toggle Sidebar") }
         if root != nil && !compact { add("search-contents", "Search in All Notes") }
-        if root != nil || (compact && editor.activeFilePath != nil) { add("new-file", "Create New File") }
+        if root != nil || (compact && (editor.activeFilePath != nil || hasDefaultNoteLocation)) { add("new-file", "Create New File") }
         if root != nil && editor.activeFilePath != nil { add("open-in-compact-window", "Open File in Compact Window") }
         if editor.activeTabId != nil && !compact { add("close-tab", "Close Current Tab") }
         if !editor.tabs.isEmpty && !compact { add("close-all", "Close All Tabs") }
@@ -858,6 +858,38 @@ final class ShellModel {
         add("toggle-theme", "Toggle Dark Mode")
         add("open-settings", "Settings", "App preferences")
         return out
+    }
+
+    /// Where New Note puts the note: the default location when set and usable; otherwise today's
+    /// choice (the workspace root, or the folder of the open file in a compact window).
+    struct NewNoteTarget: Equatable {
+        var directory: String?
+        var usingDefault: Bool
+        /// Why the default location was skipped, quietly shown in the palette.
+        var notice: String?
+    }
+
+    var hasDefaultNoteLocation: Bool {
+        !values.filesDefaultNoteLocation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    func newNoteTarget() -> NewNoteTarget {
+        let fallback = root ?? editor.activeFilePath.map(LinkPaths.getParentDir)
+        let c = NewNoteLocation.choose(defaultLocation: values.filesDefaultNoteLocation, fallback: fallback)
+        let name = LinkPaths.getFileName(NewNoteLocation.normalized(values.filesDefaultNoteLocation))
+        var notice: String?
+        switch c.problem {
+        case .missing?: notice = L("The default folder \"%@\" is missing.", name)
+        case .notWritable?: notice = L("The default folder \"%@\" can't be written to.", name)
+        case nil: break
+        }
+        if let n = notice, let d = c.directory { notice = n + " " + L("Using %@.", LinkPaths.getFileName(d)) }
+        return NewNoteTarget(directory: c.directory, usingDefault: c.usedDefault, notice: notice)
+    }
+
+    private func createPath(in target: NewNoteTarget, dir: String, rawName: String) -> String? {
+        target.usingDefault ? NewNoteLocation.confinedCreatePath(directory: dir, rawName: rawName)
+                            : WorkspaceFS.paletteCreatePath(root: dir, rawName: rawName)
     }
 
     struct PaletteView: Equatable {
@@ -871,14 +903,15 @@ final class ShellModel {
         guard let p = palette else { return nil }
         let q = p.query.trimmingCharacters(in: .whitespacesAndNewlines)
         if p.intent == .createFile {
-            // compact windows create next to the active file
-            let base = root ?? editor.activeFilePath.map(LinkPaths.getParentDir)
-            guard let root = base, !q.isEmpty, let path = WorkspaceFS.paletteCreatePath(root: root, rawName: q) else {
-                return PaletteView(heading: nil, empty: nil, items: [], placeholder: L("Type a note name to create it"))
+            let target = newNoteTarget()
+            let placeholder = L("Type a note name to create it")
+            guard let dir = target.directory, !q.isEmpty, let path = createPath(in: target, dir: dir, rawName: q) else {
+                return PaletteView(heading: nil, empty: target.notice, items: [], placeholder: placeholder)
             }
-            return PaletteView(heading: L("Create note"), empty: nil,
+            let heading = target.usingDefault ? L("Create note in %@", LinkPaths.getFileName(dir)) : (target.notice ?? L("Create note"))
+            return PaletteView(heading: heading, empty: nil,
                                items: [PaletteItem(kind: .create(path), title: L("Create: %@", LinkPaths.getFileName(path)))],
-                               placeholder: L("Type a note name to create it"))
+                               placeholder: placeholder)
         }
         if p.intent == .fullText {
             let items = contentResults.map {
@@ -948,12 +981,21 @@ final class ShellModel {
             pendingReveal = (path, offset, length)
             Task { try? await editor.openFileInTabOrFocus(path); notify(.content) }
         case let .create(path):
+            let typed = palette?.query ?? ""
             palette = nil
             Task {
                 do {
                     _ = try WorkspaceFS.createFile(path)
-                    index?.add(path, modifiedAt: WorkspaceFS.modifiedTime(path))
-                    refreshDirectory(LinkPaths.getParentDir(path))
+                    // a default location outside the workspace is not part of its index or tree
+                    if root.map({ path.hasPrefix($0 + "/") }) ?? true {
+                        index?.add(path, modifiedAt: WorkspaceFS.modifiedTime(path))
+                        refreshDirectory(LinkPaths.getParentDir(path))
+                    }
+                } catch AppError.io(let reason) {
+                    // the typed name stays in the palette
+                    alert(L("Couldn't create the note: %@", reason))
+                    palette = PaletteState(intent: .createFile, query: typed)
+                    return
                 } catch { /* already exists: open it */ }
                 if isCompact { await editor.openCompactFile(path) } else { try? await editor.openFileInTabOrFocus(path) }
             }

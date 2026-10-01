@@ -63,7 +63,7 @@ enum SelfTestRunner {
         }
         Task { @MainActor in
             // Flowriter: the integrity and space scenarios run in the writing space's document window
-            if FlowriterSpace.enabled && (["integrity", "space", "quiet", "combined", "restart-combined", "panels", "writing-menu", "hints", "hints-restart", "overflow-typing", "restart-overflow-typing"] + ViewTogglesScenarios.names + FileNameScenarios.names + SelectionBarScenarios.names + ToolsScenarios.names).contains(scenario) { await model.editor.openCompactFile(file) }
+            if FlowriterSpace.enabled && (["integrity", "space", "quiet", "combined", "restart-combined", "panels", "writing-menu", "hints", "hints-restart", "overflow-typing", "restart-overflow-typing"] + ViewTogglesScenarios.names + FileNameScenarios.names + DefaultLocationScenarios.names + SelectionBarScenarios.names + ToolsScenarios.names).contains(scenario) { await model.editor.openCompactFile(file) }
             else { await model.openWorkspace(root, openFile: file, keepSession: false) }
             wc.flush()
             guard let pane = await waitFor(5, { wc.root.area.activeFilePane?.controller != nil ? wc.root.area.activeFilePane : nil }),
@@ -198,6 +198,7 @@ enum SelfTestScenarios {
             if await AlternativesScenarios.run(name, ctx) { return }   // Flowriter: alternatives
             if await ViewTogglesScenarios.run(name, ctx) { return }   // Flowriter: view toggles (ViewTogglesSelfTest.swift)
             if await FileNameScenarios.run(name, ctx) { return }   // Flowriter: the file name and save dot (FileNameSelfTest.swift)
+            if await DefaultLocationScenarios.run(name, ctx) { return }   // Flowriter: the default location for new notes (DefaultLocationSelfTest.swift)
             if await CombinedScenarios.run(name, ctx) { return }
             if await WritingMenuScenarios.run(name, ctx) { return }   // Flowriter: the right-click menu (WritingMenuSelfTest.swift)
             if await ReviveClickScenarios.run(name, ctx) { return }   // Flowriter: Revive by right click and shortcut (ReviveClickSelfTest.swift)

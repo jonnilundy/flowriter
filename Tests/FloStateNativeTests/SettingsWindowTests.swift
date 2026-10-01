@@ -69,7 +69,7 @@ final class SettingsWindowTests: XCTestCase {
                 case .color: XCTAssertNotNil(c.well, c.def.key)
                 case .range: XCTAssertNotNil(c.slider, c.def.key)
                 case .list: XCTAssertNotNil(c.tokens, c.def.key)
-                case .string: XCTAssertTrue(c.field != nil || c.popup != nil, c.def.key)
+                case .string: XCTAssertTrue(c.field != nil || c.popup != nil || c.folderLabel != nil, c.def.key)
                 }
             }
         }
@@ -179,5 +179,35 @@ final class SettingsBroadcastTests: XCTestCase {
         c.control("editor.font-size")!.stepped(c.control("editor.font-size")!.stepper!)
         XCTAssertEqual(f.model.values.editorFontSize, 20, "open windows pick it up live")
         wc.window?.close()
+    }
+}
+
+@MainActor
+final class DefaultLocationSettingTests: XCTestCase {
+    func testFolderRowChooseAndReset() {
+        let data = TFS.tempDir("settings")
+        let backend = SettingsBackend(dataDir: AppDataDirectory(baseURL: URL(fileURLWithPath: data)))
+        let wc = SettingsWindowController(backend: backend)
+        wc.window!.setFrameOrigin(NSPoint(x: -10000, y: -10000))
+        defer { wc.window?.close() }
+        wc.select("files")
+        let c = wc.selectedPane.control("files.default-note-location")!
+        XCTAssertEqual(c.folderLabel?.stringValue, "Not set")
+        XCTAssertEqual(c.resetButton?.isEnabled, false)
+        let folder = TFS.tempDir("notes")
+        var asked: String?
+        c.pickFolder = { asked = $0; return folder + "/" }
+        c.chooseFolder(nil)
+        XCTAssertEqual(asked, "")
+        XCTAssertEqual(backend.values.filesDefaultNoteLocation, folder)
+        XCTAssertEqual(c.folderLabel?.stringValue, NewNoteLocation.abbreviated(folder))
+        XCTAssertEqual(c.resetButton?.isEnabled, true)
+        c.pickFolder = { _ in nil }   // cancelled: nothing changes
+        c.chooseFolder(nil)
+        XCTAssertEqual(backend.values.filesDefaultNoteLocation, folder)
+        c.resetFolder(nil)
+        XCTAssertEqual(backend.values.filesDefaultNoteLocation, "")
+        XCTAssertEqual(c.folderLabel?.stringValue, "Not set")
+        XCTAssertFalse(TFS.read(data + "/config")?.contains("default-note-location") ?? false)
     }
 }
