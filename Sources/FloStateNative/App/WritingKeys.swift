@@ -6,20 +6,21 @@ import FloKit
 /// and four key chords hard).
 ///   ⌥G  Ghost it / Revive       ⌥A  Add Alternative…       ⌥O  Show / Hide Overflow
 /// and the ⌘K leader: ⌘K, then one plain letter within 2 s:
-///   g ghost   a alternative   o overflow   s stash   v versions   l link
+///   g ghost   a alternative   o overflow   s stash   v versions   l link   r recent
 /// Esc or the timeout ends the leader. Any other key ends it and goes on to the page as typed (a
 /// typed letter is never swallowed). While the leader waits, the shortcut line shows the letters
 /// (HintStrip.setLeader). The window's key monitor (ShellWindowController.handleKey) calls `route`
 /// before the menus and the text views see the event, so no ©, å or ø reaches the page or the
 /// Overflow panel. The Format and Overflow menus carry the same three ⌥ key equivalents for show.
+/// ⇧⌘O and the leader's r open the quick recent picker (the palette's recent intent, ShellModel.openRecent).
 /// ⌘K was Search… (File menu) and still is outside a text view; in the page and the Overflow panel
 /// it starts the leader. Insert Link lives on the leader's l (and the Format menu).
 @MainActor
 enum WritingKeys {
-    enum Action: Equatable { case ghost, alternative, overflow, stash, versions, link }
+    enum Action: Equatable { case ghost, alternative, overflow, stash, versions, link, recent }
 
     static let leaderTimeout: TimeInterval = 2
-    static let letters: [String: Action] = ["g": .ghost, "a": .alternative, "o": .overflow, "s": .stash, "v": .versions, "l": .link]
+    static let letters: [String: Action] = ["g": .ghost, "a": .alternative, "o": .overflow, "s": .stash, "v": .versions, "l": .link, "r": .recent]
 
     private(set) static var leaderWindow: NSWindow?
     static var leaderActive: Bool { leaderWindow != nil }
@@ -52,6 +53,7 @@ enum WritingKeys {
             if mods.isEmpty, !e.isARepeat, let l = letter(e), let a = letters[l] { run(a, in: wc); return true }
             return false
         }
+        if mods == [.command, .shift], letter(e) == "o", !e.isARepeat { run(.recent, in: wc); return true }   // anywhere in the window
         guard inWritingText(w) else { return false }
         if mods == [.command], letter(e) == "k" { beginLeader(in: w); return true }
         if mods == [.option] {
@@ -86,6 +88,7 @@ enum WritingKeys {
     // MARK: actions
 
     static func run(_ a: Action, in wc: ShellWindowController) {
+        if a == .recent { wc.model.perform(.openRecent); return }
         let area = wc.root.area
         guard let pane = area.activeFilePane else { NSSound.beep(); return }
         switch a {
@@ -102,6 +105,8 @@ enum WritingKeys {
         case .link:
             // the Format menu's Insert Link: the editor keymap's Mod-k (Formatting.insertLink)
             guard let c = pane.controller, wc.window?.firstResponder === c.textView, c.handleKey("Mod-k") else { NSSound.beep(); return }
+        case .recent:
+            break   // handled above
         }
     }
 }

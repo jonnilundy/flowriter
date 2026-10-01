@@ -17,7 +17,9 @@ path. It works offline: no account, no network calls, no AI.
   the document but not to the page (⌥O).
 - **Selection bar**: the actions for the selected text, next to the selection.
 - **⌘K leader**: ⌘K, then one letter: `g` ghost, `a` alternative, `o` overflow,
-  `s` stash in Overflow, `v` versions, `l` link.
+  `s` stash in Overflow, `v` versions, `l` link, `r` recent files.
+- **Open Recent**: File > Open Recent lists the last ten documents, newest
+  first. ⇧⌘O (or ⌘K, then `r`) opens the same list as a picker you can type into.
 - Live Markdown with marks always visible, so moving the caret never reflows
   the text. Tables, math, Mermaid, images and HTML blocks render in place.
 

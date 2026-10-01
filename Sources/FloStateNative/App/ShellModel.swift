@@ -12,6 +12,7 @@ enum ShellAction: Equatable {
     case back, forward
     // web-view shortcuts (use-keyboard-shortcuts.ts)
     case openFileSearch            // Cmd-O
+    case openRecent                // Cmd-Shift-O, ⌘K r (Flowriter): the quick recent picker
     case searchContents            // Cmd-Shift-F
     case previousTab, nextTab      // Cmd-Shift-[ ], Ctrl-(Shift-)Tab
     case selectTab(Int)            // Cmd-1…9 (1-based)
@@ -24,7 +25,7 @@ enum ShellAction: Equatable {
 
 /// Command palette state (`ui-store.ts` + `command-palette/index.tsx`).
 struct PaletteState: Equatable {
-    enum Intent: String { case search, createFile = "create-file", fullText = "full-text" }
+    enum Intent: String { case search, createFile = "create-file", fullText = "full-text", recent }
     var intent: Intent
     var query: String = ""
     var selected: Int = 0
@@ -160,6 +161,10 @@ final class ShellModel {
         recentRecorder = RecentFilesRecorder(editor: editor) { [weak self] path in
             guard let self = self, !self.readOnly else { return }
             try? self.recentFilesStore.record(path, extensions: self.settings.supportedExtensions)
+            // the Dock icon's menu lists the same documents
+            if WorkspaceFS.isFile(path), self.settings.supportedExtensions.isSupported(path) {
+                NSDocumentController.shared.noteNewRecentDocumentURL(URL(fileURLWithPath: path))
+            }
         }
         editor.observers.append { [weak self] change in self?.editorChanged(change) }
         editor.onRequestWindowClose = { [weak self] in self?.requestWindowClose() }
@@ -665,6 +670,7 @@ final class ShellModel {
         case .search: palette = PaletteState(intent: .search)
         case .openFileSearch: if FlowriterSpace.openPanel(self) { return }; if root != nil { palette = PaletteState(intent: .search) }
         case .searchContents: if root != nil && !isCompact { palette = PaletteState(intent: .fullText) }
+        case .openRecent: palette = PaletteState(intent: .recent)
         case .closeTab: if editor.activeTabId != nil && !isCompact { editor.closeActiveTab() }
         case .toggleSidebar: toggleSidebar()
         case .toggleTypewriter: typewriterScrolling.toggle(); notify(.layout)
@@ -838,6 +844,23 @@ final class ShellModel {
         if root == nil && editor.tabs.isEmpty { closeWindow() }
     }
 
+    // MARK: open recent (Flowriter: File > Open Recent, the quick picker)
+
+    /// The rows of File > Open Recent and the quick picker for this window: newest first, this
+    /// window's file and files that are gone left out.
+    func recentMenuItems(limit: Int = RecentMenu.menuLimit) -> [RecentMenuItem] {
+        RecentMenu.items(recentFilesStore.menuEntries(), current: editor.activeFilePath, limit: limit)
+    }
+
+    /// Open a recent file in this window the way Open… does: the page is saved first, then the
+    /// file replaces it (a workspace window opens it in a tab). A file that has gone leaves the list.
+    func openRecent(_ path: String) {
+        guard WorkspaceFS.isFile(path) else { try? recentFilesStore.remove(path); return }
+        if path == editor.activeFilePath { return }
+        flushDirtyFiles()
+        if isCompact { Task { await editor.openCompactFile(path) } } else { Task { try? await editor.openFileInTabOrFocus(path) } }
+    }
+
     // MARK: palette (command-palette/index.tsx)
 
     /// A standalone (compact) file window: no workspace, one file tab.
@@ -892,6 +915,15 @@ final class ShellModel {
             }
             return PaletteView(heading: L("In notes"), empty: nil, items: items, placeholder: L("Search in all notes..."))
         }
+        if p.intent == .recent {
+            let ql = q.lowercased()
+            let rows = recentMenuItems(limit: RecentFilesStore.maxCount).filter {
+                ql.isEmpty || $0.title.lowercased().contains(ql) || $0.path.lowercased().contains(ql)
+            }
+            let items = rows.map { PaletteItem(kind: .file($0.path), title: $0.title, subtitle: $0.parentTooltip) }
+            return PaletteView(heading: items.isEmpty ? nil : "Recent", empty: items.isEmpty ? (ql.isEmpty ? "No recent files." : "No recent file matches.") : nil,
+                               items: items, placeholder: "Open a recent file...")
+        }
         let cmds = q.isEmpty ? paletteCommands() : paletteCommands().filter { $0.title.lowercased().contains(q.lowercased()) }
         var files = q.isEmpty || isCompact ? [] : paletteResults.map {
             PaletteItem(kind: .file($0.path), title: LinkPaths.getFileName($0.path), subtitle: $0.relativePath,
@@ -941,7 +973,9 @@ final class ShellModel {
     func runPaletteItem(_ item: PaletteItem) {
         switch item.kind {
         case let .file(path):
+            let recent = palette?.intent == .recent
             palette = nil
+            if recent { openRecent(path); return }
             if isCompact { Task { await editor.openCompactFile(path) } } else { Task { try? await editor.openFileInTabOrFocus(path) } }
         case let .hit(path, offset, length):
             palette = nil

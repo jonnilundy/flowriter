@@ -207,7 +207,10 @@ public struct RecentEntry: Equatable {
     public var path: String
     /// Unix seconds; 0 marks a legacy entry with unknown time.
     public var openedAt: UInt64
-    public init(path: String, openedAt: UInt64) { self.path = path; self.openedAt = openedAt }
+    /// Cleared from the File > Open Recent menu (Clear Menu). The entry stays: the app still
+    /// reopens the last document at launch. Opening the file again shows it again.
+    public var hidden: Bool
+    public init(path: String, openedAt: UInt64, hidden: Bool = false) { self.path = path; self.openedAt = openedAt; self.hidden = hidden }
 }
 
 public struct RecentFile: Equatable {
@@ -233,7 +236,7 @@ public final class RecentFilesStore {
             for e in arr {
                 guard let p = e["path"]?.stringValue else { return [] }
                 let at = e["opened_at"]?.intValue ?? 0
-                out.append(RecentEntry(path: p, openedAt: at > 0 ? UInt64(at) : 0))
+                out.append(RecentEntry(path: p, openedAt: at > 0 ? UInt64(at) : 0, hidden: e["hidden"]?.boolValue ?? false))
             }
             return out
         }
@@ -245,7 +248,7 @@ public final class RecentFilesStore {
 
     private func save(_ entries: [RecentEntry]) throws {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        let json = JSONValue.array(entries.map { .object([("path", .string($0.path)), ("opened_at", .int(Int64($0.openedAt)))]) })
+        let json = JSONValue.array(entries.map { .object([("path", .string($0.path)), ("opened_at", .int(Int64($0.openedAt)))] + ($0.hidden ? [("hidden", .bool(true))] : [])) })
         try AtomicFile.write(Data(JSON.prettyString(json).utf8), to: url, tempName: url.lastPathComponent.replacingOccurrences(of: ".json", with: ".json.tmp"))
     }
 
@@ -273,6 +276,21 @@ public final class RecentFilesStore {
         list.removeAll { $0.path == path }
         if list.count == before { return }
         try save(list)
+    }
+
+    /// Open Recent > Clear Menu: every entry leaves the menu and the quick picker (see `RecentEntry.hidden`).
+    public func clearMenu() throws {
+        lock.lock(); defer { lock.unlock() }
+        var list = load()
+        guard list.contains(where: { !$0.hidden }) else { return }
+        for i in list.indices { list[i].hidden = true }
+        try save(list)
+    }
+
+    /// The entries the Open Recent menu and the quick picker draw from: newest first, cleared ones left out.
+    public func menuEntries() -> [RecentEntry] {
+        lock.lock(); defer { lock.unlock() }
+        return load().filter { !$0.hidden }
     }
 
     /// `get_recent_files_global`: entries that can't be stat'ed are hidden
