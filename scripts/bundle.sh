@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Build a release and assemble "build/Flo State Native.app".
+# Build a release and assemble "build/Flowriter.app" (fork: own bundle id, no updates).
 # INSTALL=1 also copies it to /Applications (scripts/install.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -8,7 +8,8 @@ ROOT=$PWD
 [[ -f "$ROOT/.local.env" ]] && source "$ROOT/.local.env"
 SCRATCH=$ROOT/.build-release
 # APP_NAME / APP (output path) are overridable: scripts/release.sh builds "Flo State".
-APP_NAME="${APP_NAME:-Flo State Native}"
+APP_NAME="${APP_NAME:-Flowriter}"
+BUNDLE_ID="${BUNDLE_ID:-app.flowriter.Flowriter}"
 APP="${APP:-$ROOT/build/$APP_NAME.app}"
 # App icon: Resources/AppIcon.icon (Icon Composer bundle) compiled by Xcode 26's actool into
 # Assets.car (macOS 26 Liquid Glass icon + pre-rendered rounded-rect images for macOS <=15)
@@ -69,8 +70,8 @@ for l in $LANGS; do LOCALIZATIONS+="<string>$l</string>"; done
 # (monotonic, what Sparkle compares).
 SHORT_VERSION=$(tr -d ' \n' < "$ROOT/VERSION")
 BUILD_NUMBER=${BUILD_NUMBER:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}
-FEED_URL=${FEED_URL:-https://flocrivello.com/flostate/appcast.xml}
-SU_PUBLIC_ED_KEY=${SU_PUBLIC_ED_KEY:-555mr7A0qvjV4aGSyDX3YK4rBrXP7BrTTkF9Bu1UhSo=}
+# Fork: no SUFeedURL / SUPublicEDKey, so Sparkle has nothing to check (ForkIdentity.updatesEnabled
+# is false as well, so the updater is never even created).
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -80,17 +81,14 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleDevelopmentRegion</key><string>en</string>
   <key>CFBundleLocalizations</key><array>${LOCALIZATIONS}</array>
   <key>CFBundleDisplayName</key><string>${APP_NAME}</string>
-  <key>CFBundleIdentifier</key><string>app.flostate.native</string>
+  <key>CFBundleIdentifier</key><string>${BUNDLE_ID}</string>
   <key>CFBundleExecutable</key><string>FloStateNative</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>${SHORT_VERSION}</string>
   <key>CFBundleVersion</key><string>${BUILD_NUMBER}</string>
-  <key>SUFeedURL</key><string>${FEED_URL}</string>
-  <key>SUPublicEDKey</key><string>${SU_PUBLIC_ED_KEY}</string>
-  <key>SUEnableAutomaticChecks</key><true/>
-  <key>SUAutomaticallyUpdate</key><true/>
-  <key>SUAllowsAutomaticUpdates</key><true/>
-  <key>SUScheduledCheckInterval</key><integer>86400</integer>
+  <key>SUEnableAutomaticChecks</key><false/>
+  <key>SUAutomaticallyUpdate</key><false/>
+  <key>SUAllowsAutomaticUpdates</key><false/>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   ${ICON_NAME_PLIST}
   <key>LSMinimumSystemVersion</key><string>14.0</string>
@@ -115,7 +113,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <dict>
       <key>CFBundleTypeName</key><string>Markdown Document</string>
       <key>CFBundleTypeRole</key><string>Editor</string>
-      <key>LSHandlerRank</key><string>Default</string>
+      <key>LSHandlerRank</key><string>Alternate</string>
       <key>CFBundleTypeExtensions</key><array><string>md</string><string>mdx</string><string>markdown</string><string>mdown</string><string>mkd</string><string>mkdn</string><string>mdwn</string></array>
       <key>LSItemContentTypes</key><array><string>net.daringfireball.markdown</string></array>
     </dict>

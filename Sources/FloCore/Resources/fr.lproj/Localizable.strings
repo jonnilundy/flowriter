@@ -597,6 +597,7 @@
 
 /* ShellModel.swift */
 "Type a note name to create it." = "Saisissez un nom de note pour la créer.";
+"Type a note name to create it" = "Saisissez un nom de note pour la créer";
 
 /* ShellModel.swift */
 "Create a new note..." = "Créer une note...";
@@ -941,3 +942,6 @@
 "Quick Look" = "Coup d’œil";
 /* PDF card: page count badge */
 "%d pages" = "%d pages";
+
+/* FlowriterSpace.swift: File menu, "Go to File…" renamed (Cmd-O) */
+"Open…" = "Ouvrir…";

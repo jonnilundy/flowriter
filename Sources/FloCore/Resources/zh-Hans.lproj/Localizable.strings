@@ -597,6 +597,7 @@
 
 /* ShellModel.swift */
 "Type a note name to create it." = "输入笔记名称以创建。";
+"Type a note name to create it" = "输入笔记名称以创建";
 
 /* ShellModel.swift */
 "Create a new note..." = "新建笔记...";
@@ -941,3 +942,6 @@
 "Quick Look" = "快速查看";
 /* PDF card: page count badge */
 "%d pages" = "%d 页";
+
+/* FlowriterSpace.swift: File menu, "Go to File…" renamed (Cmd-O) */
+"Open…" = "打开…";

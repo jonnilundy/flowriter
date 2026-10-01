@@ -27,6 +27,9 @@ enum FloApp {
             ShellSnapshot.run(args)
             exit(0)
         }
+        if args.contains("--ui-selftest") {
+            SelfTestRunner.run(args)
+        }
         if args.contains("--sparkle-probe") {
             UpdateProbe.run(args)
         }
@@ -84,8 +87,8 @@ enum FloApp {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    static let openNotification = Notification.Name("app.flostate.native.open")
-    static let bundleID = "app.flostate.native"
+    static let openNotification = Notification.Name(ForkIdentity.openNotificationName)
+    static let bundleID = ForkIdentity.bundleID
 
     let dataDir: AppDataDirectory
     let router = MenuRouter()
@@ -149,6 +152,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !offscreen, AppUpdater.shared == nil, AppUpdater.isConfigured() { AppUpdater.shared = AppUpdater() }
         if LaunchTrace.enabled { let t = Date(); _ = L("File"); LaunchTrace.note("first localized lookup (\(L10n.current))", since: t) }
         NSApp.mainMenu = MainMenu.build(target: router, updateItem: AppUpdater.shared?.menuItem())
+        GhostAttach.installMenu()   // Flowriter
+        AlternativesAttach.installMenu()   // Flowriter
+        FlowriterSpace.installMenus(in: NSApp.mainMenu!, focused: { [weak self] in self?.focusedController?.model })
+        SelectionBar.installMenu(in: NSApp.mainMenu!)   // Flowriter: View > Show Selection Bar
+        OverflowMenu.installMenu(in: NSApp.mainMenu!)   // Flowriter
+        if FlowriterSpace.enabled { ViewTogglesView.installMenu(in: NSApp.mainMenu!) }   // Flowriter: view toggles
         router.focusedModel = { [weak self] in self?.focusedController?.model }
         router.keyWindowIsForeign = { [weak self] in
             guard let key = NSApp.keyWindow, let self = self else { return false }
@@ -179,6 +188,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func startup() {
         let settings = AppSettings(globalConfigDir: dataDir.baseURL)
         try? dataDir.prepare()
+        // Flowriter: the writing space opens one document (the one passed in, else the last one)
+        if let f = FlowriterSpace.startupFile(launchPaths: launchPaths, dataDir: dataDir, settings: settings) { openCompactWindow(f); return }
         let recents = RecentWorkspacesStore(appData: dataDir).load()
         let pending = launchPaths.lazy.compactMap { PendingOpen.resolve($0, extensions: settings.supportedExtensions) }.first
         let plan = WorkspaceBootstrap.plan(startupOpen: pending, recentWorkspaces: recents, restoreWorkspace: settings.values.windowRestoreWorkspace)
@@ -310,7 +321,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// CSV / .log are registered (Open With) but not claimed: those usually belong to other apps.
     private func claimDefaultTextHandlersOnce() {
         let key = "claimedDefaultTextHandlers"
-        guard !offscreen, !UserDefaults.standard.bool(forKey: key),
+        guard ForkIdentity.claimsDefaultTextHandlers, !offscreen, !UserDefaults.standard.bool(forKey: key),
               Bundle.main.bundlePath.hasPrefix("/Applications/") else { return }
         UserDefaults.standard.set(true, forKey: key)
         let app = Bundle.main.bundleURL
@@ -328,6 +339,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let pending = PendingOpen.resolve(p, extensions: settings.supportedExtensions) else { continue }
             if let ws = pending.workspace { openWorkspaceWindow(ws, file: nil, keepSession: true); continue }
             guard let file = pending.file else { continue }
+            if FlowriterSpace.enabled {   // Flowriter: a document opens in its own window (or focuses the one showing it)
+                if let c = windows.first(where: { $0.model.root == nil && $0.model.editor.activeFilePath == file }) { c.window?.makeKeyAndOrderFront(nil) } else { openCompactWindow(file) }
+                continue
+            }
             let roots = windows.compactMap { $0.model.root }
             if let owner = WorkspaceBootstrap.owningWorkspace(of: file, among: roots) {
                 openWorkspaceWindow(owner, file: file, keepSession: true)

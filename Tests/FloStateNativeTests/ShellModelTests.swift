@@ -644,8 +644,9 @@ final class ShellPaletteTests: XCTestCase {
         await f.open()
         f.model.perform(.newNote)
         var v = f.model.paletteView()!
-        XCTAssertEqual(v.placeholder, "Create a new note...")
-        XCTAssertEqual(v.empty, "Type a note name to create it.")
+        XCTAssertEqual(v.placeholder, "Type a note name to create it")
+        XCTAssertNil(v.empty)
+        XCTAssertEqual(PaletteGeometry.layout(v).content, 0)
         f.model.setPaletteQuery("  My note ")
         v = f.model.paletteView()!
         XCTAssertEqual(v.heading, "Create note")
@@ -698,7 +699,7 @@ final class ShellMenuAndKeyTests: XCTestCase {
     func testMenuStructure() {
         let router = MenuRouter()
         let menu = MainMenu.build(target: router)
-        XCTAssertEqual(menu.items.map { $0.title }, ["Flo State", "File", "Edit", "Format", "View", "Window"])
+        XCTAssertEqual(menu.items.map { $0.title }, [ForkIdentity.appName, "File", "Edit", "Format", "View", "Window"])
         func items(_ i: Int) -> [String] { menu.items[i].submenu!.items.map { $0.isSeparatorItem ? "-" : $0.title } }
         XCTAssertEqual(items(1), ["New Note", "New Tab", "Go to File…", "-", "Go to Today", "Search…", "Search in All Notes…", "-", "Close Tab"])
         XCTAssertEqual(items(3), ["Bold", "Italic", "Strikethrough", "Inline Code", "Insert Link", "-", "Heading 1", "Heading 2", "Heading 3", "Body Text",
@@ -725,8 +726,9 @@ final class ShellMenuAndKeyTests: XCTestCase {
         router.focusedModel = { f.model }
         let menu = MainMenu.build(target: router)
         let view = menu.items.first { $0.title == "View" }!.submenu!
+        let typewriter = f.model.typewriterScrolling   // Flowriter: off by default
         router.menuAction(view.items.first { $0.title == "Toggle Typewriter Scrolling" }!)
-        XCTAssertFalse(f.model.typewriterScrolling)
+        XCTAssertEqual(f.model.typewriterScrolling, !typewriter)
         router.menuAction(view.items.first { $0.title == "Increase Font Size" }!)
         XCTAssertEqual(f.model.values.editorFontSize, 17)
         router.menuAction(view.items.first { $0.title == "Reset Font Size" }!)

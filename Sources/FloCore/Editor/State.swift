@@ -622,8 +622,13 @@ public struct TransactionSpec {
     public var filter: Bool
     /// CM `Transaction.addToHistory`.
     public var addToHistory: Bool
+    /// CM `isolateHistory`: keep this transaction's history event from joining the event before
+    /// it (`.before`), the edit after it (`.after`), or both (`.full`). Nil: the usual grouping
+    /// (adjacent typing within `HistoryConfig.newGroupDelay` joins one undo step).
+    public var isolateHistory: IsolateHistory?
     public init(changes: [Change] = [], changeSet: ChangeSet? = nil, selection: EditorSelection? = nil,
-                userEvent: String? = nil, scrollIntoView: Bool = true, filter: Bool = true, addToHistory: Bool = true) {
+                userEvent: String? = nil, scrollIntoView: Bool = true, filter: Bool = true, addToHistory: Bool = true,
+                isolateHistory: IsolateHistory? = nil) {
         self.changes = changes
         self.changeSet = changeSet
         self.selection = selection
@@ -631,7 +636,15 @@ public struct TransactionSpec {
         self.scrollIntoView = scrollIntoView
         self.filter = filter
         self.addToHistory = addToHistory
+        self.isolateHistory = isolateHistory
     }
+}
+
+/// CM's `isolateHistory` annotation values.
+public enum IsolateHistory: Sendable, Equatable {
+    case before
+    case after
+    case full
 }
 
 public struct Transaction {

@@ -6,7 +6,7 @@ import Foundation
 /// key falls back to the English key, so English needs no lookup table hits.
 public enum L10n {
     /// Where the tables come from. Tests may point this at one `<lang>.lproj`.
-    nonisolated(unsafe) public static var bundle: Bundle = FloResources.bundle
+    nonisolated(unsafe) public static var bundle: Bundle = FloResources.strings
 
     /// Languages shipped (lproj names), English first.
     public static let languages = ["en", "zh-Hans", "fr", "es", "it", "ja", "de", "hi", "bn", "pt-BR", "pt-PT", "ru", "ur", "ar"]
@@ -15,7 +15,7 @@ public enum L10n {
 
     /// One language's table bundle (`<lang>.lproj`), for tests and snapshots.
     public static func languageBundle(_ lang: String) -> Bundle? {
-        FloResources.bundle.path(forResource: lang, ofType: "lproj").flatMap(Bundle.init(path:))
+        FloResources.strings.path(forResource: lang, ofType: "lproj").flatMap(Bundle.init(path:))
     }
 
     /// The language the UI strings resolve to (e.g. "de"; "en" when none matches).

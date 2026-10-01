@@ -16,7 +16,7 @@ public struct AppDataDirectory {
     public init(baseURL: URL) { self.baseURL = baseURL }
 
     public static var defaultBaseURL: URL {
-        applicationSupport.appendingPathComponent("FloStateNative", isDirectory: true)
+        applicationSupport.appendingPathComponent(ForkIdentity.dataDirName, isDirectory: true)
     }
 
     /// The Tauri app's data dir (bundle identifier `com.writer-computer`).

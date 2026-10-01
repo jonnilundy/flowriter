@@ -128,7 +128,11 @@ enum Pipeline {
                 }
             }
         }
-        env.history = env.history.apply(tr, time: env.time, addToHistory: spec.addToHistory, fromHistory: fromHistory)
+        var history = env.history
+        if spec.isolateHistory == .before || spec.isolateHistory == .full { history = history.isolate() }
+        history = history.apply(tr, time: env.time, addToHistory: spec.addToHistory, fromHistory: fromHistory)
+        if spec.isolateHistory == .after || spec.isolateHistory == .full { history = history.isolate() }
+        env.history = history
         env.onTransaction?(tr)
         return tr.state
     }
@@ -168,6 +172,10 @@ public final class EditorSession {
     public func dispatch(_ spec: TransactionSpec) {
         if let s = Pipeline.dispatch(spec, on: state, env: env) { state = s }
     }
+
+    /// End the current undo group: the next change starts a new history event, however soon and
+    /// close it comes (CM `isolateHistory: "after"` on the last transaction).
+    public func isolateHistory() { env.history = env.history.isolate() }
 
     /// Run a command (e.g. a context-menu action).
     @discardableResult

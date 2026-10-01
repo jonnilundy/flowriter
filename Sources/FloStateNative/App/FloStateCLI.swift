@@ -7,7 +7,7 @@ import FloCore
 /// (argv[0] basename), it opens its argument in the app and exits. "Install"
 /// symlinks /usr/local/bin/flostate → the running binary inside the bundle.
 enum FloStateCLI {
-    static let installTarget = "/usr/local/bin/flostate"
+    static let installTarget = "/usr/local/bin/" + ForkIdentity.cliName
     static let exitSuccess: Int32 = 0, exitUsage: Int32 = 2, exitRuntime: Int32 = 3
 
     static let usage = """
@@ -39,7 +39,7 @@ enum FloStateCLI {
     }
 
     static func isCLIInvocation(_ argv0: String) -> Bool {
-        (argv0 as NSString).lastPathComponent == "flostate"
+        ["flostate", ForkIdentity.cliName].contains((argv0 as NSString).lastPathComponent)
     }
 
     static func parse(_ argv: [String]) -> Result<Parsed, ParseError> {
@@ -90,7 +90,7 @@ enum FloStateCLI {
                 guard let pending = PendingOpen.resolve(std) else { err("flostate: not a folder or markdown file: \(std)"); return exitRuntime }
                 target = pending.file ?? pending.workspace
             }
-            let app = env["FLOSTATE_APP_PATH"] ?? bundlePath(forBinary: argv.first.map(resolveArgv0) ?? "") ?? "Flo State"
+            let app = env["FLOSTATE_APP_PATH"] ?? bundlePath(forBinary: argv.first.map(resolveArgv0) ?? "") ?? ForkIdentity.appName
             var args = ["-a", app]
             if let t = target { args.append(t) }
             guard launch(args) else { err("flostate: could not launch Flo State (\(app)). Set FLOSTATE_APP_PATH."); return exitRuntime }

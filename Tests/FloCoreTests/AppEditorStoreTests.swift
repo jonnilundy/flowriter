@@ -568,7 +568,7 @@ final class AppSaveEngineTests: XCTestCase {
         XCTAssertEqual(SaveProcessing(trimTrailingWhitespace: false, insertFinalNewline: true).apply(""), "\n")
         XCTAssertEqual(SaveProcessing(trimTrailingWhitespace: false, insertFinalNewline: true).apply("x\r\n"), "x\r\n")
         XCTAssertEqual(SaveProcessing(trimTrailingWhitespace: false, insertFinalNewline: true).apply("x"), "x\n")
-        XCTAssertEqual(SaveProcessing(settings: SettingsValues([:])), SaveProcessing(trimTrailingWhitespace: false, insertFinalNewline: true))
+        XCTAssertEqual(SaveProcessing(settings: SettingsValues([:])), SaveProcessing(trimTrailingWhitespace: false, insertFinalNewline: false))  // fork default
     }
 
     func testPerPathIndependence() async throws {

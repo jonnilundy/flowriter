@@ -51,6 +51,13 @@ final class LineBox: NSObject {
     }
 }
 
+extension EditorController {
+    /// Flowriter: a blank line is one text line tall (upstream: 1em). With the short blank line the
+    /// caret on an empty line was short and high, and the first key typed there grew the line and
+    /// moved it down; paragraphs also sat on a different grid from their soft lines.
+    nonisolated(unsafe) public static var fullHeightBlankLines = false
+}
+
 /// Converts a RenderPlan into text-storage attributes, line by line.
 final class AttributeApplier {
     let theme: EditorTheme
@@ -244,6 +251,7 @@ final class AttributeApplier {
                     attrs[.foregroundColor] = color
                     maxInlineSize = max(maxInlineSize, size)
                     if st.italic && !theme.hasItalicFace() { attrs[.obliqueness] = 0.2 }
+                    else if st.italic, let it = theme.italicFont(font) { attrs[.font] = it }   // Flowriter: the family's italic face
                     if st.underline { attrs[.underlineStyle] = NSUnderlineStyle.single.rawValue }
                     if st.strike { attrs[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
                     if st.codeBackground { attrs[.floInlineCode] = true }
@@ -411,7 +419,7 @@ final class AttributeApplier {
         let isBlank = line.from == line.to
         let strut = base * theme.lineHeight
         var lineH = max(strut, maxInlineSize * theme.lineHeight)
-        if isBlank || ls.kind == .blank { lineH = base }
+        if isBlank || ls.kind == .blank { lineH = EditorController.fullHeightBlankLines ? strut : base }
         if case .setextUnderline = ls.kind, plan.style(at: line.from).hidden == .removed { lineH = 0.01 }
         var before: CGFloat = 0, after: CGFloat = 0
         // A block widget replacing the whole line takes the widget's own height.
@@ -486,9 +494,10 @@ final class AttributeApplier {
             head += CGFloat(ls.paddingLeftCh) * ch
             first += CGFloat(ls.paddingLeftCh + ls.textIndentCh) * ch
         }
-        if ls.blockquoteDepth > 0 {
+        if ls.blockquoteDepth > 0 && RenderPlanner.quoteBars {
             // `.cm-blockquote-line { padding-inline-start: 1em }` whatever the depth;
             // nested quotes only add a bar at the nested `>`
+            // (Flowriter marks mode: no bar and no padding, the dim `>` is the quote's only mark)
             head += base; first += base
         }
         if case .fencedCode = ls.kind {

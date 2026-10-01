@@ -257,8 +257,8 @@ enum MainMenu {
             }
         }
         // the installed bundle's name ("Flo State"); tests / bare binaries get the same
-        let appName = Bundle.main.bundleIdentifier == "app.flostate.native"
-            ? (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Flo State") : "Flo State"
+        let appName = Bundle.main.bundleIdentifier == ForkIdentity.bundleID
+            ? (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? ForkIdentity.appName) : ForkIdentity.appName
         let prefs = NSMenuItem(title: L("Settings…"), action: #selector(MenuRouter.menuAction(_:)), keyEquivalent: ",")
         prefs.target = target
         prefs.representedObject = MenuRouter.Box(.openPreferences)

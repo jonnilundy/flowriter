@@ -12,7 +12,7 @@ final class LocalizationTests: XCTestCase {
     static let sourcesDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         .appendingPathComponent("Sources")
 
-    override func tearDown() async throws { L10n.bundle = FloResources.bundle }
+    override func tearDown() async throws { L10n.bundle = FloResources.strings }
 
     func table(_ lang: String) -> [String: String] {
         guard let b = L10n.languageBundle(lang), let url = b.url(forResource: "Localizable", withExtension: "strings"),
@@ -98,6 +98,13 @@ final class LocalizationTests: XCTestCase {
         let e = expectation(description: "open")
         Task { await f.open(); e.fulfill() }
         wait(for: [e], timeout: 10)
+    }
+
+    /// The default table bundle sees every shipped language, so the app picks the user's
+    /// (Swift Build bundles nest the tables one level down; see FloResources.strings).
+    func testDefaultBundleHasEveryLanguage() {
+        XCTAssertEqual(Set(L10n.bundle.localizations), Set(L10n.languages))
+        for lang in L10n.languages { XCTAssertNotNil(L10n.languageBundle(lang), lang) }
     }
 
     /// English needs no table hits; a missing key falls back to the key.

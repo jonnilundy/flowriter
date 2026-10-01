@@ -5,7 +5,7 @@
 #   scripts/test.sh --filter X      only matching tests (swift test --filter), one process
 #
 # (run it as a background job; you get notified when it ends)
-# - build once (slowbuild: efficiency cores, $JOBS=4 jobs), then run the tests at normal speed (nice 10,
+# - build once (slowbuild if installed: efficiency cores; $JOBS=4 jobs), then run the tests at normal speed (nice 10,
 #   3 processes: short bursts; background QoS made CPU-heavy tests 4x slower); logs in build/test*.log
 # - output is unbuffered (NSUnbufferedIO), so the log shows each test as it runs
 # - watchdog: once a module's tests are running, no output for $STALL seconds (default 15) =
@@ -47,7 +47,7 @@ watch() {
       if (( ${quiet[$log]} >= limit )); then
         local stuck=$(stuck_in "$log")
         for q in "$@"; do pkill -P ${q%%:*} 2>/dev/null; kill ${q%%:*} 2>/dev/null; done
-        pkill -f "FloStateNativePackageTests.xctest" 2>/dev/null
+        pkill -f "$ROOT/$BP/debug/.*\.xctest" 2>/dev/null
         for f in build/test-*.log(N); do cat "$f" >> "$LOG"; done
         echo "TESTS STALLED in ${stuck:-build} after ${quiet[$log]}s without output (log: $log)"
         exit 3
@@ -56,8 +56,9 @@ watch() {
   done
 }
 
-# 1. build
-JOBS=${JOBS:-4} slowbuild swift build --build-tests --build-path $BP -j ${JOBS:-4} >> "$LOG" 2>&1 &
+# 1. build ($THROTTLE wraps it, e.g. THROTTLE=nice; default slowbuild when it is on the PATH, else none)
+THROTTLE=${THROTTLE-$( (( $+commands[slowbuild] )) && print slowbuild )}
+JOBS=${JOBS:-4} ${=THROTTLE} swift build --build-tests --build-path $BP -j ${JOBS:-4} >> "$LOG" 2>&1 &
 BPID=$!
 watch "$BPID:$LOG"
 wait $BPID || { echo "TESTS CRASH: $(grep -m1 -E "error:" "$LOG" | cut -c1-200) (in build) (log: $LOG)"; exit 1; }
@@ -68,11 +69,13 @@ if (( $# )); then
   nice -n 10 swift test --skip-build --build-path $BP "$@" > build/test-filtered.log 2>&1 &
   pids+=("$!:build/test-filtered.log")
 else
-  BUNDLE="$ROOT/$BP/debug/FloStateNativePackageTests.xctest"
+  # one bundle per test target (Swift Build, Xcode 27+), else SwiftPM's combined package bundle
+  COMBINED="$ROOT/$BP/debug/FloStateNativePackageTests.xctest"
   classes=$(swift test --skip-build --build-path $BP list 2>/dev/null | cut -d/ -f1 | sort -u)
   for mod in FloStateNativeTests FloCoreTests FloKitTests; do
     sel=$(print -r -- "$classes" | grep "^$mod\." | paste -sd, -)
     [[ -n $sel ]] || continue
+    BUNDLE="$ROOT/$BP/debug/$mod.xctest"; [[ -d $BUNDLE ]] || BUNDLE=$COMBINED
     nice -n 10 xcrun xctest -XCTest "$sel" "$BUNDLE" > "build/test-$mod.log" 2>&1 &
     pids+=("$!:build/test-$mod.log")
   done

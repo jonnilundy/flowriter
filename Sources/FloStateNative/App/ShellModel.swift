@@ -76,7 +76,7 @@ final class ShellModel {
             notify(.layout)
         }
     }
-    var typewriterScrolling = true
+    var typewriterScrolling = FlowriterDefaults.typewriterScrolling   // Flowriter: off
     var palette: PaletteState? {
         didSet {
             // full-text search keeps note text only while it's open
@@ -663,7 +663,7 @@ final class ShellModel {
         case .newTab: if root != nil && !isCompact { editor.openNewTab() }
         case .goToToday: editorCommand(.goToToday)
         case .search: palette = PaletteState(intent: .search)
-        case .openFileSearch: if root != nil { palette = PaletteState(intent: .search) }
+        case .openFileSearch: if FlowriterSpace.openPanel(self) { return }; if root != nil { palette = PaletteState(intent: .search) }
         case .searchContents: if root != nil && !isCompact { palette = PaletteState(intent: .fullText) }
         case .closeTab: if editor.activeTabId != nil && !isCompact { editor.closeActiveTab() }
         case .toggleSidebar: toggleSidebar()
@@ -874,11 +874,11 @@ final class ShellModel {
             // compact windows create next to the active file
             let base = root ?? editor.activeFilePath.map(LinkPaths.getParentDir)
             guard let root = base, !q.isEmpty, let path = WorkspaceFS.paletteCreatePath(root: root, rawName: q) else {
-                return PaletteView(heading: nil, empty: q.isEmpty ? L("Type a note name to create it.") : nil, items: [], placeholder: L("Create a new note..."))
+                return PaletteView(heading: nil, empty: nil, items: [], placeholder: L("Type a note name to create it"))
             }
             return PaletteView(heading: L("Create note"), empty: nil,
                                items: [PaletteItem(kind: .create(path), title: L("Create: %@", LinkPaths.getFileName(path)))],
-                               placeholder: L("Create a new note..."))
+                               placeholder: L("Type a note name to create it"))
         }
         if p.intent == .fullText {
             let items = contentResults.map {

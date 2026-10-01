@@ -23,6 +23,8 @@ enum PaletteGeometry {
         if view.heading != nil { heading = y; y += headingHeight }
         var ys: [CGFloat] = []
         for it in view.items { ys.append(y); y += itemHeight(it) }
+        // nothing to list: the card is the input field only, no divider
+        if heading == nil && empty == nil && ys.isEmpty { return (nil, [], nil, 0) }
         return (heading, ys, empty, y + listPadding)
     }
 }
@@ -162,7 +164,9 @@ final class PaletteCardView: FlippedView {
         p.surfaceCard.setFill(); path.fill()
         p.cardUnderlay.setFill(); path.fill()
         p.lineSubtler.setFill()
-        CGRect(x: 1, y: 1 + PaletteGeometry.inputHeight - 1, width: bounds.width - 2, height: 1).fill()
+        if bounds.height > PaletteGeometry.inputHeight + 2 {
+            CGRect(x: 1, y: 1 + PaletteGeometry.inputHeight - 1, width: bounds.width - 2, height: 1).fill()
+        }
         let border = roundedPath(bounds.insetBy(dx: 0.5, dy: 0.5), 15.5)
         border.lineWidth = 1
         p.lineSubtler.setStroke(); border.stroke()

@@ -50,9 +50,11 @@ final class FloLayoutFragment: NSTextLayoutFragment {
                 fillRounded(rect, radius: 0.4 * theme.rem, top: first, bottom: last, color: theme.codeBackground)
             default: break
             }
-            if ls.blockquoteDepth > 0 {
+            // Flowriter marks mode: the visible dim `>` marks the quote, a bar beside it would mark it twice
+            if ls.blockquoteDepth > 0 && RenderPlanner.quoteBars {
                 // border widths snap down to device pixels (2x)
-                let w = (0.3 * theme.baseSize * 2).rounded(.down) / 2
+                // (Flowriter reading view: a hairline like the alternatives margin line, not the 5 pt bar)
+                let w = RenderPlanner.readingView ? 1.5 : (0.3 * theme.baseSize * 2).rounded(.down) / 2
                 theme.blockquoteBar.setFill()
                 NSBezierPath(rect: CGRect(x: columnLeft, y: top, width: w, height: bottom - top)).fill()
                 // blockQuote.ts: a bar per nested QuoteMark at 6px + its measured offset from the line start

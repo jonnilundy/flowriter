@@ -19,7 +19,7 @@ public final class EditorTheme {
     public var background: NSColor
     /// Root font size for `rem` units (the web app's html font-size).
     public let rem: CGFloat = 16
-    public let maxTextWidth: CGFloat = 734
+    public var maxTextWidth: CGFloat = 734   // Flowriter sets a narrower column (FlowriterSpace.swift)
 
     public init(baseSize: CGFloat = 18, lineHeight: CGFloat = 1.5, headingSpaceBefore: CGFloat = 0,
                 headingSpaceAfter: CGFloat = 8, paragraphSpacing: CGFloat = 0, bulletSpacing: CGFloat = 12,
@@ -50,7 +50,9 @@ public final class EditorTheme {
     public var codeBackground: NSColor { foreground.withAlphaComponent(contrast * 0.16) }
     public var blockquoteBar: NSColor { foreground.withAlphaComponent(contrast * 0.58) }
     /// System highlight colour (System Settings → Appearance).
-    public var selectionColor: NSColor { .selectedTextBackgroundColor }
+    public var selectionColor: NSColor { selectionOverride ?? .selectedTextBackgroundColor }
+    /// Flowriter: selection tinted with the theme accent.
+    public var selectionOverride: NSColor?
 
     public func color(_ role: ColorRole) -> NSColor {
         switch role {
@@ -101,7 +103,8 @@ public final class EditorTheme {
     }
 
     static func cssFont(families: [String], size: CGFloat, weight: Int) -> NSFont {
-        for fam in families {
+        for name in families {
+            let fam = systemMonoFamily(name)   // Flowriter: "SF Mono" is the system monospaced font
             guard let members = NSFontManager.shared.availableMembers(ofFontFamily: fam), !members.isEmpty else { continue }
             // members: [postscriptName, faceName, weight(0-15), traits]
             let upright = members.filter { (($0[3] as? UInt) ?? 0) & UInt(NSFontTraitMask.italicFontMask.rawValue) == 0 }
@@ -119,6 +122,12 @@ public final class EditorTheme {
             if let name = chosen, let f = NSFont(name: name, size: size) { return f }
         }
         return NSFont.systemFont(ofSize: size, weight: weight >= 600 ? .semibold : .regular)
+    }
+
+    /// "SF Mono" / ui-monospace name the system monospaced font, whose family AppKit lists under a
+    /// private name (the SF Mono family itself is not installed for apps).
+    static func systemMonoFamily(_ fam: String) -> String {
+        fam == "SF Mono" || fam == "ui-monospace" ? NSFont.monospacedSystemFont(ofSize: 12, weight: .regular).familyName ?? fam : fam
     }
 
     /// NSFontManager weight (0-15) -> CSS weight.
@@ -186,7 +195,7 @@ public final class EditorTheme {
     }()
 
     public func hasItalicFace() -> Bool {
-        for fam in fontFamilies {
+        for fam in fontFamilies.map(Self.systemMonoFamily) {
             if let m = NSFontManager.shared.availableMembers(ofFontFamily: fam), !m.isEmpty {
                 return m.contains { (($0[3] as? UInt) ?? 0) & UInt(NSFontTraitMask.italicFontMask.rawValue) != 0 }
             }

@@ -229,7 +229,7 @@ final class AppSettingsSchemaTests: XCTestCase {
         XCTAssertEqual(d["editor.subheading-color"], .string("#3a3a3a"))
         XCTAssertEqual(d["appearance.theme"], .string("system"))
         XCTAssertEqual(d["files.associations"], .list(["*.md", "*.mdx", "*.markdown", "*.csv"]))
-        XCTAssertEqual(d["files.insert-final-newline"], .bool(true))
+        XCTAssertEqual(d["files.insert-final-newline"], .bool(false))  // fork: off, posts keep their bytes
         XCTAssertEqual(d["files.trim-trailing-whitespace"], .bool(false))
         XCTAssertEqual(d["theme.light.preset"], .string("Writer"))
         XCTAssertEqual(SettingsSchema.def("appearance.theme")?.options, ["system", "light", "dark"])
@@ -405,7 +405,7 @@ final class AppDataDirectoryTests: XCTestCase {
     }
 
     func testDefaultLocations() {
-        XCTAssertTrue(AppDataDirectory.defaultBaseURL.path.hasSuffix("Library/Application Support/FloStateNative"))
+        XCTAssertTrue(AppDataDirectory.defaultBaseURL.path.hasSuffix("Library/Application Support/Flowriter"))
         XCTAssertTrue(AppDataDirectory.legacyBaseURL.path.hasSuffix("Library/Application Support/com.writer-computer"))
     }
 }

@@ -40,7 +40,11 @@ final class LinkClickTests: XCTestCase {
         XCTAssertEqual(r.controller.link(at: sp), .href("https://x.com"), "style: \(r.controller.currentPlan!.style(at: sp))")
         let tv = r.controller.textView
         let wp = point(r, sp)
-        XCTAssertEqual(tv.characterIndexForInsertion(at: tv.convert(wp, from: nil)), sp, "wp=\(wp) rect=\(tv.firstRect(forCharacterRange: NSRange(location: sp, length: 1), actualRange: nil)) win=\(r.window.frame)")
+        // The middle of a character is as close to its leading edge (sp) as to its trailing edge (sp + 1),
+        // so the nearest insertion point is either one, by float rounding of the glyph positions (this 4 pt "i"
+        // gives sp + 1 in the test VM). linkHit, the app's hit test, checks the characters on both sides of it.
+        XCTAssertTrue([sp, sp + 1].contains(tv.characterIndexForInsertion(at: tv.convert(wp, from: nil))), "wp=\(wp) rect=\(tv.firstRect(forCharacterRange: NSRange(location: sp, length: 1), actualRange: nil)) win=\(r.window.frame)")
+        XCTAssertEqual(tv.linkHit(at: tv.convert(wp, from: nil)), .href("https://x.com"))
         click(r, sp)
         XCTAssertEqual(got, [.href("https://x.com")])
         XCTAssertEqual(r.selection.main.head, doc.utf16.count, "caret must not move on a link click")

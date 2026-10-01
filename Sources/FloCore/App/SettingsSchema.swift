@@ -54,8 +54,9 @@ public enum SettingsSchema {
             case let .array(a): defaultValue = .list(a.compactMap { $0.stringValue })
             default: fatalError("settings.schema.json: bad default for \(entry["key"]?.stringValue ?? "?")")
             }
+            let key = entry["key"]?.stringValue ?? ""
             return SettingDef(
-                key: entry["key"]?.stringValue ?? "",
+                key: key,
                 label: entry["label"]?.stringValue ?? "",
                 description: entry["description"]?.stringValue ?? "",
                 category: entry["category"]?.stringValue ?? "",
@@ -66,7 +67,7 @@ public enum SettingsSchema {
                 step: entry["step"]?.doubleValue,
                 cssVar: entry["cssVar"]?.stringValue,
                 cssFormat: entry["cssFormat"]?.stringValue,
-                defaultValue: defaultValue
+                defaultValue: FlowriterSettings.defaultValue(key) ?? defaultValue   // Flowriter
             )
         }
     }

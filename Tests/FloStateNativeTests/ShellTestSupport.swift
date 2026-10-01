@@ -33,7 +33,8 @@ final class ShellFixture {
         root = TFS.tempDir("ws")
         data = TFS.tempDir("data")
         for (rel, content) in files { TFS.write(root + "/" + rel, content) }
-        TFS.write(data + "/config", config)
+        // Flowriter defaults files.insert-final-newline to false; these tests pin upstream's true
+        TFS.write(data + "/config", config.contains("insert-final-newline") ? config : "files.insert-final-newline = true\n" + config)
         if let s = session {
             let store = SessionStore(url: URL(fileURLWithPath: data + "/sessions.json"))
             try! store.save(root: root, tabs: s.tabs, activeIndex: s.activeIndex)

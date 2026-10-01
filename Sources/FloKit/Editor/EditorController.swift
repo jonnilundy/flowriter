@@ -21,6 +21,13 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
     /// Files dropped from Finder onto the text: (paths, UTF-16 offset of the drop point) → handled?
     /// NSTextView otherwise takes file drops itself (inserting a path, or nothing) before the window sees them.
     public var onFileDrop: (([String], Int) -> Bool)?
+    /// Flowriter: the app adds its own items to the right-click menu (Overflow).
+    public var contextMenuExtras: ((NSMenu) -> Void)?
+    /// Flowriter: when set, the whole right-click menu (nil = no menu at all). The event and the
+    /// document offset under the click (NSNotFound off the text).
+    public var contextMenuProvider: ((NSEvent, Int) -> NSMenu?)?
+    /// Flowriter: every key that reaches the text view (the shortcut hints fade while typing).
+    public var onKeyDown: (() -> Void)?
 
     public enum LinkClick: Equatable {
         case href(String)
@@ -62,6 +69,13 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
     private var plan: RenderPlan?
     var currentPlan: RenderPlan? { plan }
     let planCache = PlanCache()
+    /// Flowriter: the one hook that moves the document sidecar's anchors with every edit
+    /// (Writing/SidecarEditHook.swift), nil when no sidecar feature is attached.
+    public internal(set) var sidecarHook: SidecarEditHook?
+    /// Flowriter: Ghost (Writing/GhostLayer.swift), nil when not attached.
+    public internal(set) var ghosts: GhostLayer?
+    /// Flowriter: alternatives (Writing/AlternativesLayer.swift), nil when off.
+    public internal(set) var alternatives: AlternativesLayer?
     /// Find/replace, wiki autocomplete, context menu, paste (EditorFeatures.swift).
     public private(set) lazy var features = EditorFeatures(editor: self)
     /// Folded heading sections (sorted by `from`), mapped through edits.
@@ -143,7 +157,12 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
         textView.drawsBackground = false
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
-        textView.isAutomaticTextReplacementEnabled = true
+        // A plain text editor: what you type is what the file holds. No grey inline predictions after
+        // the caret, no math results after "=", no text replacements; spelling underlines stay.
+        textView.isAutomaticTextReplacementEnabled = false
+        textView.inlinePredictionType = .no
+        if #available(macOS 15.0, *) { textView.mathExpressionCompletionType = .no }
+        NoWritingTools.configure(textView)   // no AI: no Writing Tools button or menu items
         textView.isContinuousSpellCheckingEnabled = true
         textView.isAutomaticSpellingCorrectionEnabled = false
         textView.usesFindBar = false // the app's own find card (FindOverlay.swift)
@@ -170,6 +189,94 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
 
     /// Top of the first line: frontmatter wrapper pt 9rem + pb-6 + 12px border.
     public var topInset: CGFloat = 180
+    /// Points added to the 40vh bottom padding. Flowriter: the room the shortcut line's band takes
+    /// while it is hidden, so the box's height plus this stays the same as the band comes and goes
+    /// and a document scrolled to its end can keep its scroll position (EditorPaneView.applyColumnLayout).
+    public var bottomExtra: CGFloat = 0
+
+    // MARK: side panels (Flowriter)
+
+    /// Room the column keeps clear for side panels floating over the page (their widths; 0 for a
+    /// closed panel), in scroll view points. A panel that fits in its margin changes nothing: the
+    /// column stays centred. When it does not fit, the column moves away from it, and narrows only
+    /// when panels on both sides leave no room. The left panel clears the gutter (where heading
+    /// marks hang); the right one is sized to keep `panelAir` from the text and must keep at least
+    /// `panelMinAir` (a 220 pt panel in a margin a few points short of 244 does not nudge the page).
+    public struct SideReserve: Equatable {
+        public var left: CGFloat = 0, right: CGFloat = 0
+        public init(left: CGFloat = 0, right: CGFloat = 0) { self.left = left; self.right = right }
+    }
+    public private(set) var sideReserve = SideReserve()
+    public static let panelAir: CGFloat = 24
+    public static let panelMinAir: CGFloat = 12
+    /// Column moves between two reserves: 180 ms, the overflow panel's ease-out.
+    public static var slideDuration: CFTimeInterval = 0.18
+    private var slide: (fromX: CGFloat, start: CFTimeInterval, duration: CFTimeInterval)?
+    private var slideTimer: Timer?
+
+    /// Text span of the centred column (no reserve), in scroll view points: where panels measure
+    /// their margins, so a panel's width never depends on where it pushed the column.
+    public var centredTextSpan: (left: CGFloat, right: CGFloat) {
+        let (w, textW) = columnWidths()
+        let l = (w - textW) / 2
+        return (l, l + textW)
+    }
+    public var gutterWidth: CGFloat { applier.gutter }
+
+    private func columnWidths() -> (CGFloat, CGFloat) {
+        let w = scrollView.contentSize.width
+        let sidePad = min(64, max(24, 0.04 * (scrollView.window?.frame.width ?? w)))
+        return (w, max(100, min(theme.maxTextWidth, w - 2 * sidePad)))
+    }
+
+    /// Text left and width for a reserve: centred when that clears both panels, else moved over,
+    /// narrowed only as far as it must.
+    func columnPlacement(_ r: SideReserve) -> (left: CGFloat, width: CGFloat) {
+        let (w, full) = columnWidths()
+        var textL = (w - full) / 2, textW = full
+        let minL = r.left > 0 ? r.left + applier.gutter : -CGFloat.infinity
+        let maxR = r.right > 0 ? w - r.right - Self.panelMinAir : CGFloat.infinity
+        if textL < minL { textL = minL }
+        if textL + textW > maxR { textL = max(maxR - textW, minL > -CGFloat.infinity ? minL : maxR - textW) }
+        if textL + textW > maxR { textW = max(100, maxR - textL) }
+        return (textL, textW)
+    }
+
+    /// Set the reserve. Animated: the column slides to its new place (a width change, when there
+    /// is one, happens at once, as the panel opens); typing never moves it.
+    public func setSideReserve(_ r: SideReserve, animated: Bool) {
+        guard r != sideReserve else { return }
+        let fromX = textView.textContainerInset.width
+        sideReserve = r
+        slide = nil
+        layoutColumn()
+        let toX = textView.textContainerInset.width
+        guard animated, Self.slideDuration > 0, abs(toX - fromX) > 0.5 else { return }
+        slide = (fromX, CACurrentMediaTime(), Self.slideDuration)
+        layoutColumn()
+        slideTimer?.invalidate()
+        let t = Timer(timeInterval: 1.0 / 120, repeats: true) { [weak self] timer in
+            MainActor.assumeIsolated {
+                guard let self = self, self.slide != nil else { timer.invalidate(); return }
+                self.layoutColumn()
+                if self.slide == nil { timer.invalidate(); self.slideTimer = nil }
+            }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        slideTimer = t
+    }
+
+    /// The column is sliding between two places.
+    public var isSliding: Bool { slide != nil }
+
+    /// cubic-bezier(0.23, 1, 0.32, 1) at time `t` (0...1).
+    static func easeOut(_ t: CGFloat) -> CGFloat {
+        let p1 = CGPoint(x: 0.23, y: 1), p2 = CGPoint(x: 0.32, y: 1)
+        func bez(_ a: CGFloat, _ b: CGFloat, _ u: CGFloat) -> CGFloat { 3 * a * u * (1 - u) * (1 - u) + 3 * b * u * u * (1 - u) + u * u * u }
+        var lo: CGFloat = 0, hi: CGFloat = 1, u = t
+        for _ in 0..<24 { u = (lo + hi) / 2; if bez(p1.x, p2.x, u) < t { lo = u } else { hi = u } }
+        return bez(p1.y, p2.y, u)
+    }
 
     public func layoutColumn() {
         let oldInset = textView.textContainerInset, oldW = textView.textContainer?.size.width
@@ -178,9 +285,13 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
             if imageOverlay.hit != nil, oldInset != textView.textContainerInset || oldW != textView.textContainer?.size.width { imageOverlay.show(nil) }
         }
         let w = scrollView.contentSize.width
-        let sidePad = min(64, max(24, 0.04 * (scrollView.window?.frame.width ?? w)))
-        let textW = max(100, min(theme.maxTextWidth, w - 2 * sidePad))
-        let left = (w - textW) / 2 - applier.gutter
+        let place = columnPlacement(sideReserve)
+        let textW = place.width
+        var left = place.left - applier.gutter
+        if let s = slide {
+            let t = CGFloat((CACurrentMediaTime() - s.start) / s.duration)
+            if t >= 1 { slide = nil } else { left = s.fromX + (max(0, left) - s.fromX) * Self.easeOut(max(0, t)) }
+        }
         // TextKit drops paragraphSpacingBefore on the first paragraph; CSS doesn't.
         var firstPad: CGFloat = 0
         if state.doc.lines > 0, let ps = textView.textStorage?.length ?? 0 > 0 ? textView.textStorage?.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle : nil {
@@ -190,6 +301,13 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
         let widthChanged = textView.textContainer?.size.width != textW + applier.gutter
         textView.textContainer?.size = NSSize(width: textW + applier.gutter, height: .greatestFiniteMagnitude)
         if widthChanged { scheduleFullLayout() }
+        else if textView.textContainerInset != oldInset {
+            // the column moved without a new width (a panel's slide): TextKit 2 keeps its fragment
+            // views where they were laid out, so the text would stay put while the layout, the caret
+            // and the decorations move; place them again
+            textView.textLayoutManager?.textViewportLayoutController.layoutViewport()
+            textView.needsDisplay = true
+        }
         if applier.columnWidth != textW {
             applier.columnWidth = textW
             // image widths clamp to the column: re-apply lines holding images
@@ -200,8 +318,9 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
         textView.frame.size.width = w
         textView.minSize = NSSize(width: w, height: scrollView.contentSize.height)
         // bottom padding 40vh
-        let bottom = 0.4 * (scrollView.window?.frame.height ?? 800)
+        let bottom = 0.4 * (scrollView.window?.frame.height ?? 800) + bottomExtra
         textView.bottomPadding = bottom
+        MainActor.assumeIsolated { alternatives?.layoutChanged() }
     }
 
     /// A new container width throws TextKit 2 back onto estimated heights for
@@ -481,6 +600,7 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
     /// (so it lands in the undo stack), then set the selection.
     /// Run a key chord through the keymap. Returns false when unbound.
     public func handleKey(_ chord: String) -> Bool {
+        if MainActor.assumeIsolated({ alternatives?.handleKey(chord) }) == true { return true }   // Flowriter: hover + Up/Down
         if features.handleKeyFirst(chord) { return true }
         switch Keymap.normalize(chord) {
         case Keymap.normalize("Mod-Alt-["): return foldAtCaret(true)
@@ -610,7 +730,11 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
 
 public final class FloTextView: NSTextView {
     weak var controller: EditorController?
-    var bottomPadding: CGFloat = 0
+    /// The container sits exactly at the inset layoutColumn sets. NSTextView's own origin can pull
+    /// the container left of the inset when container plus inset on both sides is wider than the
+    /// view (a column moved over for a side panel in a narrow window drew 48 pt under the panel).
+    public override var textContainerOrigin: NSPoint { NSPoint(x: textContainerInset.width, y: textContainerInset.height) }
+    var bottomPadding: CGFloat = 0 { didSet { if bottomPadding != oldValue { refreshDocumentHeight() } } }
     /// Height of window chrome (tabs, drag strip) overlapping the top of the editor, in window points.
     public var topChromeHeight: CGFloat = 0 { didSet { window?.invalidateCursorRects(for: self) } }
 
@@ -690,6 +814,7 @@ public final class FloTextView: NSTextView {
     }
 
     public override func keyDown(with event: NSEvent) {
+        controller?.onKeyDown?()
         if let c = controller, !hasMarkedText(), Self.chords(event).contains(where: { c.handleKey($0) }) { return }
         super.keyDown(with: event)
     }
@@ -760,6 +885,7 @@ public final class FloTextView: NSTextView {
         c.hoverChevron = chevronLine(at: p) != nil
         let img = c.image(at: p, slop: ImageResizeOverlay.handle)
         if img != c.imageOverlay.hit { c.imageOverlay.show(img) }
+        c.alternatives?.mouseMoved(p)   // Flowriter: hover for Up/Down swaps
     }
 
     public override func mouseExited(with event: NSEvent) {
@@ -767,6 +893,7 @@ public final class FloTextView: NSTextView {
         controller?.hoverLine = nil
         controller?.hoverChevron = false
         controller?.imageOverlay.show(nil)
+        controller?.alternatives?.mouseExited()
     }
 
     public override func updateTrackingAreas() {
@@ -886,10 +1013,18 @@ public final class FloTextView: NSTextView {
     public override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         controller?.features.drawHighlights(dirtyRect)
+        MainActor.assumeIsolated { controller?.ghosts?.draw(dirtyRect) }   // Flowriter: proposed ghosts
+        controller?.alternatives?.draw(dirtyRect)
     }
 
     public override func menu(for event: NSEvent) -> NSMenu? {
+        if let provide = controller?.contextMenuProvider {
+            let m = provide(event, characterIndexForInsertion(at: convert(event.locationInWindow, from: nil)))
+            if let m = m { NoWritingTools.strip(m) }
+            return m
+        }
         let base = controller?.features.contextMenu(for: event) ?? super.menu(for: event)
+        if let base = base { NoWritingTools.strip(base); controller?.contextMenuExtras?(base) }   // Flowriter: Overflow
         guard let c = controller, let hit = c.image(at: convert(event.locationInWindow, from: nil)) else { return base }
         let menu = base ?? NSMenu()
         let items = c.imageSizeMenuItems(for: hit)

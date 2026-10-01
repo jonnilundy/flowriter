@@ -260,8 +260,8 @@ public final class EditorStore: SaveEngineHost {
     private func loaded(_ base: OpenFile, raw: String) -> OpenFile {
         let parsed = Frontmatter.parseDocument(raw)
         var f = base
-        f.frontmatter = parsed.frontmatter
-        f.content = parsed.body
+        f.frontmatter = FlowriterSettings.rawFrontmatter ? nil : parsed.frontmatter   // Flowriter: raw frontmatter
+        f.content = FlowriterSettings.rawFrontmatter ? raw : parsed.body
         f.title = parsed.title
         f.titleSource = parsed.titleSource
         f.diskContent = raw

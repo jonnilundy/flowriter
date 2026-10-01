@@ -184,7 +184,11 @@ final class PasteMenuTests: XCTestCase {
             let menu = c.features.buildMenu(linkHref: href)
             // web: children are created before their submenu; compare the items in order
             let web = (m["items"] as! [[Any]]).filter { ($0[0] as! String) == "MenuItem" || ($0[0] as! String) == "Predefined" }
-                .map { e -> [String?] in [e[0] as? String, (e[1] as? String).map { Self.idMap[$0] ?? $0 }, e[2] as? String, e[3] as? String] }
+                .map { e -> [String?] in
+                    let id = (e[1] as? String).map { Self.idMap[$0] ?? $0 }
+                    // Flowriter: ⌘K starts the shortcut leader (WritingKeys.swift); Insert link is the leader's l, with no key shown
+                    return [e[0] as? String, id, e[2] as? String, id == "format.link" ? nil : e[3] as? String]
+                }
             XCTAssertEqual(flatten(menu).map { $0.map { $0 ?? "-" } }, web.map { $0.map { $0 ?? "-" } }, label)
             XCTAssertEqual(menu.items.compactMap { $0.submenu?.title }, ["Format", "Paragraph", "Insert"])
         }

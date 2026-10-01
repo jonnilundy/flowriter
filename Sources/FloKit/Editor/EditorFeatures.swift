@@ -45,6 +45,11 @@ public final class EditorFeatures {
     /// The document was swapped/reloaded (`writer.swap` / `writer.reload`).
     func documentReplaced() {
         pendingTransactions.removeAll()
+        MainActor.assumeIsolated {
+            editor.sidecarHook?.documentReplaced()   // Flowriter: first, the layers read what it re-anchored
+            editor.ghosts?.documentReplaced()
+            editor.alternatives?.documentReplaced()
+        }
         if completion.open != nil || !completion.active.isInactive { closeCompletion() }
         if searchPanelOpen { editor.textView.needsDisplay = true }
         if isFindOpen { findOverlayIfCreated?.refreshCounter(); updateOverview() }
@@ -93,6 +98,7 @@ public final class EditorFeatures {
 
     func observe(_ tr: Transaction) {
         pendingTransactions.append(tr)
+        MainActor.assumeIsolated { editor.sidecarHook?.observe(tr) }
     }
 
     /// Called by the controller after every state change reached the text view.
@@ -100,6 +106,12 @@ public final class EditorFeatures {
         let trs = pendingTransactions
         pendingTransactions.removeAll()
         if !bufferTransactions { completionTransactions(trs) }
+        MainActor.assumeIsolated {
+            // Flowriter: the sidecar follows the edit once, here; ghosts and alternatives read the result
+            let edit = editor.sidecarHook?.stateDidChange(trs)
+            editor.ghosts?.stateDidChange(edit)
+            editor.alternatives?.stateDidChange(edit)
+        }
         if searchPanelOpen { editor.textView.needsDisplay = true }
         if isFindOpen { findOverlayIfCreated?.refreshCounter(); updateOverview() }
     }
@@ -113,6 +125,12 @@ public final class EditorFeatures {
         switch k {
         case "Mod-f":
             openFind(); return true
+        case "Mod-z":   // Flowriter: Ghost it / Revive are undoable
+            if MainActor.assumeIsolated({ editor.ghosts?.undoGhost() ?? false }) { return true }
+            return false
+        case "Mod-Shift-z":
+            if MainActor.assumeIsolated({ editor.ghosts?.redoGhost() ?? false }) { return true }
+            return false
         case "Mod-g":
             if !isFindOpen { openFind(); return true }
             return findNext()

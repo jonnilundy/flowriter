@@ -58,6 +58,12 @@ final class EditorPaneView: FlippedView {
     private(set) var frontmatterPanel: FrontmatterPanelView?
     /// PDF / image tabs: a viewer instead of the editor (`controller` stays nil).
     private(set) var viewer: FileViewerView?
+    /// Flowriter: the Overflow panel (OverflowPanel.swift), one per pane.
+    var overflow: OverflowController?
+    /// Flowriter: the shortcut line at the bottom (ShortcutHints.swift), one per pane.
+    private(set) var hints: ShortcutHintsView?
+    /// Flowriter: the selection bar (SelectionBar.swift), one per pane.
+    var selectionBar: SelectionBar?
 
     init(path: String, model: ShellModel) {
         self.path = path
@@ -111,7 +117,9 @@ final class EditorPaneView: FlippedView {
     private func makeController(text: String, caret: Int) {
         let t0 = Date()
         defer { LaunchTrace.note("makeController \((path as NSString).lastPathComponent) \(text.utf16.count) chars", since: t0) }
-        let c = EditorController(theme: EditorTheme.from(settings: model.values, mode: model.mode))
+        let theme = EditorTheme.from(settings: model.values, mode: model.mode)
+        FlowriterSpace.tune(theme, values: model.values, mode: model.mode)   // Flowriter: narrow monospace column
+        let c = EditorController(theme: theme)
         c.documentPath = path
         c.workspaceRoot = model.root
         c.scrollView.automaticallyAdjustsContentInsets = false
@@ -132,6 +140,8 @@ final class EditorPaneView: FlippedView {
         c.onDocChanged = { [weak self] state in
             guard let self = self, !self.suppressUpdates else { return }
             self.model.editor.updateContent(self.path, state.doc.string)
+
+            self.overflow?.pageChanged(state.doc.string)   // Flowriter
             self.model.editor.updateCursorPos(self.path, state.selection.main.head)
             self.typewriter(force: false)
         }
@@ -147,7 +157,7 @@ final class EditorPaneView: FlippedView {
                                          uiFont: { [values = model.values] size, weight in UIFonts.ui(values, size: size, weight: weight) })
         c.features.wikiCompletions = { [weak self] q, limit in self?.model.index?.fuzzySearch(q, limit: limit) ?? [] }
         c.features.frontmatterPaste = { [weak self] fm in
-            guard let self = self, let f = self.model.editor.file(self.path), f.frontmatter == nil else { return false }
+            guard let self = self, !FlowriterSettings.rawFrontmatter, let f = self.model.editor.file(self.path), f.frontmatter == nil else { return false }
             self.model.editor.updateFrontmatter(self.path, fm)
             self.frontmatterPanel?.syncFromStore()
             return true
@@ -165,7 +175,7 @@ final class EditorPaneView: FlippedView {
         }
         // Typing the third `-` on line 1 creates empty frontmatter.
         c.session.env.createFrontmatter = { [weak self] in
-            guard let self = self, let f = self.model.editor.file(self.path), f.frontmatter == nil else { return false }
+            guard let self = self, !FlowriterSettings.rawFrontmatter, let f = self.model.editor.file(self.path), f.frontmatter == nil else { return false }
             self.model.editor.updateFrontmatter(self.path, "")
             return true
         }
@@ -204,17 +214,70 @@ final class EditorPaneView: FlippedView {
             }
         }
         controller = c
+        GhostAttach.attach(c, path: path)   // Flowriter
+        AlternativesAttach.attach(c, path: path)            // Flowriter
+        attachOverflow(to: c)   // Flowriter
+        WritingMenu.attach(to: c, pane: self)   // Flowriter: the right-click menu holds the writing actions
+        attachHints(to: c)   // Flowriter: the shortcut line
+        SelectionBar.attach(to: c, pane: self)   // Flowriter: ghost / alt / stash over a selection
         applyColumnLayout()
     }
 
     func applyColumnLayout() {
         guard let c = controller else { return }
+        let clip = c.scrollView.contentView, y0 = clip.bounds.origin.y, h0 = clip.bounds.height
+        // Flowriter: the shortcut line's band, while hidden, goes to the bottom padding instead
+        c.bottomExtra = FlowriterSpace.enabled && !ShellSnapshot.active && !showsHints ? ShortcutHintsView.band - 12 : 0
         c.scrollView.frame = scrollBox
+        updateSideReserve(animated: false)
         c.layoutColumn()
         layoutFrontmatter()
+        overflow?.layout()   // Flowriter
         // `padding-bottom: 40vh` is FloTextView.bottomPadding (set by layoutColumn)
+        // The band came or went (tools switch, View menu): the box changed height at its bottom.
+        // Near the end AppKit pulls the clip origin back into the shorter document of the moment;
+        // the bottom padding now covers it, so put the text back where it was.
+        if clip.bounds.height != h0, clip.bounds.origin.y != y0, y0 >= 0,
+           y0 + clip.bounds.height <= (c.scrollView.documentView?.frame.height ?? 0) + 0.5 {
+            clip.scroll(to: CGPoint(x: clip.bounds.origin.x, y: y0))
+            c.scrollView.reflectScrolledClipView(clip)
+        }
         clampScroll()
         c.scrollView.suppressScrollPocket()
+    }
+
+    /// Flowriter: room for the side panels floating over the page (Alternatives on the left,
+    /// Overflow on the right). A panel that fits its margin leaves the column where it is; one that
+    /// does not moves the column over (animated when it opens or closes, EditorController).
+    func updateSideReserve(animated: Bool) {
+        guard let c = controller else { return }
+        let area = superview as? EditorAreaView
+        let alt = area?.alternativesPanel
+        let left = alt?.isOpen == true && area != nil ? alt!.panelWidth(in: area!) : 0
+        let right = overflow?.isOpen == true ? overflow!.panelWidth : 0
+        c.setSideReserve(.init(left: left, right: right), animated: animated)
+        layoutHints(left: left, right: right)
+    }
+
+    /// Flowriter: the shortcut line is on (writing space, a text editor, the View menu setting).
+    var showsHints: Bool { FlowriterSpace.enabled && !ShellSnapshot.active && controller != nil && HintStrip.isShown }
+
+    private func attachHints(to c: EditorController) {
+        guard FlowriterSpace.enabled, !ShellSnapshot.active else { return }
+        let h = hints ?? ShortcutHintsView(model: model)
+        hints = h
+        addSubview(h, positioned: .above, relativeTo: c.scrollView)   // under the Overflow panel and its button
+        c.onKeyDown = { [weak h] in h?.keyPressed() }
+    }
+
+    /// The band below the scroll box, centred between the open side panels.
+    func layoutHints(left: CGFloat, right: CGFloat) {
+        guard let h = hints else { return }
+        h.isHidden = !showsHints
+        guard showsHints else { return }
+        let x0 = min(left, bounds.width), x1 = max(x0, bounds.width - right)
+        h.frame = CGRect(x: x0, y: max(0, bounds.height - ShortcutHintsView.band), width: x1 - x0, height: ShortcutHintsView.band)
+        h.needsLayout = true
     }
 
     /// Keep the clip view inside the document (AppKit can leave it at a
@@ -236,8 +299,9 @@ final class EditorPaneView: FlippedView {
         panel.isHidden = h == 0
         panel.frame = CGRect(x: (w - colW) / 2, y: 144, width: colW, height: h)
         // the scroller sits inside the 12px borders: 144 (pt-[9rem]) + 24 (pb-6)
-        if c.topInset != 168 + h {
-            c.topInset = 168 + h
+        let top: CGFloat = FlowriterSpace.enabled ? FlowriterSpace.topInset : 168   // Flowriter: calmer top margin
+        if c.topInset != top + h {
+            c.topInset = top + h
             c.layoutColumn()
         }
     }
@@ -270,7 +334,11 @@ final class EditorPaneView: FlippedView {
     /// The scroll container box (inside the 12px top/bottom borders).
     /// The scroller's padding box: `border-top/bottom: 12px solid transparent`
     /// clip the scrolled text 12px from the pane's top and bottom edges.
-    var scrollBox: CGRect { CGRect(x: 0, y: 12, width: bounds.width, height: max(0, bounds.height - 24)) }
+    /// Flowriter: with the shortcut line on, the box ends above its band, so no text is drawn under it.
+    var scrollBox: CGRect {
+        let bottom = showsHints ? ShortcutHintsView.band : 12
+        return CGRect(x: 0, y: 12, width: bounds.width, height: max(0, bounds.height - 12 - bottom))
+    }
 
     /// `recenterCaret` (use-center-mode.ts): after input, or a key that moved
     /// the caret, scroll so the caret sits at 70% of the scroller's height

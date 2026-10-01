@@ -86,6 +86,8 @@ final class EditorAreaView: FlippedView {
     private var headingsCache: (path: String, content: String, headings: [DocumentHeading])?
     /// The find/replace card (`EditorSearchOverlay`), shared by the panes.
     let findOverlay = FindOverlayView()
+    /// Flowriter: the Alternatives panel (AlternativesPanel.swift), created on first use.
+    var alternativesPanel: AlternativesPanelView?
 
     init(model: ShellModel) {
         self.model = model
@@ -180,7 +182,7 @@ final class EditorAreaView: FlippedView {
             return
         }
         let hs = headings(for: pane.path)
-        rail.isHidden = hs.isEmpty
+        rail.isHidden = hs.isEmpty || pane.overflow?.isOpen == true   // Flowriter: not under the Overflow panel
         if rail.headings != hs { rail.headings = hs; rail.updateTrackingAreas() }
         rail.activeIndex = pane.activeHeadingIndex(hs)
     }
@@ -195,6 +197,7 @@ final class EditorAreaView: FlippedView {
         let bs = anchorBanner.size(maxWidth: bounds.width * 0.9)
         anchorBanner.frame = CGRect(x: (bounds.width - bs.width) / 2, y: 24, width: bs.width, height: bs.height)
         anchorBanner.needsDisplay = true
+        alternativesPanel?.layoutIn(self)   // Flowriter: the panel floats over the left margin
     }
 
     func rebuildEditorThemes() {
@@ -287,6 +290,9 @@ final class ShellRootView: FlippedView {
     let welcome: WelcomeView
     let dragRegion = DragRegionView()
     let compactHeader: CompactHeaderView
+    lazy var flowriterCount: FlowriterCountView = { let v = FlowriterCountView(model: model); addSubview(v); return v }()   // Flowriter
+    lazy var flowriterToggles: ViewTogglesView = { let v = ViewTogglesView(model: model); addSubview(v); return v }()   // Flowriter: view toggles (ViewTogglesBar.swift)
+    lazy var flowriterName: FileNameView = { let v = FileNameView(model: model); addSubview(v); return v }()   // Flowriter: file name and save dot (FileNameBar.swift)
     let resizeHandle: SidebarResizeHandle
     /// Live width while dragging the handle (not yet persisted).
     var draftSidebarWidth: CGFloat?
@@ -400,7 +406,9 @@ final class ShellRootView: FlippedView {
         sidebar.frame = CGRect(x: 0, y: 0, width: max(vw, showSidebar ? S : (sidebarAnimation?.fromWidth ?? vw)), height: H)
         let areaX = vw
         area.frame = CGRect(x: areaX, y: 0, width: W - areaX, height: H)
-        tabBacking.frame = CGRect(x: areaX, y: 0, width: W - areaX, height: Metrics.tabBackingHeight)
+        // Flowriter: the Overflow panel runs the full window height, so the backing stops where it starts
+        let panelReserve = area.activeFilePane?.overflow?.reservedWidth ?? 0
+        tabBacking.frame = CGRect(x: areaX, y: 0, width: max(0, W - areaX - panelReserve), height: Metrics.tabBackingHeight)
         tabBlur.frame = tabBacking.frame
         tabBacking.fillColor = model.palette_.bg
         collapsedToggle.isHidden = showSidebar || compact
@@ -411,7 +419,10 @@ final class ShellRootView: FlippedView {
         tabs.isHidden = compact
         tabs.frame = CGRect(x: left, y: 0, width: max(0, W - 12 - left), height: Metrics.chromeRowHeight)
         paletteOverlay?.frame = bounds
-        compactHeader.isHidden = !model.isCompact
+        compactHeader.isHidden = !model.isCompact || FlowriterSpace.enabled   // Flowriter: the count instead
+        if FlowriterSpace.enabled { flowriterCount.isHidden = !model.isCompact; flowriterCount.frame = CGRect(x: 0, y: 0, width: W, height: Metrics.chromeRowHeight); flowriterCount.refresh() }
+        if FlowriterSpace.enabled { flowriterToggles.isHidden = !model.isCompact || !WritingTools.isOn; flowriterToggles.frame = flowriterCount.frame; flowriterToggles.layout(around: flowriterCount) }
+        if FlowriterSpace.enabled { flowriterName.isHidden = !model.isCompact; flowriterName.refresh(); flowriterName.layout(around: flowriterCount, in: self) }
         compactHeader.frame = CGRect(x: 0, y: 0, width: W, height: Metrics.chromeRowHeight)
         compactHeader.needsDisplay = true
         let showWelcome = model.root == nil && model.editor.tabs.isEmpty
@@ -745,6 +756,7 @@ final class ShellWindowController: NSWindowController, NSWindowDelegate {
                 root.area.reloadContent()
                 root.tabs.reload()
                 root.compactHeader.needsDisplay = true
+                if FlowriterSpace.enabled { root.flowriterCount.refresh(); root.flowriterName.refresh() }
             }
             if s.contains("sidebar") || s.contains("content") { root.sidebar.reload() }
         }
@@ -760,6 +772,7 @@ final class ShellWindowController: NSWindowController, NSWindowDelegate {
         }
         focusEditorOnTabSwitch()
         window?.title = model.editor.windowTitle()
+        if FlowriterSpace.enabled { FileNameView.titleWindow(window, model) }   // Flowriter: the file's name and URL
         positionTrafficLights()   // AppKit re-lays out the titlebar on title changes
         if root.paletteOverlay != nil { root.paletteOverlay?.reload(resetField: false) }
     }
@@ -777,6 +790,7 @@ final class ShellWindowController: NSWindowController, NSWindowDelegate {
 
     func handleKey(_ e: NSEvent) -> NSEvent? {
         guard e.window === window else { return e }
+        if WritingKeys.route(e, in: self) { return nil }   // Flowriter: ⌥G ⌥A ⌥O and the ⌘K leader (WritingKeys.swift)
         let fr = window?.firstResponder
         let editorFocused = fr is NSTextView || fr is NSTextField
         if e.keyCode == 53, model.palette != nil { model.palette = nil; return nil }

@@ -386,7 +386,7 @@
       "description": "Ensure files end with a newline when saving",
       "category": "Files",
       "type": "boolean",
-      "default": true
+      "default": false
     },
     {
       "key": "files.trim-trailing-whitespace",

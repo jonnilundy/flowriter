@@ -28,7 +28,7 @@ final class EnterScrollTests: XCTestCase {
         defer { wc.window?.close() }
         print("progress: EnterScroll opening workspace"); fflush(stdout)
         await f.open()
-        if !typewriter { f.model.typewriterScrolling = false }
+        f.model.typewriterScrolling = typewriter   // Flowriter: off by default
         try await f.model.editor.openFileInTabOrFocus(f.p("big.md"))
         print("progress: EnterScroll note open"); fflush(stdout)
         await f.settle()
@@ -62,6 +62,9 @@ final class EnterScrollTests: XCTestCase {
         let mid = (c.textView.string as NSString).length / 2
         c.textView.setSelectedRange(NSRange(location: mid, length: 0))
         c.textView.scrollRangeToVisible(c.textView.selectedRange()); await settle()
+        // Flowriter: scrollRangeToVisible no longer centres the caret (CaretFollow.swift), so start
+        // from the recentred position, as while typing
+        if typewriter { pane.typewriter(force: true); pane.flushTypewriter(); await settle() }
         let before = c.scrollView.contentView.bounds.origin.y
         lastY = c.scrollView.contentView.bounds.origin.y; jumps = []
         for i in 0..<3 { c.textView.keyDown(with: enterEvent(wc.window!)); await settle(); print("progress: EnterScroll middle return #\(i + 1)"); fflush(stdout) }

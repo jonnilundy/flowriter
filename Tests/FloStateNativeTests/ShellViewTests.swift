@@ -532,6 +532,7 @@ final class TypewriterTests: XCTestCase {
                              config: "editor.jump-to-bottom-after-minutes = 0\n")
         let wc = ShellWindowController(model: f.model, frame: NSRect(x: -10000, y: -10000, width: 1200, height: 800), offscreen: true)
         await f.open(file: "long.md")
+        f.model.typewriterScrolling = true   // Flowriter: off by default
         wc.flush()
         wc.root.layoutSubtreeIfNeeded()
         let pane = wc.root.area.activeFilePane!

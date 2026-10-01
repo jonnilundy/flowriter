@@ -56,6 +56,8 @@ struct Planner {
     var revealedHashLines = Set<Int>()
     /// Line numbers touched by any selection range.
     let selectionLines: [(Int, Int)]
+    /// Flowriter: RenderPlanner.marksAlwaysVisible (MarksVisible.swift).
+    let marksVisible = RenderPlanner.marksAlwaysVisible
 
     init(state: EditorState, from: Int, to: Int) {
         self.state = state
@@ -124,7 +126,7 @@ struct Planner {
         func visit(_ n: SyntaxNode, inherited: [HTag]) {
             var tags = inherited
             var nextInherited = inherited
-            if let (tag, inherit) = NodeTags.rules[n.name] {
+            if let (tag, inherit) = marksVisible ? plainSetextRule(n) : NodeTags.rules[n.name] {
                 tags.append(tag)
                 if inherit { nextInherited.append(tag) }
             }
@@ -206,6 +208,8 @@ struct Planner {
 
     mutating func headingsAndLines() {
         tree.iterate(from: base, to: end, enter: { n, _ in
+            if marksVisible && n.name.hasPrefix("SetextHeading") { return true }   // Flowriter: plain text (MarksVisible.swift)
+            if marksVisible && n.name.hasPrefix("ATXHeading") && emptyATXHeading(n) { return false }   // Flowriter: `#` alone is plain text
             if n.name.hasPrefix("ATXHeading") || n.name.hasPrefix("SetextHeading") {
                 let level = Int(String(n.name.last!))!
                 let line = doc.lineAt(n.from)
@@ -217,7 +221,7 @@ struct Planner {
                 if n.name.hasPrefix("ATXHeading"),
                    let mark = n.children.first, mark.name == "HeaderMark" {
                     let hashEnd = min(mark.to + 1, n.to)
-                    let onLine = selectionSharesLine(n.from, n.to)
+                    let onLine = marksShown(n.from, n.to)
                     if onLine { revealedHashLines.insert(line.number) }
                     apply(n.from, hashEnd) { $0.hidden = .margin(visible: onLine); $0.color = .muted }
                 }
@@ -230,6 +234,7 @@ struct Planner {
                 return false
             }
             if n.name == "FencedCode", mermaidBody(n) != nil { return false }
+            if n.name == "Frontmatter" && marksVisible { dimFrontmatter(n); return false }   // Flowriter: dim raw text, no box
             if n.name == "FencedCode" || n.name == "Frontmatter" {
                 let first = doc.lineAt(n.from).number, last = doc.lineAt(n.to).number
                 for l in first...last {
@@ -300,15 +305,16 @@ struct Planner {
         tree.iterate(from: base, to: end, enter: { n, _ in
             switch n.name {
             case "StrongEmphasis", "Emphasis":
-                if !selectionSharesLine(n.from, n.to) {
+                if !marksShown(n.from, n.to) {
                     for m in children(n, named: ["EmphasisMark"]) { apply(m.from, m.to) { $0.hidden = .removed } }
                 }
             case "InlineCode":
-                if !selectionSharesLine(n.from, n.to) {
+                if !marksShown(n.from, n.to) {
                     for m in children(n, named: ["CodeMark"]) { apply(m.from, m.to) { $0.hidden = .zeroSize } }
                 }
             case "Link":
-                if !selectionSharesLine(n.from, n.to) {
+                markLink(n)
+                if !marksShown(n.from, n.to) {
                     apply(n.from, n.to) { st in
                         if st.color == .text { st.color = .link }
                         st.underline = true; st.clickableLink = true
@@ -316,25 +322,26 @@ struct Planner {
                     for m in children(n, named: ["LinkMark", "URL"]) { apply(m.from, m.to) { $0.hidden = .zeroSize } }
                 }
             case "Strikethrough":
-                if !selectionSharesLine(n.from, n.to) {
+                if !marksShown(n.from, n.to) {
                     for m in children(n, named: ["StrikethroughMark"]) { apply(m.from, m.to) { $0.hidden = .removed } }
                 }
             case "Escape":
                 let zone = wordAt(n.from).flatMap { $0.1 > n.from + 1 ? $0 : nil }
                     ?? (doc.lineAt(n.from).from, doc.lineAt(n.from).to)
-                if selectionSharesLine(zone.0, zone.1) { break }
-                if selectionSharesLine(n.from, n.to) { break }
+                if marksShown(zone.0, zone.1) { break }
+                if marksShown(n.from, n.to) { break }
                 for m in children(n, named: ["EscapeMark"]) { apply(m.from, m.to) { $0.hidden = .zeroSize } }
             case "FencedCode":
-                if !selectionSharesLine(n.from, n.to) {
+                if !marksShown(n.from, n.to) {
                     for m in children(n, named: ["CodeMark", "CodeInfo"]) { apply(m.from, m.to) { $0.hidden = .transparent } }
                 }
             case "Blockquote":
-                if !selectionSharesLine(n.from, n.to) {
-                    for m in children(n, named: ["QuoteMark"]) { apply(m.from, m.to) { $0.hidden = .transparent } }
+                if !marksShown(n.from, n.to) {
+                    let quoteHide: HiddenKind = marksHidden ? .zeroSize : .transparent   // reading view: no 1ch hole after the bar
+                    for m in children(n, named: ["QuoteMark"]) { apply(m.from, m.to) { $0.hidden = quoteHide } }
                 }
             case let s where s.hasPrefix("SetextHeading"):
-                if !selectionSharesLine(n.from, n.to) {
+                if !marksShown(n.from, n.to) {
                     for m in children(n, named: ["HeaderMark"]) { apply(m.from, m.to) { $0.hidden = .removed } }
                 }
             default: break
@@ -364,7 +371,7 @@ struct Planner {
 
     mutating func foldWidgets() {
         tree.iterate(from: base, to: end, enter: { n, _ in
-            let touched = selectionTouches(n.from, n.to)
+            let touched = unfolded(n.from, n.to)
             switch n.name {
             case "Emoji":
                 if !touched, let e = EmojiTable.get(doc.slice(n.from + 1, n.to - 1)) { replace(n.from, n.to, .emoji(e)) }
@@ -466,7 +473,7 @@ struct Planner {
             if insideCode(start) { continue }
             // inside a block widget (rendered table): the widget owns the text
             if widgets.contains(where: { $0.block && $0.replaces && $0.from <= start && end <= $0.to }) { continue }
-            let cursorInside = state.selection.ranges.contains { $0.from >= start && $0.to <= end }
+            let cursorInside = !marksHidden && (marksVisible || state.selection.ranges.contains { $0.from >= start && $0.to <= end })
             if cursorInside {
                 apply(start, end) { st in if st.color == .text { st.color = .link } }
             } else if let target = embed {

@@ -58,7 +58,7 @@ extension EditorFeatures {
                 .item(id: "format.strikethrough", title: "Strikethrough", key: "Mod-Shift-x"),
                 .item(id: "format.code", title: "Inline code", key: "Mod-e"),
                 .separator,
-                .item(id: "format.link", title: "Insert link\u{2026}", key: "Mod-k"),
+                .item(id: "format.link", title: "Insert link\u{2026}", key: nil),
                 .separator,
                 .item(id: "clearInlineFormatting", title: "Clear formatting", key: nil),
             ]),
@@ -79,7 +79,7 @@ extension EditorFeatures {
                 .item(id: "toggleFencedCodeBlock", title: "Code block", key: nil),
             ]),
             .submenu(title: "Insert", items: [
-                .item(id: "format.link", title: "Link\u{2026}", key: "Mod-k"),
+                .item(id: "format.link", title: "Link\u{2026}", key: nil),
                 .item(id: "insertTable", title: "Table", key: nil),
                 .item(id: "insertHorizontalRule", title: "Horizontal rule", key: nil),
                 .separator,
@@ -124,7 +124,9 @@ extension EditorFeatures {
         let tv = editor.textView
         let i = tv.characterIndexForInsertion(at: tv.convert(event.locationInWindow, from: nil))
         let href = i == NSNotFound ? nil : menuLinkHref(at: i)
-        return buildMenu(linkHref: href)
+        let menu = buildMenu(linkHref: href)
+        if i != NSNotFound { MainActor.assumeIsolated { editor.ghosts?.augment(menu, at: i) } }   // Flowriter: Ghost it / Revive
+        return menu
     }
 
     public func buildMenu(linkHref: String?) -> NSMenu {

@@ -597,6 +597,7 @@
 
 /* ShellModel.swift */
 "Type a note name to create it." = "নোট তৈরি করতে তার নাম লিখুন।";
+"Type a note name to create it" = "নোট তৈরি করতে তার নাম লিখুন";
 
 /* ShellModel.swift */
 "Create a new note..." = "নতুন নোট তৈরি করুন...";
@@ -941,3 +942,6 @@
 "Quick Look" = "দ্রুত দেখা";
 /* PDF card: page count badge */
 "%d pages" = "%d পৃষ্ঠা";
+
+/* FlowriterSpace.swift: File menu, "Go to File…" renamed (Cmd-O) */
+"Open…" = "খুলুন…";

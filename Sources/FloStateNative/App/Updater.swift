@@ -21,7 +21,8 @@ final class AppUpdater: NSObject {
 
     /// Only a real, fully configured bundle updates itself (not tests or a bare binary).
     nonisolated static func isConfigured(_ bundle: Bundle = .main) -> Bool {
-        bundle.bundleURL.pathExtension == "app"
+        ForkIdentity.updatesEnabled
+            && bundle.bundleURL.pathExtension == "app"
             && bundle.object(forInfoDictionaryKey: "SUFeedURL") != nil
             && bundle.object(forInfoDictionaryKey: "SUPublicEDKey") != nil
     }

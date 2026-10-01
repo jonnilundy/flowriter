@@ -1,29 +1,28 @@
-# Flo State Native
+# Flowriter
 
-A native macOS rewrite of Flo State, a customised build of
-[writer.computer](https://github.com/joelbqz/writer-computer)'s markdown editor.
-The original is a Tauri app (React + CodeMirror 6 in a web view); this one is
-Swift, AppKit and TextKit 2, with no web view in the editing path.
+A quiet, native macOS writing space for Markdown. One document per window, a
+narrow column, and a few tools that help you cut and rework text without
+losing any of it.
 
-The goal is behavioural parity with the web app: the same live-preview
-rendering (syntax marks hide per line, and tables, math, Mermaid, images and
-HTML blocks fold into widgets), the same editing commands and keymaps, and the
-same app shell (sidebar, tabs, command palette, outline rail, settings,
-find/replace). Parity is measured against the real web frontend: see
-[Testing](#testing).
+Flowriter is Swift, AppKit and TextKit 2, with no web view in the editing
+path. It works offline: no account, no network calls, no AI.
 
-## Layout
+## Features
 
-| Path | What |
-|---|---|
-| `Sources/FloCore` | Platform-independent core: a Swift port of `@lezer/markdown` (plus GFM and the app's extensions), editor state/transactions/history, editing commands and keymaps, the render planner (per-character styles), and the app model (settings, workspace FS, `.gitignore`, search index, sessions). |
-| `Sources/FloKit` | AppKit/TextKit 2 editor: text view, layout, widgets (tables, KaTeX math, Mermaid, HTML blocks, images), find overlay, wiki-link autocomplete, paste handling. |
-| `Sources/FloStateNative` | The app: window, sidebar, tabs, palette, settings, menus, plus headless CLI modes (`--snapshot`, `--batch-geometry`, `--replay-keys`, `--perf <file>`, `--fuzz-edit <file> <seed> <steps>`, `--shell-snapshot`) used by the parity harness. |
-| `Tests/` | Unit and parity tests (XCTest). `Tests/FloTestSupport` generates synthetic documents. |
-| `fixtures/` | Behaviour recorded from the web app (syntax trees, per-char render styles, keystroke results, find/paste/menu/wiki-link behaviour). |
-| `oracle/` | The harness that runs the real web frontend headless and records or compares fixtures. |
-| `tools/` | Scripts that rebuild the bundled JavaScript (code highlighting, HTML sanitizer, Mermaid) from a writer-computer checkout. |
-| `docs/` | `SPEC.md` (behavioural spec of the web app), `KEYS-DEVIATIONS.md`. |
+- **Ghost**: fade a sentence instead of deleting it. It stays in the file, out
+  of the word count, and comes back with one click (⌥G).
+- **Alternatives**: keep other versions of a word, sentence or paragraph next
+  to the text and switch between them (⌥A).
+- **Overflow**: a side panel for cut text, notes and outlines that belong to
+  the document but not to the page (⌥O).
+- **Selection bar**: the actions for the selected text, next to the selection.
+- **⌘K leader**: ⌘K, then one letter: `g` ghost, `a` alternative, `o` overflow,
+  `s` stash in Overflow, `v` versions, `l` link.
+- Live Markdown with marks always visible, so moving the caret never reflows
+  the text. Tables, math, Mermaid, images and HTML blocks render in place.
+
+Ghosts, alternatives and overflow live in a small sidecar file next to the
+document (`.<name>.md.flowriter.json`). The Markdown file itself stays plain.
 
 ## Build
 
@@ -32,122 +31,71 @@ Requires macOS 14+ and Swift 6 (Xcode 16 or a matching toolchain).
 ```sh
 swift build --product FloStateNative        # debug build
 swift run FloStateNative                    # run it (unbundled)
-scripts/bundle.sh                           # release build -> "build/Flo State Native.app"
-INSTALL=1 scripts/bundle.sh                 # ...and install it as /Applications/Flo State.app
+scripts/bundle.sh                           # release build -> build/Flowriter.app
+INSTALL=1 scripts/bundle.sh                 # ...and install it as /Applications/Flowriter.app
 ```
 
 `scripts/bundle.sh` builds with `-j ${JOBS:-2}`; set `THROTTLE` to a wrapper
 command (for example `nice -n 10`) to lower its priority. The app is ad-hoc
-signed unless `DEVELOPER_ID` is set (`scripts/sign.sh`).
+signed unless `DEVELOPER_ID` is set (`scripts/sign.sh`). The bundle id is
+`app.flowriter.Flowriter`; set `BUNDLE_ID` to build under another one.
 
-The version is `VERSION` (CFBundleShortVersionString); the build number
-(CFBundleVersion) is the git commit count.
+The app does not update itself. Sparkle stays linked from upstream but is never
+started, and the bundle has no feed URL.
 
-### Updates and releases
+`FLO_SPACE=0 swift run FloStateNative` runs the upstream Flo State shell
+(sidebar, tabs, properties table) instead of the writing space.
 
-In-app updates use [Sparkle 2](https://sparkle-project.org) (pinned in
-`Package.swift`, embedded in `Contents/Frameworks`). The feed is
-`https://flocrivello.com/flostate/appcast.xml`; checks run daily and from
-*Flo State → Check for Updates…*. Updates are verified with an EdDSA key whose
-private half lives in the release machine's login keychain (Sparkle
-`generate_keys --account flostate`); the public key is in `scripts/bundle.sh`.
+## Layout
 
-```sh
-scripts/test-update.sh     # headless end-to-end update against a local appcast (after bundle.sh)
-scripts/release.sh 0.2.0   # build, sign, zip, sign_update, GitHub release, appcast
-DRY_RUN=1 scripts/release.sh
-```
-
-For testing, `FLOSTATE_FEED_URL` (or `defaults write app.flostate.native
-FloStateFeedURL <url>`) overrides the feed.
-
-Notarization: set `DEVELOPER_ID="Developer ID Application: Name (TEAMID)"`
-and `NOTARY_PROFILE=<profile>` (created once with `xcrun notarytool
-store-credentials <profile>`). `release.sh` then signs with the hardened
-runtime, notarizes and staples before zipping.
+| Path | What |
+|---|---|
+| `Sources/FloCore` | Platform-independent core: a Swift port of `@lezer/markdown` (plus GFM), editor state, transactions and history, editing commands and keymaps, the render planner, the app model, and the writing sidecar (`Writing/`). |
+| `Sources/FloKit` | AppKit/TextKit 2 editor: text view, layout, widgets, find, paste, and the writing layers (`Editor/Writing/`). |
+| `Sources/FloStateNative` | The app: window, writing space, panels, menus, shortcuts, and the scripted window tests (`*SelfTest.swift`). |
+| `Tests/` | Unit and parity tests (XCTest) and the fixture posts the window tests open. |
+| `fixtures/`, `oracle/` | Behaviour recorded from the original web app and the harness that records it (from upstream). |
+| `tools/` | Scripts that rebuild the bundled JavaScript. |
+| `docs/` | `SPEC.md` (behavioural spec of the web app), `KEYS-DEVIATIONS.md`. |
 
 ## Testing
-
-### Unit and parity tests
 
 ```sh
 swift test
 ```
 
-The parity tests replay the recorded web behaviour in `fixtures/` through the
-native code and assert that nothing differs: syntax trees node for node,
-render styles character by character, keystroke results, find/replace, paste,
-context menu and wiki-link autocomplete. The tests need no network, no browser
-and no files outside the repo; large documents are generated in code
-(`Tests/FloTestSupport`).
+The unit and parity tests need no network, no browser and no files outside
+the repo.
 
-### The oracle harness (re-recording fixtures)
+The window tests (`scripts/*-vm-test.sh`, all of them through
+`scripts/all-vm-suites.sh`) open real windows and drive them with synthetic
+key and mouse events. Run them in a macOS virtual machine, never on your own
+desktop. `VM_RUN` below stands for any command that runs a shell command
+inside the VM, in a copy of this repo.
 
-`oracle/` runs the real web frontend against a mock Tauri backend
-(`oracle/server.py`) and drives it through headless Chrome (CDP) or an
-offscreen `WKWebView` (`oracle/wk`, the engine the Tauri app uses on macOS).
+```sh
+$VM_RUN scripts/all-vm-suites.sh          # every suite, stops at the first failure
+$VM_RUN 'scripts/all-vm-suites.sh --all'  # every suite, even after a failure
+$VM_RUN 'scripts/ui-vm-test.sh ghost restart-ghost'
+```
 
-1. Check out and build writer-computer next to this repo (or anywhere, and
-   point `WRITER_REPO` at it). The fixtures were recorded against the
-   customised build described in `docs/SPEC.md` §5, so an unmodified
-   upstream checkout will show some expected differences.
+Logs and screenshots go to `~/flo-out` inside the VM.
 
-   ```sh
-   git clone https://github.com/joelbqz/writer-computer ../writer-computer
-   (cd ../writer-computer && vp install && vp run build -r)   # see its README; needs apps/desktop/dist
-   export WRITER_REPO=$PWD/../writer-computer                # optional when it is a sibling
-   ```
+The oracle harness that re-records `fixtures/` against the original web
+frontend is described in the upstream repository.
 
-2. Python deps: `python3 -m venv .venv && .venv/bin/pip install websocket-client numpy pillow`.
-   The WebKit driver: `swiftc -O oracle/wk/main.swift -o oracle/wk/wkoracle`
-   (or use Chrome with `ORACLE_ENGINE=chrome`).
+## License and credits
 
-3. Generate the sample workspace the mock backend serves. It is synthetic
-   (notes with headings, lists, tasks, links, wiki links, a table, code,
-   frontmatter, an `Archive/` folder, an image attachment and a ~110 KB dated
-   journal) and is regenerated deterministically:
+Flowriter is free software, licensed under the **GNU General Public License
+v3.0 or later** (GPL-3.0-or-later). See [LICENSE](LICENSE).
 
-   ```sh
-   python3 oracle/make_sandbox.py          # -> oracle/sandbox/Sample (gitignored)
-   ```
-
-   Set `ORACLE_SANDBOX=/path/to/folder` to run the oracle on another workspace
-   instead. The mock backend only ever reads and writes inside that folder.
-
-4. Start the backend, then run a generator or a comparison:
-
-   ```sh
-   python3 oracle/server.py &              # serves $WRITER_REPO/apps/desktop/dist on :5288
-   cd oracle
-   python3 gen_trees.py                    # -> fixtures/trees.json
-   python3 gen_render.py                   # -> fixtures/render.json
-   python3 gen_keys.py                     # -> fixtures/keys.jsonl
-   python3 shell_parity.py                 # app shell: web vs `FloStateNative --shell-snapshot`
-   python3 geom_parity.py                  # glyph positions: web vs native
-   ```
-
-Other environment variables: `ORACLE_TMP` (scratch and screenshot output,
-default `<system temp>/flo-oracle`), `NATIVE` (the `FloStateNative` binary to
-compare, default the most recent debug build in the repo), `CHROME` (Chrome
-executable path), `FLO_ORACLE_PORT` (backend port, default 5288; set the same
-value for the server and the scripts). The server overlays the local writer-computer config
-(`~/Library/Application Support/com.writer-computer/config`) on the schema
-defaults; set `FLO_DEFAULT_SETTINGS=1` to ignore it.
-
-`oracle/extract_spec.mjs` extracts the CommonMark/GFM examples from
-`@lezer/markdown`'s test suite in `$WRITER_REPO/node_modules` into
-`oracle/corpus-spec.json`.
-
-## License
-
-Flo State Native is free software, licensed under the **GNU General Public
-License v3.0 or later** (GPL-3.0-or-later). See [LICENSE](LICENSE).
-
-It is a derivative work of
+Forked from [Flo State](https://github.com/Altimor/flo-state) by Altimor,
+GPLv3. Flo State is in turn a derivative work of
 [writer-computer](https://github.com/joelbqz/writer-computer) by Joel
-([@joelbqz](https://github.com/joelbqz)) and contributors, licensed under GPL-3.0. Its behaviour, settings
-schema (`Sources/FloCore/Resources/settings.schema.json`), themes, and parts
-of its source (for example the Mermaid canvas and the HTML-block sanitizer
+([@joelbqz](https://github.com/joelbqz)) and contributors, licensed under
+GPL-3.0. Its behaviour, settings schema
+(`Sources/FloCore/Resources/settings.schema.json`), themes, and parts of its
+source (for example the Mermaid canvas and the HTML-block sanitizer
 configuration, bundled via `tools/`) are taken from that project.
 
 Bundled or ported third-party code:
@@ -158,6 +106,7 @@ Bundled or ported third-party code:
 | [beautiful-mermaid](https://www.npmjs.com/package/beautiful-mermaid), bundled with [elkjs](https://github.com/kieler/elkjs) and [entities](https://github.com/fb55/entities) | `Sources/FloCore/Resources/mermaid/mermaid-widget.js` | MIT; elkjs: EPL-2.0; entities: BSD-2-Clause |
 | [CodeMirror 6](https://codemirror.net) (`@codemirror/language`, `language-data`, `lang-*`) and [Lezer](https://lezer.codemirror.net) parsers (`@lezer/*`) | `Sources/FloCore/Resources/codehl.js` (bundled); `Sources/FloCore/Markdown` is a Swift port of `@lezer/markdown` | MIT |
 | [DOMPurify](https://github.com/cure53/DOMPurify) | `Sources/FloCore/Resources/htmlblock/sanitize.js` | MPL-2.0 or Apache-2.0 |
+| [Sparkle](https://sparkle-project.org) 2 (linked, never started) | `Package.swift` | MIT |
 | CommonMark/GFM spec examples from `@lezer/markdown`'s tests | `oracle/corpus-spec.json`, `fixtures/trees.json` | MIT |
 
 The bundled JavaScript files are minified builds; their sources are the npm

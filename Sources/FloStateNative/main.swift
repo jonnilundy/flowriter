@@ -3,6 +3,7 @@ import FloCore
 import FloKit
 
 let args = CommandLine.arguments
+FlowriterDefaults.apply()   // Flowriter
 if let i = args.firstIndex(of: "--batch-geometry") {
     // --batch-geometry in.json out.json : [{doc, caret}] -> [{chars, lineTops}]
     let input = try! JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: args[i + 1]))) as! [[String: Any]]
@@ -154,6 +155,22 @@ if let i = args.firstIndex(of: "--perf") {
         for l in lines.prefix(lines.count / 2) { pos += l.utf16.count + 1 }
         pos = max(0, pos - 1)
         r.load(text, selection: .cursor(pos))
+        if args.contains("--writing") {
+            // Flowriter: the merged writing features on the document (shared sidecar hook, a ghost, a
+            // version), on a temp copy so no sidecar lands next to the fixture
+            let dir = NSTemporaryDirectory() + "flo-perf-\(ProcessInfo.processInfo.processIdentifier)"
+            try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            let copy = dir + "/" + (args[i + 1] as NSString).lastPathComponent
+            try? text.write(toFile: copy, atomically: true, encoding: .utf8)
+            r.controller.documentPath = copy
+            let g = GhostLayer.attach(to: r.controller, store: SidecarGhostStore(documentPath: copy))
+            let a = AlternativesLayer.attach(to: r.controller, documentPath: copy)
+            let ns = text as NSString
+            let para = ns.paragraphRange(for: NSRange(location: max(0, pos - 200), length: 0))
+            g.ghost(from: para.location, to: para.location + min(40, max(1, para.length - 1)))
+            if let w = AltText.word(in: ns, at: pos - 3) { a.addVersion("alternative", level: .word, range: w, show: false) }
+            print("writing features: \(g.ranges.count) ghost, \(a.session.sets.count) version set, hook \(r.controller.sidecarHook != nil)")
+        }
         r.window.displayIfNeeded()
         print(String(format: "load %d units, %d lines: %.1f ms", units, lines.count, Date().timeIntervalSince(t0) * 1000))
         var times: [Double] = []
