@@ -1,4 +1,4 @@
-/* Flo State UI strings. Key = English source text (base language).
+/* Flowriter UI strings. Key = English source text (base language).
  * Generated from the sources; translations live in <lang>.lproj/Localizable.strings. */
 
 /* EditorModel.swift; TabStripView.swift; Tab title / tooltip of the + button (new empty tab). */
@@ -188,31 +188,31 @@
 "Command Line Tool Removed" = "Strumento da riga di comando rimosso";
 
 /* FloStateCLI.swift */
-"The `flostate` command has been removed from %@." = "Il comando `flostate` è stato rimosso da %@.";
+"The `flowriter` command has been removed from %@." = "Il comando `flowriter` è stato rimosso da %@.";
 
 /* FloStateCLI.swift */
 "Command Line Tool Installed" = "Strumento da riga di comando installato";
 
 /* FloStateCLI.swift */
-"The `flostate` command is now installed at %@." = "Il comando `flostate` è ora installato in %@.";
+"The `flowriter` command is now installed at %@." = "Il comando `flowriter` è ora installato in %@.";
 
 /* FloStateCLI.swift */
-"Run `flostate .` from any terminal to open the current folder." = "Esegui `flostate .` da qualsiasi terminale per aprire la cartella corrente.";
+"Run `flowriter .` from any terminal to open the current folder." = "Esegui `flowriter .` da qualsiasi terminale per aprire la cartella corrente.";
 
 /* FloStateCLI.swift */
-"Flo State Command Line Tool" = "Strumento da riga di comando di Flo State";
+"Flowriter Command Line Tool" = "Strumento da riga di comando di Flowriter";
 
 /* FloStateCLI.swift */
-"Could not remove the flostate command." = "Impossibile rimuovere il comando flostate.";
+"Could not remove the flowriter command." = "Impossibile rimuovere il comando flowriter.";
 
 /* FloStateCLI.swift */
-"Could not install the flostate command." = "Impossibile installare il comando flostate.";
+"Could not install the flowriter command." = "Impossibile installare il comando flowriter.";
 
-/* FloStateCLI.swift (app menu; keep `flostate` as is) */
-"Install 'flostate' Command Line Tool…" = "Installa lo strumento da riga di comando “flostate”…";
+/* FloStateCLI.swift (app menu; keep `flowriter` as is) */
+"Install 'flowriter' Command Line Tool…" = "Installa lo strumento da riga di comando “flowriter”…";
 
-/* FloStateCLI.swift (app menu; keep `flostate` as is) */
-"Uninstall 'flostate' Command Line Tool…" = "Disinstalla lo strumento da riga di comando “flostate”…";
+/* FloStateCLI.swift (app menu; keep `flowriter` as is) */
+"Uninstall 'flowriter' Command Line Tool…" = "Disinstalla lo strumento da riga di comando “flowriter”…";
 
 /* FrontmatterPanel.swift; Placeholder in a frontmatter property name field. */
 "key" = "chiave";
@@ -744,7 +744,7 @@
 "Jump to bottom after (minutes)" = "Vai in fondo dopo (minuti)";
 
 /* Settings description / tooltip (editor.jump-to-bottom-after-minutes) */
-"On returning to Flo State after this long away, jump to the end of the document. 0 disables it." = "Tornando su Flo State dopo questa assenza, va alla fine del documento. 0 per disattivare.";
+"On returning to Flowriter after this long away, jump to the end of the document. 0 disables it." = "Tornando su Flowriter dopo questa assenza, va alla fine del documento. 0 per disattivare.";
 
 /* Settings label (editor.heading-space-before) */
 "Space before headings" = "Spazio prima dei titoli";
@@ -899,8 +899,8 @@
 /* Theme preset name; Theme preset name. */
 "Warm Paper" = "Carta calda";
 
-/* Theme preset name; App / theme name: keep "Flo State" untranslated. */
-"Flo State" = "Flo State";
+/* Theme preset name; App / theme name: keep "Flowriter" untranslated. */
+"Flowriter" = "Flowriter";
 
 /* ShellMenus.swift (Format menu) */
 "Inline Code" = "Codice in linea";

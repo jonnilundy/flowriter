@@ -479,7 +479,7 @@ final class ShellViewTests: XCTestCase {
         refresh()
         XCTAssertFalse(wc.root.welcome.isHidden)
         XCTAssertTrue(wc.root.tabs.isHidden)
-        XCTAssertEqual(f.model.editor.windowTitle(), "Flo State")
+        XCTAssertEqual(f.model.editor.windowTitle(), ForkIdentity.appName)
     }
 }
 

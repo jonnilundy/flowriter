@@ -37,13 +37,13 @@ enum StarterNotebook {
     }
 
     static let welcome = """
-    # Welcome to Flo State
+    # Welcome to Flowriter
 
     This notebook is just a folder of plain markdown files in your Documents folder. Any app can open them, and nothing is locked in.
 
     ## Writing
 
-    Markdown renders as you type. The syntax shows on the line you're editing and gets out of the way everywhere else: **bold**, _italic_, `code`, [links](https://flocrivello.com/flostate/).
+    Markdown renders as you type. The syntax shows on the line you're editing and gets out of the way everywhere else: **bold**, _italic_, `code`, [links](https://github.com/jonnilundy/flowriter).
 
     - Lists continue when you press Return
     - [ ] Checkboxes too

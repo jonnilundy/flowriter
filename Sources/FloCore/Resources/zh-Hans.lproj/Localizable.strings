@@ -1,4 +1,4 @@
-/* Flo State UI strings. Key = English source text (base language).
+/* Flowriter UI strings. Key = English source text (base language).
  * Generated from the sources; translations live in <lang>.lproj/Localizable.strings. */
 
 /* EditorModel.swift; TabStripView.swift; Tab title / tooltip of the + button (new empty tab). */
@@ -188,31 +188,31 @@
 "Command Line Tool Removed" = "命令行工具已移除";
 
 /* FloStateCLI.swift */
-"The `flostate` command has been removed from %@." = "已从 %@ 移除 `flostate` 命令。";
+"The `flowriter` command has been removed from %@." = "已从 %@ 移除 `flowriter` 命令。";
 
 /* FloStateCLI.swift */
 "Command Line Tool Installed" = "命令行工具已安装";
 
 /* FloStateCLI.swift */
-"The `flostate` command is now installed at %@." = "`flostate` 命令已安装到 %@。";
+"The `flowriter` command is now installed at %@." = "`flowriter` 命令已安装到 %@。";
 
 /* FloStateCLI.swift */
-"Run `flostate .` from any terminal to open the current folder." = "在任意终端中运行 `flostate .` 即可打开当前文件夹。";
+"Run `flowriter .` from any terminal to open the current folder." = "在任意终端中运行 `flowriter .` 即可打开当前文件夹。";
 
 /* FloStateCLI.swift */
-"Flo State Command Line Tool" = "Flo State 命令行工具";
+"Flowriter Command Line Tool" = "Flowriter 命令行工具";
 
 /* FloStateCLI.swift */
-"Could not remove the flostate command." = "无法移除 flostate 命令。";
+"Could not remove the flowriter command." = "无法移除 flowriter 命令。";
 
 /* FloStateCLI.swift */
-"Could not install the flostate command." = "无法安装 flostate 命令。";
+"Could not install the flowriter command." = "无法安装 flowriter 命令。";
 
-/* FloStateCLI.swift (app menu; keep `flostate` as is) */
-"Install 'flostate' Command Line Tool…" = "安装“flostate”命令行工具…";
+/* FloStateCLI.swift (app menu; keep `flowriter` as is) */
+"Install 'flowriter' Command Line Tool…" = "安装“flowriter”命令行工具…";
 
-/* FloStateCLI.swift (app menu; keep `flostate` as is) */
-"Uninstall 'flostate' Command Line Tool…" = "卸载“flostate”命令行工具…";
+/* FloStateCLI.swift (app menu; keep `flowriter` as is) */
+"Uninstall 'flowriter' Command Line Tool…" = "卸载“flowriter”命令行工具…";
 
 /* FrontmatterPanel.swift; Placeholder in a frontmatter property name field. */
 "key" = "键";
@@ -744,7 +744,7 @@
 "Jump to bottom after (minutes)" = "多久后跳到末尾（分钟）";
 
 /* Settings description / tooltip (editor.jump-to-bottom-after-minutes) */
-"On returning to Flo State after this long away, jump to the end of the document. 0 disables it." = "离开 Flo State 超过此时长后再返回时，跳到文稿末尾。0 表示停用。";
+"On returning to Flowriter after this long away, jump to the end of the document. 0 disables it." = "离开 Flowriter 超过此时长后再返回时，跳到文稿末尾。0 表示停用。";
 
 /* Settings label (editor.heading-space-before) */
 "Space before headings" = "标题前间距";
@@ -899,8 +899,8 @@
 /* Theme preset name; Theme preset name. */
 "Warm Paper" = "暖色纸张";
 
-/* Theme preset name; App / theme name: keep "Flo State" untranslated. */
-"Flo State" = "Flo State";
+/* Theme preset name; App / theme name: keep "Flowriter" untranslated. */
+"Flowriter" = "Flowriter";
 
 /* ShellMenus.swift (Format menu) */
 "Inline Code" = "行内代码";

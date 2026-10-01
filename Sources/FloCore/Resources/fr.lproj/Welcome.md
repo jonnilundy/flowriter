@@ -1,10 +1,10 @@
-# Bienvenue dans Flo State
+# Bienvenue dans Flowriter
 
 Ce carnet n’est qu’un dossier de simples fichiers Markdown, rangé dans votre dossier Documents. N’importe quelle app peut les ouvrir, et rien ne vous enferme.
 
 ## Écrire
 
-Le Markdown s’affiche au fil de la frappe. La syntaxe apparaît sur la ligne en cours d’édition et s’efface partout ailleurs : **gras**, _italique_, `code`, [liens](https://flocrivello.com/flostate/).
+Le Markdown s’affiche au fil de la frappe. La syntaxe apparaît sur la ligne en cours d’édition et s’efface partout ailleurs : **gras**, _italique_, `code`, [liens](https://github.com/jonnilundy/flowriter).
 
 - Les listes continuent quand vous appuyez sur Retour
 - [ ] Les cases à cocher aussi

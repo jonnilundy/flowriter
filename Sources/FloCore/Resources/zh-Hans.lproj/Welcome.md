@@ -1,10 +1,10 @@
-# 欢迎使用 Flo State
+# 欢迎使用 Flowriter
 
 这个笔记本只是“文稿”文件夹中的一个普通文件夹，里面是纯文本 Markdown 文件。任何 App 都能打开它们，不会被锁定在某个软件里。
 
 ## 书写
 
-Markdown 会在你输入时即时渲染。语法只在你正在编辑的那一行显示，其他地方都会自动隐藏：**粗体**、_斜体_、`代码`、[链接](https://flocrivello.com/flostate/)。
+Markdown 会在你输入时即时渲染。语法只在你正在编辑的那一行显示，其他地方都会自动隐藏：**粗体**、_斜体_、`代码`、[链接](https://github.com/jonnilundy/flowriter)。
 
 - 按下 Return 键时列表会自动延续
 - [ ] 复选框也一样

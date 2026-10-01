@@ -21,7 +21,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$PWD
-GH_REPO=${GH_REPO:-Altimor/flo-state}
+GH_REPO=${GH_REPO:-jonnilundy/flowriter}
 SITE_DIR=${SITE_DIR:-$HOME/agent/2026.09.26 flocrivello-site}
 SPARKLE_BIN="$ROOT/.build-release/artifacts/sparkle/Sparkle/bin"
 

@@ -884,7 +884,7 @@ public final class EditorStore: SaveEngineHost {
     /// Window title: just the document's name (its title, like the tab label),
     /// with no app-name suffix.
     public func windowTitle() -> String {
-        guard let tab = activeTab else { return "Flo State" }
+        guard let tab = activeTab else { return ForkIdentity.appName }
         switch tab.location {
         case .file: return tabTitle(tab)
         case .launcher: return L("New Tab")

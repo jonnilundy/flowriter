@@ -14,7 +14,7 @@ final class StartFromScratchTests: XCTestCase {
         let root = WorkspaceFS.canonicalize(docs.appendingPathComponent("Notebook").path)
         XCTAssertEqual(f.model.root, root)
         XCTAssertEqual(f.model.editor.activeFilePath, root + "/Welcome.md")
-        XCTAssertTrue(TFS.read(root + "/Welcome.md")?.hasPrefix("# Welcome to Flo State\n") == true)
+        XCTAssertTrue(TFS.read(root + "/Welcome.md")?.hasPrefix("# Welcome to Flowriter\n") == true)
         // a non-empty "Notebook" is never touched: the next one is "Notebook 2"
         XCTAssertEqual(StarterNotebook.folder(documents: docs).lastPathComponent, "Notebook 2")
         try? FileManager.default.removeItem(atPath: WorkspaceFS.canonicalize(docs.path))

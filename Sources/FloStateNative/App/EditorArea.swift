@@ -806,12 +806,12 @@ final class OutlinePopoverView: FlippedView {
 }
 
 
-/// Appends unexplained scroll jumps to ~/Library/Logs/Flo State/scroll.log
+/// Appends unexplained scroll jumps to ~/Library/Logs/Flowriter/scroll.log
 /// (y before/after, doc height, caret, event, call stack) to debug live-only bugs.
 @MainActor
 enum ScrollJumpLog {
     static func record(from: CGFloat, to: CGFloat, controller c: EditorController) {
-        let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Flo State")
+        let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Flowriter")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appendingPathComponent("scroll.log")
         let head = c.state.selection.main.head
