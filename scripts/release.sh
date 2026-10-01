@@ -19,7 +19,7 @@
 #
 # Env: DEVELOPER_ID="Developer ID Application: Name (TEAMID)", NOTARY_PROFILE=<notarytool keychain profile>,
 #      NOTES_FILE=<markdown notes> (default: release-notes/X.Y.Z.md if present),
-#      GH_REPO (default jonnilundy/flowriter), JOBS (default 4),
+#      GH_REPO (default jonnilundy/flowriter), JOBS (default 8),
 #      SITE_DIR (no default: unset skips the appcast and site steps), SPARKLE_ACCOUNT (default flowriter),
 #      DEPLOY_CMD (shell command that publishes the site), THROTTLE (default: slowbuild if installed),
 #      DRY_RUN=1 (build + sign + zip into build/release only; no GitHub, no site writes).
@@ -56,7 +56,7 @@ THROTTLE=${THROTTLE-$(command -v slowbuild || true)}
 
 # 1-2. build + sign (bundle.sh → sign.sh uses DEVELOPER_ID when set)
 rm -rf "$OUT"; mkdir -p "$OUT"
-APP_NAME="$APP_NAME" APP="$APP" INSTALL=0 THROTTLE="$THROTTLE" JOBS=${JOBS:-4} "$ROOT/scripts/bundle.sh"
+APP_NAME="$APP_NAME" APP="$APP" INSTALL=0 THROTTLE="$THROTTLE" JOBS=${JOBS:-8} "$ROOT/scripts/bundle.sh"
 BUILD=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Contents/Info.plist")
 
 NOTARIZED=0
