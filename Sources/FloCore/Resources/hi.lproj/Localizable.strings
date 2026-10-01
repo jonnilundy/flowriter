@@ -945,3 +945,14 @@
 
 /* FlowriterSpace.swift: File menu, "Go to File…" renamed (Cmd-O) */
 "Open…" = "खोलें…";
+"Choose…" = "Choose…";
+"Reset" = "Reset";
+"Not set" = "Not set";
+"Choose" = "Choose";
+"Create note in %@" = "Create note in %@";
+"The default folder \"%@\" is missing." = "The default folder \"%@\" is missing.";
+"The default folder \"%@\" can't be written to." = "The default folder \"%@\" can't be written to.";
+"Using %@." = "Using %@.";
+"Default location for new notes" = "Default location for new notes";
+"New notes" = "New notes";
+"The folder every new note is created in. Empty: next to the open note, or in the workspace folder." = "The folder every new note is created in. Empty: next to the open note, or in the workspace folder.";

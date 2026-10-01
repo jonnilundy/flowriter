@@ -81,6 +81,7 @@ enum SettingsPanes {
                       "theme.dark.heading-color", "theme.dark.translucent", "theme.dark.contrast"]),
         ]),
         Pane(id: "files", title: "Files", symbol: "doc", groups: [
+            ("New notes", ["files.default-note-location"]),
             (nil, ["files.associations"]),
         ]),
     ]
@@ -187,6 +188,21 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
     private(set) var slider: NSSlider?
     private(set) var sliderValue: NSTextField?
     private(set) var tokens: NSTokenField?
+    /// The folder row ("files.default-note-location"): the shortened path, Choose… and Reset.
+    private(set) var folderLabel: NSTextField?
+    private(set) var chooseButton: NSButton?
+    private(set) var resetButton: NSButton?
+    /// Asks for a folder (tests replace it); nil when cancelled.
+    var pickFolder: (_ current: String) -> String? = { current in
+        let p = NSOpenPanel()
+        p.canChooseDirectories = true
+        p.canChooseFiles = false
+        p.canCreateDirectories = true
+        p.allowsMultipleSelection = false
+        p.prompt = L("Choose")
+        if !current.isEmpty { p.directoryURL = URL(fileURLWithPath: current, isDirectory: true) }
+        return p.runModal() == .OK ? p.url?.path : nil
+    }
     private var mode: ThemeMode? { def.key.hasPrefix("theme.light.") ? .light : def.key.hasPrefix("theme.dark.") ? .dark : nil }
 
     init(def: SettingDef, backend: SettingsBackend) {
@@ -222,6 +238,17 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
             p.addItems(withTitles: NSFontManager.shared.availableFontFamilies.sorted())
             p.target = self; p.action = #selector(changed(_:))
             popup = p; built = p
+        case .string where def.key == SettingControl.folderKey:
+            let l = NSTextField(labelWithString: "")
+            l.lineBreakMode = .byTruncatingMiddle
+            l.widthAnchor.constraint(equalToConstant: 220).isActive = true
+            let choose = NSButton(title: L("Choose…"), target: self, action: #selector(chooseFolder(_:)))
+            let reset = NSButton(title: L("Reset"), target: self, action: #selector(resetFolder(_:)))
+            for b in [choose, reset] { b.bezelStyle = .rounded; b.controlSize = .small }
+            folderLabel = l; chooseButton = choose; resetButton = reset
+            let st = NSStackView(views: [l, choose, reset])
+            st.spacing = 8
+            built = st
         case .string where def.key.hasSuffix(".preset"):
             let p = NSPopUpButton(frame: .zero, pullsDown: false)
             for t in ThemePreset.all {
@@ -299,6 +326,8 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
 
     var value: ConfigValue { backend.value(def.key) }
 
+    static let folderKey = "files.default-note-location"
+
     static let inlineHelp: Set<String> = ["editor.jump-to-bottom-after-minutes", "editor.auto-insert-daily-heading",
                                           "files.associations", "appearance.editor-width"]
 
@@ -345,6 +374,13 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
                 }
             }
         }
+        if let l = folderLabel {
+            let path = v.stringValue ?? ""
+            l.stringValue = path.isEmpty ? L("Not set") : NewNoteLocation.abbreviated(path)
+            l.textColor = path.isEmpty ? .secondaryLabelColor : .labelColor
+            l.toolTip = path.isEmpty ? nil : path
+            resetButton?.isEnabled = !path.isEmpty
+        }
         if let f = field, f.currentEditor() == nil {
             if def.type == .number { f.doubleValue = v.numberValue ?? 0 } else { f.stringValue = v.stringValue ?? "" }
         }
@@ -378,6 +414,13 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
         default: break
         }
     }
+
+    @objc func chooseFolder(_ sender: Any?) {
+        guard let picked = pickFolder(value.stringValue ?? "") else { return }
+        backend.set(def.key, .string(NewNoteLocation.normalized(picked)))
+    }
+
+    @objc func resetFolder(_ sender: Any?) { backend.reset([def.key]) }
 
     @objc func stepped(_ sender: NSStepper) {
         field?.doubleValue = sender.doubleValue
