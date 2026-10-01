@@ -11,7 +11,7 @@
 # + restart-overflow-typing + overflow-shots (light, dark), combined + restart-combined
 # (light, dark), panels (light, dark), writing-ui (light, dark),
 # integrity-reading (the integrity suite in the reading view), view-toggles + restart-view-toggles
-# (light, dark), tools (light, dark), selection-bar (light, dark), file-name (light, dark), default-location (light, dark), recent (light, dark), then --perf with and without the writing
+# (light, dark), tools (light, dark), selection-bar (light, dark), file-name (light, dark), default-location (light, dark), recent (light, dark), outline (light, dark), then --perf with and without the writing
 # features. Each suite's summary lines stream live (indented; LIVE=all for every line) and its whole
 # output goes to ~/flo-out/suite-<name>.txt.
 # The run stops at the first failed suite (the rest are listed as SKIP) unless --all is given.
@@ -117,6 +117,7 @@ suite selection-bar scripts/selection-bar-vm-test.sh
 suite file-name scripts/file-name-vm-test.sh
 suite default-location scripts/default-location-vm-test.sh
 suite recent scripts/recent-vm-test.sh
+suite outline scripts/outline-vm-test.sh
 if (( ! stopped )) && { (( ! ${#only} )) || (( ${only[(Ie)perf]} )) }; then
   echo "== perf"
   LIVE=all timed $SUITE_TIMEOUT "$OUT/perf-plain.txt" "$BIN" --perf Tests/fixtures/integrity/workshop.md
