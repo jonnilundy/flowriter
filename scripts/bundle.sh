@@ -19,7 +19,7 @@ ICON_SRC="$ROOT/Resources/AppIcon.icon"
 ICON_FALLBACK="$ROOT/Resources/AppIcon.icns"
 
 # JOBS caps parallel compile jobs; wrap with $THROTTLE (e.g. a nice/taskpolicy wrapper) if set
-${=THROTTLE:-} swift build -c release -j "${JOBS:-4}" --product FloStateNative --scratch-path "$SCRATCH"
+${=THROTTLE:-} swift build -c release -j "${JOBS:-8}" --product FloStateNative --scratch-path "$SCRATCH"
 BIN_DIR=$(swift build -c release --product FloStateNative --scratch-path "$SCRATCH" --show-bin-path)
 
 rm -rf "$APP"

@@ -5,7 +5,7 @@
 #   scripts/test.sh --filter X      only matching tests (swift test --filter), one process
 #
 # (run it as a background job; you get notified when it ends)
-# - build once (slowbuild if installed: efficiency cores; $JOBS=4 jobs), then run the tests at normal speed (nice 10,
+# - build once (slowbuild if installed: efficiency cores; $JOBS=8 jobs), then run the tests at normal speed (nice 10,
 #   3 processes: short bursts; background QoS made CPU-heavy tests 4x slower); logs in build/test*.log
 # - output is unbuffered (NSUnbufferedIO), so the log shows each test as it runs
 # - watchdog: once a module's tests are running, no output for $STALL seconds (default 15) =
@@ -58,7 +58,7 @@ watch() {
 
 # 1. build ($THROTTLE wraps it, e.g. THROTTLE=nice; default slowbuild when it is on the PATH, else none)
 THROTTLE=${THROTTLE-$( (( $+commands[slowbuild] )) && print slowbuild )}
-JOBS=${JOBS:-4} ${=THROTTLE} swift build --build-tests --build-path $BP -j ${JOBS:-4} >> "$LOG" 2>&1 &
+JOBS=${JOBS:-8} ${=THROTTLE} swift build --build-tests --build-path $BP -j ${JOBS:-8} >> "$LOG" 2>&1 &
 BPID=$!
 watch "$BPID:$LOG"
 wait $BPID || { echo "TESTS CRASH: $(grep -m1 -E "error:" "$LOG" | cut -c1-200) (in build) (log: $LOG)"; exit 1; }
