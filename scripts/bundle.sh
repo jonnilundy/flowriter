@@ -7,7 +7,7 @@ ROOT=$PWD
 # per-machine defaults (gitignored), e.g. INSTALL=1 THROTTLE=slowbuild
 [[ -f "$ROOT/.local.env" ]] && source "$ROOT/.local.env"
 SCRATCH=$ROOT/.build-release
-# APP_NAME / APP (output path) are overridable: scripts/release.sh builds "Flo State".
+# APP_NAME / APP (output path) are overridable: scripts/release.sh builds into build/release.
 APP_NAME="${APP_NAME:-Flowriter}"
 BUNDLE_ID="${BUNDLE_ID:-app.flowriter.Flowriter}"
 APP="${APP:-$ROOT/build/$APP_NAME.app}"

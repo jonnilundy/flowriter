@@ -59,7 +59,7 @@ final class AlternativesPanelView: FlippedView, NSTextFieldDelegate {
     private var hoverRow: Int?
     private(set) var tabRects: [(AlternativeLevel, NSRect)] = []
 
-    /// How the panel was opened: plain (⌥⌘A), or a session that Esc ends by closing it and giving
+    /// How the panel was opened: plain (⌥A), or a session that Esc ends by closing it and giving
     /// the page back its selection (the range is the page selection when it opened).
     enum Session: Equatable { case none, add(NSRange), versions(NSRange) }
     private(set) var session: Session = .none
