@@ -5,6 +5,7 @@
 # appcast on localhost, runs the N app with --sparkle-probe pointed at it via
 # FLOSTATE_FEED_URL, and checks the temp copy was replaced by N+1.
 # Run scripts/bundle.sh first (INSTALL=0).
+# Unused in the fork while ForkIdentity.updatesEnabled is false (the app has no feed to probe).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$PWD

@@ -3,6 +3,8 @@
 
 appcast.py APPCAST --version 0.1.0 --build 68 --url URL --ed-signature SIG --length N
            [--notes-url URL] [--notes-file notes.md] [--min-system 14.0] [--title T] [--link L]
+
+Unused in the fork while ForkIdentity.updatesEnabled is false: release.sh calls it only when SITE_DIR is set.
 """
 import argparse, datetime, html, os, re, sys
 import xml.etree.ElementTree as ET
