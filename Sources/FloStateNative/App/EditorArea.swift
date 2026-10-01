@@ -404,10 +404,20 @@ final class EditorPaneView: FlippedView {
         flushTypewriter()
     }
 
-    /// Scroll so the heading line lands 24px below the scroller top.
-    func scrollToHeading(_ h: DocumentHeading) {
+    /// Scroll so the heading line lands `landing` points below the scroller top (upstream: 24).
+    func scrollToHeading(_ h: DocumentHeading, landing: CGFloat = 24) {
         guard let c = controller, let top = c.lineTop(forPosition: h.pos, in: self) else { return }
-        scrollBy(top - 24)
+        scrollBy(top - landing)
+    }
+
+    /// An outline click: the caret goes to the start of the heading's text, the heading lands
+    /// where `scrollToHeading` puts it, and the page has focus (typing continues there).
+    func goToHeading(_ h: DocumentHeading) {
+        guard let c = controller else { return }
+        let caret = HeadingJump.caret(for: h, in: c.text as NSString)
+        c.run { t in t.dispatch(TransactionSpec(selection: .cursor(caret), scrollIntoView: false)); return true }
+        window?.makeFirstResponder(c.textView)
+        scrollToHeading(h, landing: HeadingJump.landing)
     }
 
     /// Select a text range (a full-text search hit), put it a third of the way down, and focus the editor.
@@ -430,13 +440,13 @@ final class EditorPaneView: FlippedView {
         return true
     }
 
-    /// `computeActive`: last heading whose top is at or above scroller top + 28.
+    /// `computeActive`: last heading whose top is at or above the landing line + 4 (upstream: scroller top + 28).
     func activeHeadingIndex(_ headings: [DocumentHeading]) -> Int? {
         guard !headings.isEmpty, let c = controller else { return nil }
         var active: Int? = nil
         for (i, h) in headings.enumerated() {
             guard let y = c.lineTop(forPosition: min(h.pos, c.state.doc.length), in: self) else { break }
-            if y > 28 { break }
+            if y > HeadingJump.landing + 4 { break }   // upstream 28: the heading a jump landed is the current one
             active = i
         }
         return active ?? 0
@@ -601,210 +611,6 @@ final class StatusBarView: FlippedView {
 
     override func menu(for event: NSEvent) -> NSMenu? { ShellMenus.footerMenu(model: model) }
 }
-
-// MARK: - Outline rail (section-rail.tsx)
-
-enum RailGeometry {
-    static let inactiveWidth: CGFloat = 10, activeWidth: CGFloat = 20, tickGap: CGFloat = 6, edgeInset: CGFloat = 12
-    static let popoverWidth: CGFloat = 260
-
-    /// Tick rects in the editor-area coordinate space (width `w`, height `h`).
-    static func ticks(count: Int, active: Int?, areaWidth w: CGFloat, areaHeight h: CGFloat) -> [CGRect] {
-        guard count > 0 else { return [] }
-        let stack = CGFloat(count) + CGFloat(count - 1) * tickGap
-        let right = w - Metrics.scrollbarGutter - edgeInset
-        let top = h / 2 - stack / 2
-        return (0..<count).map { i in
-            let tw = i == active ? activeWidth : inactiveWidth
-            return CGRect(x: right - 2 - tw, y: top + CGFloat(i) * (1 + tickGap), width: tw, height: 1)
-        }
-    }
-
-    /// The hover zone (34px wide, stack tall, vertically centred).
-    static func zone(count: Int, areaWidth w: CGFloat, areaHeight h: CGFloat) -> CGRect {
-        let stack = CGFloat(count) + CGFloat(max(0, count - 1)) * tickGap
-        return CGRect(x: w - Metrics.scrollbarGutter - edgeInset - activeWidth - 2, y: h / 2 - stack / 2, width: edgeInset + activeWidth + 2, height: stack)
-    }
-}
-
-final class OutlineRailView: FlippedView {
-    let model: ShellModel   // strong: AppKit can still lay a view out after its window controller (the other owner) is gone
-    var headings: [DocumentHeading] = [] { didSet { needsDisplay = true } }
-    var activeIndex: Int? { didSet { if oldValue != activeIndex { needsDisplay = true; popover?.needsDisplay = true } } }
-    var onSelect: ((DocumentHeading) -> Void)?
-    private(set) var popover: OutlinePopoverView?
-    init(model: ShellModel) { self.model = model; super.init(frame: .zero) }
-    required init?(coder: NSCoder) { fatalError() }
-
-    var tickRects: [CGRect] { RailGeometry.ticks(count: headings.count, active: activeIndex, areaWidth: bounds.width, areaHeight: bounds.height) }
-
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        let local = convert(point, from: superview)
-        if let p = popover, p.frame.contains(local) { return p.hitTest(convert(local, to: p.superview)) ?? p }
-        return RailGeometry.zone(count: headings.count, areaWidth: bounds.width, areaHeight: bounds.height).contains(local) && popover == nil ? self : nil
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        guard popover == nil else { return }
-        let c = model.palette_.textPrimary
-        // ScrollFade: a 70vh window centred on the rail, 48px fades at both ends.
-        let vh = window?.contentView?.bounds.height ?? bounds.height
-        let top = bounds.height / 2 - vh * 0.35, bottom = bounds.height / 2 + vh * 0.35
-        for (i, r) in tickRects.enumerated() {
-            let y = r.midY
-            guard y >= top, y <= bottom else { continue }
-            let fade = min(1, (y - top) / 48) * min(1, (bottom - y) / 48)
-            c.withAlphaComponent((i == activeIndex ? 1 : 0.35) * fade).setFill()
-            r.fill()
-        }
-    }
-
-    override func updateTrackingAreas() {
-        trackingAreas.forEach(removeTrackingArea)
-        let z = RailGeometry.zone(count: headings.count, areaWidth: bounds.width, areaHeight: bounds.height)
-        if !headings.isEmpty { addTrackingArea(NSTrackingArea(rect: z, options: [.mouseEnteredAndExited, .activeAlways], owner: self)) }
-    }
-    override func mouseEntered(with event: NSEvent) { openPopover() }
-    override func mouseExited(with event: NSEvent) {
-        let p = convert(event.locationInWindow, from: nil)
-        if let pop = popover, pop.frame.contains(p) { return }
-        closePopover()
-    }
-    override func mouseUp(with event: NSEvent) {
-        let p = convert(event.locationInWindow, from: nil)
-        if let i = tickRects.firstIndex(where: { $0.insetBy(dx: 0, dy: -3).contains(p) }) { onSelect?(headings[i]) }
-    }
-
-    func openPopover() {
-        guard popover == nil, !headings.isEmpty else { return }
-        let pop = OutlinePopoverView(rail: self)
-        popover = pop
-        addSubview(pop)
-        pop.layoutFor(bounds)
-        needsDisplay = true
-    }
-
-    func closePopover() {
-        popover?.removeFromSuperview()
-        popover = nil
-        needsDisplay = true
-    }
-
-    override func keyDown(with event: NSEvent) {
-        if event.keyCode == 53, popover != nil { closePopover(); return }
-        super.keyDown(with: event)
-    }
-
-    func headingMenu(_ h: DocumentHeading) -> NSMenu {
-        ShellMenus.menu([ClosureMenuItem(L("Copy heading link")) { [weak model] in model?.copyToPasteboard(DocumentHeadings.headingLink(h)) }])
-    }
-
-    func dump() -> [[String: Any]] {
-        tickRects.enumerated().map { i, r in
-            ["rect": convertToRootRect(r).dumpArray, "title": headings[i].text, "active": i == activeIndex]
-        }
-    }
-}
-
-/// The outline popover: 260px card, rows 13px/1.5, gap 4, indent by level.
-final class OutlinePopoverView: FlippedView {
-    unowned let rail: OutlineRailView
-    let scroll = NSScrollView()
-    let list = FlippedView()
-    private var hovered: Int? { didSet { list.needsDisplay = true } }
-
-    init(rail: OutlineRailView) {
-        self.rail = rail
-        super.init(frame: .zero)
-        wantsLayer = true
-        layer?.cornerRadius = 16
-        layer?.masksToBounds = true
-        scroll.drawsBackground = false
-        scroll.automaticallyAdjustsContentInsets = false
-        scroll.hasVerticalScroller = false
-        scroll.documentView = list
-        addSubview(scroll)
-        let drawer = ListDrawer(owner: self)
-        list.addSubview(drawer)
-        self.drawer = drawer
-    }
-    required init?(coder: NSCoder) { fatalError() }
-    private var drawer: ListDrawer!
-
-    var rowStyle: TextStyle { TextStyle(font: UIFonts.ui(rail.model.values), color: rail.model.palette_.textMuted, kern: -0.13) }
-    var indent: CGFloat { CGFloat(rail.model.values.editorOutlineIndentPerLevel) }
-
-    func layoutFor(_ area: CGRect) {
-        let rowsH = CGFloat(rail.headings.count) * 19.5 + CGFloat(max(0, rail.headings.count - 1)) * 4
-        let maxH = (window?.contentView?.bounds.height ?? area.height) * 0.7
-        let contentH = rowsH + 24
-        let h = min(maxH, contentH)
-        frame = CGRect(x: area.width - Metrics.scrollbarGutter - RailGeometry.edgeInset - RailGeometry.popoverWidth - 4,
-                       y: area.height / 2 - h / 2, width: RailGeometry.popoverWidth, height: h)
-        scroll.frame = bounds
-        list.frame = CGRect(x: 0, y: 0, width: bounds.width, height: contentH)
-        drawer.frame = list.bounds
-        // open scrolled so the active row is centred
-        if let a = rail.activeIndex {
-            let rowY = 12 + CGFloat(a) * 23.5
-            let target = max(0, min(contentH - h, rowY - h / 2 + 19.5 / 2))
-            scroll.contentView.scroll(to: CGPoint(x: 0, y: target))
-        }
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        let p = rail.model.palette_
-        p.surfaceCard.setFill(); bounds.fill()
-        p.cardUnderlay.setFill(); bounds.fill(using: .sourceOver)
-        p.lineSubtler.setStroke()
-        let path = roundedPath(bounds.insetBy(dx: 0.5, dy: 0.5), 15.5)
-        path.lineWidth = 1
-        path.stroke()
-    }
-
-    func rowIndex(at p: CGPoint) -> Int? {
-        let y = p.y - 12
-        guard y >= 0 else { return nil }
-        let i = Int(y / 23.5)
-        return i < rail.headings.count && y - CGFloat(i) * 23.5 <= 19.5 ? i : nil
-    }
-
-    final class ListDrawer: FlippedView {
-        unowned let owner: OutlinePopoverView
-        init(owner: OutlinePopoverView) { self.owner = owner; super.init(frame: .zero) }
-        required init?(coder: NSCoder) { fatalError() }
-        override func draw(_ dirtyRect: NSRect) {
-            guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-            let p = owner.rail.model.palette_
-            for (i, h) in owner.rail.headings.enumerated() {
-                var s = owner.rowStyle
-                if i == owner.rail.activeIndex { s.color = p.accent } else if i == owner.hovered { s.color = p.textPrimary }
-                let x = 16 + CGFloat(max(0, h.level - 2)) * owner.indent
-                s.draw(h.text, x: x, lineTop: 12 + CGFloat(i) * 23.5, lineHeight: 19.5, maxWidth: bounds.width - 16 - x, in: ctx)
-            }
-        }
-        override func updateTrackingAreas() {
-            trackingAreas.forEach(removeTrackingArea)
-            addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self))
-        }
-        override func mouseMoved(with event: NSEvent) { owner.hovered = owner.rowIndex(at: convert(event.locationInWindow, from: nil)) }
-        override func mouseExited(with event: NSEvent) {
-            owner.hovered = nil
-            let rail = owner.rail
-            let p = rail.convert(event.locationInWindow, from: nil)
-            if !RailGeometry.zone(count: rail.headings.count, areaWidth: rail.bounds.width, areaHeight: rail.bounds.height).contains(p)
-                && !owner.frame.contains(p) { rail.closePopover() }
-        }
-        override func mouseUp(with event: NSEvent) {
-            if let i = owner.rowIndex(at: convert(event.locationInWindow, from: nil)) { owner.rail.onSelect?(owner.rail.headings[i]) }
-        }
-        override func menu(for event: NSEvent) -> NSMenu? {
-            guard let i = owner.rowIndex(at: convert(event.locationInWindow, from: nil)) else { return nil }
-            return owner.rail.headingMenu(owner.rail.headings[i])
-        }
-    }
-}
-
 
 /// Appends unexplained scroll jumps to ~/Library/Logs/Flowriter/scroll.log
 /// (y before/after, doc height, caret, event, call stack) to debug live-only bugs.

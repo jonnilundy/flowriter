@@ -98,7 +98,7 @@ final class EditorAreaView: FlippedView {
         addSubview(footer)
         addSubview(rail)
         addSubview(anchorBanner)
-        rail.onSelect = { [weak self] h in self?.activeFilePane?.scrollToHeading(h); self?.updateRail() }
+        rail.onSelect = { [weak self] h in self?.activeFilePane?.goToHeading(h); self?.updateRail() }   // Flowriter: caret, scroll and focus, not only a scroll
     }
     required init?(coder: NSCoder) { fatalError() }
 
@@ -804,7 +804,7 @@ final class ShellWindowController: NSWindowController, NSWindowDelegate {
         let editorFocused = fr is NSTextView || fr is NSTextField
         if e.keyCode == 53, model.palette != nil { model.palette = nil; return nil }
         if e.keyCode == 53, !model.selectedPaths.isEmpty { model.selectedPaths = []; return nil }
-        if e.keyCode == 53, root.area.rail.popover != nil { root.area.rail.closePopover(); return nil }
+        if e.keyCode == 53, root.area.rail.isOpen { root.area.rail.closePopover(); return nil }
         let k = ShellKeys.key(e)
         if MainMenu.menuWins(keyCode: k.keyCode, command: k.command, shift: k.shift, option: k.option, control: k.control),
            NSApp?.mainMenu?.performKeyEquivalent(with: e) == true {
