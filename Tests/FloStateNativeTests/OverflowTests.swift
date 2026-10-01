@@ -95,4 +95,23 @@ final class OverflowTests: XCTestCase {
         XCTAssertEqual(OverflowStash.remove("x", from: "a\n\nb"), "a\n\nb", "not there: unchanged")
         XCTAssertEqual(OverflowStash.remove("b", from: "b\n\na\n\nb"), "b\n\na", "the last occurrence goes")
     }
+
+    /// The toggle's tooltip names the key the Overflow menu item really has (Option-O), and the hint strip agrees.
+    @MainActor
+    func testToggleTooltipMatchesTheRealKeyBinding() throws {
+        let main = NSMenu(title: "Main")
+        OverflowMenu.installMenu(in: main)
+        let overflow = try XCTUnwrap(main.items.first { $0.submenu?.title == "Overflow" }?.submenu)
+        let item = try XCTUnwrap(overflow.items.first { $0.title == OverflowMenu.toggleTitles.0 })
+        let mods = item.keyEquivalentModifierMask
+        var glyphs = ""
+        if mods.contains(.control) { glyphs += "\u{2303}" }
+        if mods.contains(.option) { glyphs += "\u{2325}" }
+        if mods.contains(.shift) { glyphs += "\u{21E7}" }
+        if mods.contains(.command) { glyphs += "\u{2318}" }
+        glyphs += item.keyEquivalent.uppercased()
+        XCTAssertEqual(glyphs, "\u{2325}O", "the real binding is Option-O")
+        XCTAssertEqual(OverflowToggleButton().toolTip, "Overflow (\(glyphs))")
+        XCTAssertEqual(HintStrip.builtIn.first { $0.label == "overflow" }?.keys, glyphs)
+    }
 }

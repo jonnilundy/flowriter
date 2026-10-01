@@ -448,7 +448,7 @@ final class OverflowToggleButton: NSButton {
     override var mouseDownCanMoveWindow: Bool { false }
 
     /// The Overflow toggle by default; the Alternatives panel uses the same button, mirrored (sidebar.left).
-    init(symbol: String = "sidebar.right", label: String = "Toggle Overflow", toolTip tip: String = "Overflow (\u{2325}\u{2318}O)") {
+    init(symbol: String = "sidebar.right", label: String = "Toggle Overflow", toolTip tip: String = "Overflow (\u{2325}O)") {
         super.init(frame: NSRect(x: 0, y: 0, width: Self.size, height: Self.size))
         isBordered = false
         bezelStyle = .regularSquare
