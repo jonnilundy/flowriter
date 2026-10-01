@@ -20,10 +20,20 @@ import FloKit
 /// The selection bar's versions opens on the set's versions with the shown one highlighted: Up /
 /// Down move, Return applies (closes), Esc closes; focus back to the page either way.
 ///
+/// Closing: ⌥A again (in the panel, or in the page on the text the panel shows, which an idle panel
+/// following the caret always does; a selection it does not show, such as a phrase, moves it
+/// there), Esc in the page (Esc in the panel first gives the page focus), the panel's own toggle
+/// in its bottom left corner (the Overflow toggle, mirrored), Format > Alternatives, ⌘K v. A
+/// click in the page never closes it: the panel follows the caret. A click in the empty space
+/// below the list focuses the add line, caret ready.
+///
 /// Like the Overflow panel on the right it is an overlay: opaque, a hairline on its inner edge,
 /// only as wide as the margin (220 pt at least), and opening or closing it leaves the text column
-/// where it is. When the margin is narrower than that (a narrow window), the column moves over
-/// once as the panel slides in (EditorController.setSideReserve), so the panel never covers text.
+/// where it is. It runs the full window height: the title band's backing stops at its edge
+/// (ShellRootView.layout, `reservedWidth`), so the traffic lights and the file name sit on the
+/// panel's tint and the band never reads as a strip of its own. When the margin is narrower than
+/// 220 pt (a narrow window), the column moves over once as the panel slides in
+/// (EditorController.setSideReserve), so the panel never covers text.
 @MainActor
 final class AlternativesPanelView: FlippedView, NSTextFieldDelegate {
     static var animations = true
@@ -35,6 +45,8 @@ final class AlternativesPanelView: FlippedView, NSTextFieldDelegate {
     private(set) var isOpen = false
     private(set) var level: AlternativeLevel = .word
     let input = AlternativesInputField()
+    /// The panel's toggle (shown while it is open): Overflow's button, mirrored to the bottom left corner.
+    let toggleButton = OverflowToggleButton(symbol: "sidebar.left", label: "Hide Alternatives", toolTip: "Hide Alternatives (\u{2325}A)")
     private(set) weak var alts: AlternativesLayer?
     private var observers: [NSObjectProtocol] = []
 
@@ -67,6 +79,10 @@ final class AlternativesPanelView: FlippedView, NSTextFieldDelegate {
         input.cell?.isScrollable = true
         input.setAccessibilityLabel("New version")
         addSubview(input)
+        toggleButton.target = self
+        toggleButton.action = #selector(toggleClicked)
+        toggleButton.isActive = true
+        addSubview(toggleButton)
         observers.append(NotificationCenter.default.addObserver(forName: AlternativesLayer.didChange, object: nil, queue: .main) { [weak self] n in
             MainActor.assumeIsolated {
                 guard let self = self, self.isOpen else { return }
@@ -169,6 +185,39 @@ final class AlternativesPanelView: FlippedView, NSTextFieldDelegate {
         focusChanged()
     }
 
+    /// Close the way the toggle, ⌥A and Esc in the page do: a session ends as Esc in the panel ends it
+    /// (the page gets its selection back), otherwise a plain close; focus goes to the page.
+    func dismiss() {
+        guard isOpen else { return }
+        if session != .none { endSession() } else { close() }
+    }
+
+    @objc private func toggleClicked() { dismiss(); focusEditor() }
+
+    /// ⌥A ("Add Alternative…") while the panel is open: true when it should close rather than move.
+    /// It closes from inside the panel, and from the page when the text it would open on (the
+    /// selection, or the word at the caret) is what the panel already shows, or is nothing. On other
+    /// text it moves there.
+    static func addShortcutCloses(panelHasFocus: Bool, target t: NSRange, current: NSRange?) -> Bool {
+        panelHasFocus || t.length == 0 || t == current
+    }
+
+    func addShortcutCloses(_ r: NSRange, in l: AlternativesLayer) -> Bool {
+        guard isOpen else { return false }
+        let focused = hasFocus
+        // against the targets the panel shows now (no refresh first: that would move them onto `r`)
+        let t = AltText.trimmed(r, in: l.text)
+        let current = t.length > 0 ? targets[AltText.level(of: t, in: l.text)]?.range : nil
+        return Self.addShortcutCloses(panelHasFocus: focused, target: t, current: current)
+    }
+
+    /// The width at the area's left edge the panel owns: the title band's backing starts after it so
+    /// the panel's tint and hairline run up to the window top (ShellRootView.layout). Held through the slide-out.
+    var reservedWidth: CGFloat {
+        guard isOpen || animating, let area = area else { return 0 }
+        return panelWidth(in: area)
+    }
+
     func close() {
         let hadFocus = hasFocus
         session = .none
@@ -207,6 +256,7 @@ final class AlternativesPanelView: FlippedView, NSTextFieldDelegate {
         let animated = Self.animations && window != nil
         let open = openFrame(in: area), closed = open.offsetBy(dx: -open.width, dy: 0)
         for p in area.panes.values { (p as? EditorPaneView)?.updateSideReserve(animated: animated) }
+        area.superview?.needsLayout = true   // the title band's backing makes room for the panel (reservedWidth)
         if v {
             isHidden = false
             frame = animated ? closed : open
@@ -218,7 +268,7 @@ final class AlternativesPanelView: FlippedView, NSTextFieldDelegate {
                 ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.23, 1, 0.32, 1)
                 animator().frame = open
             }, completionHandler: { [weak self] in
-                MainActor.assumeIsolated { self?.animating = false; self?.area?.needsLayout = true }
+                MainActor.assumeIsolated { self?.animating = false; self?.area?.needsLayout = true; self?.area?.superview?.needsLayout = true }
             })
         } else if animated {
             animating = true
@@ -227,7 +277,7 @@ final class AlternativesPanelView: FlippedView, NSTextFieldDelegate {
                 ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.23, 1, 0.32, 1)
                 animator().frame = closed
             }, completionHandler: { [weak self] in
-                MainActor.assumeIsolated { if let s = self { s.animating = false; if !s.isOpen { s.isHidden = true } } }
+                MainActor.assumeIsolated { if let s = self { s.animating = false; if !s.isOpen { s.isHidden = true }; s.area?.superview?.needsLayout = true } }
             })
         } else {
             isHidden = true
@@ -333,6 +383,13 @@ final class AlternativesPanelView: FlippedView, NSTextFieldDelegate {
         }
         let fh = lineHeight + 4
         input.frame = NSRect(x: textX - 2, y: y + 1 - 2, width: bounds.width - textX + 2 - pad, height: fh)
+        // the Overflow toggle's place, mirrored: 16 pt from the side and the bottom
+        let b = OverflowToggleButton.size
+        toggleButton.frame = NSRect(x: 16, y: bounds.height - 16 - b, width: b, height: b)
+        let fg = area?.activeFilePane?.controller?.theme.foreground ?? palette.fgBase
+        toggleButton.idleColor = fg.withAlphaComponent(0.34)
+        toggleButton.hoverColor = fg.withAlphaComponent(0.7)
+        toggleButton.refreshTint()
     }
 
     private func rowAttrs(_ r: Row, hover: Bool = false) -> [NSAttributedString.Key: Any] {
@@ -575,15 +632,38 @@ final class AlternativesPanelView: FlippedView, NSTextFieldDelegate {
 
     // MARK: mouse
 
+    /// What a click at `p` (panel coordinates) is on: a tab, a version, the empty space below the
+    /// list (from the add line down: it focuses the add line), or the rest of the panel.
+    enum ClickTarget: Equatable { case tab(AlternativeLevel), row(Int), addLine, panel }
+    static func clickTarget(at p: NSPoint, tabs: [(AlternativeLevel, NSRect)], rows: [NSRect], listBottom: CGFloat) -> ClickTarget {
+        if let t = tabs.first(where: { $0.1.contains(p) }) { return .tab(t.0) }
+        if let i = rows.firstIndex(where: { $0.contains(p) }) { return .row(i) }
+        return p.y >= listBottom ? .addLine : .panel
+    }
+
+    /// The add line focused, the caret after its text (a draft is kept, not selected).
+    func focusAddLine() {
+        guard input.isEnabled, window?.makeFirstResponder(input) == true else { return }
+        let end = (input.stringValue as NSString).length
+        input.currentEditor()?.selectedRange = NSRange(location: end, length: 0)
+        focusChanged()
+    }
+
     override func mouseDown(with e: NSEvent) {
         let p = convert(e.locationInWindow, from: nil)
-        if let t = tabRects.first(where: { $0.1.contains(p) }) { setLevel(t.0); window?.makeFirstResponder(self); return }
-        if let i = rows.firstIndex(where: { $0.rect.contains(p) }) {
+        let listBottom = rows.last.map { $0.rect.maxY } ?? listY
+        switch Self.clickTarget(at: p, tabs: tabRects, rows: rows.map(\.rect), listBottom: listBottom) {
+        case .tab(let lv):
+            setLevel(lv); window?.makeFirstResponder(self)
+        case .row(let i):
             window?.makeFirstResponder(self)
             if i == hoverRow, removeRect(rows[i]).insetBy(dx: -3, dy: -3).contains(p), rows.count > 1 { remove(row: i) } else { show(row: i) }
-            return
+        case .addLine:
+            focusAddLine()
+            if !inputHasFocus { window?.makeFirstResponder(self) }   // no target to add to
+        case .panel:
+            window?.makeFirstResponder(self)
         }
-        window?.makeFirstResponder(self)
     }
 
     override func mouseMoved(with e: NSEvent) {

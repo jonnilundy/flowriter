@@ -63,7 +63,7 @@ enum SelfTestRunner {
         }
         Task { @MainActor in
             // Flowriter: the integrity and space scenarios run in the writing space's document window
-            if FlowriterSpace.enabled && (["integrity", "space", "quiet", "combined", "restart-combined", "panels", "writing-menu", "hints", "hints-restart", "overflow-typing", "restart-overflow-typing"] + ViewTogglesScenarios.names + FileNameScenarios.names + DefaultLocationScenarios.names + RecentScenarios.names + SelectionBarScenarios.names + ToolsScenarios.names).contains(scenario) { await model.editor.openCompactFile(file) }
+            if FlowriterSpace.enabled && (["integrity", "space", "quiet", "combined", "restart-combined", "panels", "writing-menu", "hints", "hints-restart", "overflow-typing", "restart-overflow-typing"] + ViewTogglesScenarios.names + FileNameScenarios.names + DefaultLocationScenarios.names + RecentScenarios.names + SelectionBarScenarios.names + ToolsScenarios.names + AltPanelScenarios.names).contains(scenario) { await model.editor.openCompactFile(file) }
             else { await model.openWorkspace(root, openFile: file, keepSession: false) }
             wc.flush()
             guard let pane = await waitFor(5, { wc.root.area.activeFilePane?.controller != nil ? wc.root.area.activeFilePane : nil }),
@@ -196,6 +196,7 @@ enum SelfTestScenarios {
         default:
             if await runGhostScenario(name, ctx) { return }   // Flowriter: Ghost (GhostSelfTest.swift)
             if await AlternativesScenarios.run(name, ctx) { return }   // Flowriter: alternatives
+            if await AltPanelScenarios.run(name, ctx) { return }   // Flowriter: the Alternatives panel's close paths, top edge, empty click (AltPanelSelfTest.swift)
             if await ViewTogglesScenarios.run(name, ctx) { return }   // Flowriter: view toggles (ViewTogglesSelfTest.swift)
             if await RecentScenarios.run(name, ctx) { return }   // Flowriter: File > Open Recent and the quick picker (RecentSelfTest.swift)
             if await FileNameScenarios.run(name, ctx) { return }   // Flowriter: the file name and save dot (FileNameSelfTest.swift)

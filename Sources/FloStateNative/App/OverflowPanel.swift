@@ -447,15 +447,16 @@ final class OverflowToggleButton: NSButton {
     override var isFlipped: Bool { true }
     override var mouseDownCanMoveWindow: Bool { false }
 
-    init() {
+    /// The Overflow toggle by default; the Alternatives panel uses the same button, mirrored (sidebar.left).
+    init(symbol: String = "sidebar.right", label: String = "Toggle Overflow", toolTip tip: String = "Overflow (\u{2325}\u{2318}O)") {
         super.init(frame: NSRect(x: 0, y: 0, width: Self.size, height: Self.size))
         isBordered = false
         bezelStyle = .regularSquare
         imagePosition = .imageOnly
         let cfg = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
-        image = NSImage(systemSymbolName: "sidebar.right", accessibilityDescription: "Overflow")?.withSymbolConfiguration(cfg)
-        toolTip = "Overflow (\u{2325}\u{2318}O)"
-        setAccessibilityLabel("Toggle Overflow")
+        image = NSImage(systemSymbolName: symbol, accessibilityDescription: label)?.withSymbolConfiguration(cfg)
+        toolTip = tip
+        setAccessibilityLabel(label)
         focusRingType = .none
     }
     required init?(coder: NSCoder) { fatalError() }

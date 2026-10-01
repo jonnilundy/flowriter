@@ -28,6 +28,9 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
     public var contextMenuProvider: ((NSEvent, Int) -> NSMenu?)?
     /// Flowriter: every key that reaches the text view (the shortcut hints fade while typing).
     public var onKeyDown: (() -> Void)?
+    /// An Escape nothing in the page used (no find highlights, no selection to collapse, no popup):
+    /// true when the host took it (Flowriter closes the Alternatives panel).
+    public var onUnusedEscape: (() -> Bool)?
 
     public enum LinkClick: Equatable {
         case href(String)
@@ -1035,6 +1038,12 @@ public final class FloTextView: NSTextView {
 
     /// NSTextView's own completion popup (Esc / F5) is replaced by the wiki autocomplete.
     public override func complete(_ sender: Any?) {}
+
+    /// Escape after the keymap passed on it (keyDown → interpretKeyEvents): the host's turn first.
+    public override func cancelOperation(_ sender: Any?) {
+        if controller?.onUnusedEscape?() == true { return }
+        super.cancelOperation(sender)
+    }
 
     public override func resignFirstResponder() -> Bool {
         let ok = super.resignFirstResponder()
