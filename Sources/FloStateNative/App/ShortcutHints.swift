@@ -6,7 +6,7 @@ import FloKit
 ///   ⌥G ghost      ⌥A alternative      ⌥O overflow
 /// While the ⌘K leader is waiting for its letter (WritingKeys.swift) the line shows the leader
 /// letters instead, in the same band and font:
-///   g ghost      a alternative      o overflow      s stash      v versions      l link
+///   g ghost      a alternative      o overflow      s stash      v versions      l link      r recent
 /// SF Mono 11 in the count's muted colour. It fades out on a key in the page and back after 2 s
 /// without one (opacity only, ease-out, 150 / 200 ms; instant with Reduce Motion). The pane keeps
 /// its band free (EditorPaneView.scrollBox ends above it), so text never runs under it. A narrow
@@ -32,7 +32,7 @@ enum HintStrip {
     /// The letters after ⌘K, in the order the leader line shows them.
     static let leaderItems: [Item] = [
         Item(keys: "g", label: "ghost"), Item(keys: "a", label: "alternative"), Item(keys: "o", label: "overflow"),
-        Item(keys: "s", label: "stash"), Item(keys: "v", label: "versions"), Item(keys: "l", label: "link"),
+        Item(keys: "s", label: "stash"), Item(keys: "v", label: "versions"), Item(keys: "l", label: "link"), Item(keys: "r", label: "recent"),
     ]
     private(set) static var items: [Item] = builtIn
     /// The ⌘K leader is waiting: the line shows `leaderItems`.

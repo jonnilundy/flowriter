@@ -154,7 +154,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = MainMenu.build(target: router, updateItem: AppUpdater.shared?.menuItem())
         GhostAttach.installMenu()   // Flowriter
         AlternativesAttach.installMenu()   // Flowriter
-        FlowriterSpace.installMenus(in: NSApp.mainMenu!, focused: { [weak self] in self?.focusedController?.model })
+        FlowriterSpace.installMenus(in: NSApp.mainMenu!, focused: { [weak self] in self?.focusedController?.model },
+                                    recents: RecentFilesStore(appData: dataDir), openWithoutWindow: { [weak self] in self?.open(paths: [$0]) })
         SelectionBar.installMenu(in: NSApp.mainMenu!)   // Flowriter: View > Show Selection Bar
         OverflowMenu.installMenu(in: NSApp.mainMenu!)   // Flowriter
         if FlowriterSpace.enabled { ViewTogglesView.installMenu(in: NSApp.mainMenu!) }   // Flowriter: view toggles

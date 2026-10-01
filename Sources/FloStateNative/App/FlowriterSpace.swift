@@ -66,11 +66,15 @@ enum FlowriterSpace {
     // MARK: menus
 
     /// View > Appearance (System / Light / Dark); File "Go to File…" becomes "Open…" (Cmd-O).
-    static func installMenus(in main: NSMenu, focused: @escaping () -> ShellModel?) {
+    static func installMenus(in main: NSMenu, focused: @escaping () -> ShellModel?,
+                             recents: RecentFilesStore? = nil, openWithoutWindow: @escaping (String) -> Void = { _ in }) {
         guard enabled else { return }
         if let file = main.items.first(where: { $0.title == L("File") })?.submenu,
            let go = file.items.first(where: { $0.title == L("Go to File…") }) {
             go.title = L("Open…")
+            if let recents {   // File > Open Recent, right under Open… (OpenRecentMenu.swift)
+                OpenRecentMenu.install(in: file, after: go, store: recents, focused: focused, openWithoutWindow: openWithoutWindow)
+            }
         }
         if let view = main.items.first(where: { $0.title == L("View") })?.submenu {
             let sub = NSMenu(title: "Appearance")

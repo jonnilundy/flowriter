@@ -42,7 +42,7 @@ enum SelfTestRunner {
         let scenario = args[i + 1], file = args[i + 2], out = args[i + 3]
         let root = (file as NSString).deletingLastPathComponent
         let data = NSTemporaryDirectory() + "flo-selftest-data" + (ProcessInfo.processInfo.environment["FLO_SELFTEST_DATA_SUFFIX"] ?? "")
-        if scenario != "restart" { try? FileManager.default.removeItem(atPath: data) }
+        if scenario != "restart" && scenario != "recent-restart" { try? FileManager.default.removeItem(atPath: data) }
         SelectionBar.selfTestOff = !scenario.hasPrefix("selection-bar")   // Flowriter: the bar only in its own scenarios
         WritingToolsSwitch.prepareForSelfTest(scenario)   // Flowriter: tools off on first launch
         let app = NSApplication.shared
@@ -63,7 +63,7 @@ enum SelfTestRunner {
         }
         Task { @MainActor in
             // Flowriter: the integrity and space scenarios run in the writing space's document window
-            if FlowriterSpace.enabled && (["integrity", "space", "quiet", "combined", "restart-combined", "panels", "writing-menu", "hints", "hints-restart", "overflow-typing", "restart-overflow-typing"] + ViewTogglesScenarios.names + FileNameScenarios.names + DefaultLocationScenarios.names + SelectionBarScenarios.names + ToolsScenarios.names).contains(scenario) { await model.editor.openCompactFile(file) }
+            if FlowriterSpace.enabled && (["integrity", "space", "quiet", "combined", "restart-combined", "panels", "writing-menu", "hints", "hints-restart", "overflow-typing", "restart-overflow-typing"] + ViewTogglesScenarios.names + FileNameScenarios.names + DefaultLocationScenarios.names + RecentScenarios.names + SelectionBarScenarios.names + ToolsScenarios.names).contains(scenario) { await model.editor.openCompactFile(file) }
             else { await model.openWorkspace(root, openFile: file, keepSession: false) }
             wc.flush()
             guard let pane = await waitFor(5, { wc.root.area.activeFilePane?.controller != nil ? wc.root.area.activeFilePane : nil }),
@@ -123,7 +123,7 @@ enum SelfTestRunner {
     }
 
     /// The key codes of the leader letters and the ones the tests type after ⌘K.
-    static let letterCodes: [String: UInt16] = ["a": 0, "s": 1, "g": 5, "x": 7, "v": 9, "o": 31, "l": 37, "k": 40]
+    static let letterCodes: [String: UInt16] = ["a": 0, "s": 1, "g": 5, "x": 7, "v": 9, "o": 31, "l": 37, "k": 40, "r": 15]
 
     /// ⌘K, then `letter`. True when both keys were taken by the leader.
     @discardableResult
@@ -197,6 +197,7 @@ enum SelfTestScenarios {
             if await runGhostScenario(name, ctx) { return }   // Flowriter: Ghost (GhostSelfTest.swift)
             if await AlternativesScenarios.run(name, ctx) { return }   // Flowriter: alternatives
             if await ViewTogglesScenarios.run(name, ctx) { return }   // Flowriter: view toggles (ViewTogglesSelfTest.swift)
+            if await RecentScenarios.run(name, ctx) { return }   // Flowriter: File > Open Recent and the quick picker (RecentSelfTest.swift)
             if await FileNameScenarios.run(name, ctx) { return }   // Flowriter: the file name and save dot (FileNameSelfTest.swift)
             if await DefaultLocationScenarios.run(name, ctx) { return }   // Flowriter: the default location for new notes (DefaultLocationSelfTest.swift)
             if await CombinedScenarios.run(name, ctx) { return }

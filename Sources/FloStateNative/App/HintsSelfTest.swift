@@ -41,7 +41,7 @@ enum HintsScenarios {
 
     static let gap = "      "
     static let fullLine = ["⌥G ghost", "⌥A alternative", "⌥O overflow"].joined(separator: gap)
-    static let leaderLine = "g ghost   a alternative   o overflow   s stash   v versions   l link"
+    static let leaderLine = "g ghost   a alternative   o overflow   s stash   v versions   l link   r recent"
 
     static func strip(_ ctx: Ctx) -> ShortcutHintsView? { ctx.pane.hints }
 
