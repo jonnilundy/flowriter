@@ -54,6 +54,11 @@ enum WritingKeys {
             return false
         }
         if mods == [.command, .shift], letter(e) == "o", !e.isARepeat { run(.recent, in: wc); return true }   // anywhere in the window
+        // ⌥A in the Alternatives panel (its list or its add line) closes it; no å reaches the add line
+        if mods == [.option], letter(e) == "a", wc.root.area.alternativesPanel?.hasFocus == true {
+            if !e.isARepeat { run(.alternative, in: wc) }
+            return true
+        }
         guard inWritingText(w) else { return false }
         if mods == [.command], letter(e) == "k" { beginLeader(in: w); return true }
         if mods == [.option] {
@@ -95,7 +100,7 @@ enum WritingKeys {
         case .ghost:
             if pane.controller?.ghosts?.toggle() != true { NSSound.beep() }
         case .alternative:
-            AlternativesAttach.addAlternative(area)   // the Format menu's Add Alternative…
+            AlternativesAttach.addAlternative(area, fromKey: true)   // the Format menu's Add Alternative…; again: closes
         case .overflow:
             if let o = pane.overflow { o.toggle() } else { NSSound.beep() }
         case .stash:

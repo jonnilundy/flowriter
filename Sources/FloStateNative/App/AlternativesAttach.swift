@@ -12,6 +12,14 @@ enum AlternativesAttach {
     static func attach(_ c: EditorController, path: String) {
         guard enabled, !ShellSnapshot.active, GhostAttach.markdownExtensions.contains((path as NSString).pathExtension.lowercased()) else { return }
         AlternativesLayer.attach(to: c, documentPath: path)
+        // Esc in the page that nothing else used closes the panel (Esc in the panel gives the page focus first)
+        c.onUnusedEscape = { [weak c] in
+            var v: NSView? = c?.textView
+            while let s = v, !(s is EditorAreaView) { v = s.superview }
+            guard let p = (v as? EditorAreaView)?.alternativesPanel, p.isOpen else { return false }
+            p.dismiss()
+            return true
+        }
     }
 
     /// The editor area's panel (created on first use).
@@ -41,12 +49,20 @@ enum AlternativesAttach {
         }
     }
 
-    /// ⌥A "Add Alternative…": the panel on the selection (or the word at the caret).
-    static func addAlternative(_ area: EditorAreaView? = nil) {
+    /// ⌥A "Add Alternative…": the panel on the selection (or the word at the caret). The shortcut
+    /// pressed again (`fromKey`) closes the panel: from inside the panel, or from the page on the
+    /// text the panel already shows (AlternativesPanelView.addShortcutCloses). On other text it moves
+    /// the panel there. The menu items chosen by mouse always open (and focus the add line).
+    static func addAlternative(_ area: EditorAreaView? = nil, fromKey: Bool = false) {
         guard let a = area ?? keyArea, let l = a.activeFilePane?.controller?.alternatives else { return }
-        WritingTools.isOn = true   // the panel works on the decorations: tools on
         let p = panel(a)
         let r = l.selectionRange.length > 0 ? l.selectionRange : (AltText.word(in: l.text, at: l.caret) ?? l.selectionRange)
+        if fromKey, p.addShortcutCloses(r, in: l) {
+            p.dismiss()
+            p.focusEditor()
+            return
+        }
+        WritingTools.isOn = true   // the panel works on the decorations: tools on
         p.open(onSelection: r, in: l)
     }
 
@@ -58,7 +74,7 @@ enum AlternativesAttach {
         guard enabled, let format = NSApp.mainMenu?.items.first(where: { $0.submenu?.title == L("Format") })?.submenu,
               !format.items.contains(where: { $0.title == addTitle }) else { return }
         format.addItem(.separator())
-        format.addItem(ClosureMenuItem(addTitle, key: "a", modifiers: [.option]) { addAlternative() })
+        format.addItem(ClosureMenuItem(addTitle, key: "a", modifiers: [.option]) { addAlternative(fromKey: NSApp.currentEvent?.type == .keyDown) })
         format.addItem(ClosureMenuItem(toggleTitle) { toggle() })
     }
 }

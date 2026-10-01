@@ -406,9 +406,9 @@ final class ShellRootView: FlippedView {
         sidebar.frame = CGRect(x: 0, y: 0, width: max(vw, showSidebar ? S : (sidebarAnimation?.fromWidth ?? vw)), height: H)
         let areaX = vw
         area.frame = CGRect(x: areaX, y: 0, width: W - areaX, height: H)
-        // Flowriter: the Overflow panel runs the full window height, so the backing stops where it starts
-        let panelReserve = area.activeFilePane?.overflow?.reservedWidth ?? 0
-        tabBacking.frame = CGRect(x: areaX, y: 0, width: max(0, W - areaX - panelReserve), height: Metrics.tabBackingHeight)
+        // Flowriter: the side panels run the full window height, so the backing stops where they start
+        tabBacking.frame = Self.tabBackingFrame(areaX: areaX, width: W, left: area.alternativesPanel?.reservedWidth ?? 0,
+                                                right: area.activeFilePane?.overflow?.reservedWidth ?? 0)
         tabBlur.frame = tabBacking.frame
         tabBacking.fillColor = model.palette_.bg
         collapsedToggle.isHidden = showSidebar || compact
@@ -432,6 +432,15 @@ final class ShellRootView: FlippedView {
         tabBacking.isHidden = showWelcome
         tabBlur.isHidden = showWelcome || opaqueBase
         welcome.needsDisplay = true
+    }
+
+    /// Flowriter: the title band's backing (the page colour under the traffic lights, the file name
+    /// and the count) between the open side panels: `left` is the Alternatives panel's width at the
+    /// area's left edge, `right` the Overflow panel's at the window's right edge. Their tint and
+    /// hairline run up to the window top, so the band never reads as a strip of its own.
+    static func tabBackingFrame(areaX: CGFloat, width W: CGFloat, left: CGFloat, right: CGFloat) -> CGRect {
+        let x0 = areaX + max(0, left)
+        return CGRect(x: x0, y: 0, width: max(0, W - x0 - max(0, right)), height: Metrics.tabBackingHeight)
     }
 
     // MARK: sidebar animation (app-layout.tsx: width/left 140ms ease-out)

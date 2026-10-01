@@ -7,7 +7,7 @@
 #   ... 'scripts/all-vm-suites.sh quiet launch'          only these suites (names below, perf too)
 #   ... 'SUITE_TIMEOUT=120 scripts/all-vm-suites.sh'     per-suite time limit in seconds (default 600)
 # integrity (light + dark), quiet, launch, ghost + restart-ghost (light, dark), alternatives
-# (light, dark), overflow + restart-overflow + overflow-typing
+# (light, dark), alt-panel (light, dark), overflow + restart-overflow + overflow-typing
 # + restart-overflow-typing + overflow-shots (light, dark), combined + restart-combined
 # (light, dark), panels (light, dark), writing-ui (light, dark),
 # integrity-reading (the integrity suite in the reading view), view-toggles + restart-view-toggles
@@ -104,6 +104,7 @@ suite launch zsh -c 'scripts/launch-vm-test.sh | tee /dev/stderr | grep -q "post
 suite ghost-light env FLO_TEST_APPEARANCE=light scripts/ui-vm-test.sh ghost restart-ghost
 suite ghost-dark env FLO_TEST_APPEARANCE=dark scripts/ui-vm-test.sh ghost restart-ghost
 suite alternatives scripts/alternatives-vm-test.sh
+suite alt-panel scripts/alt-panel-vm-test.sh
 suite overflow scripts/ui-vm-test.sh overflow restart-overflow overflow-typing restart-overflow-typing
 suite overflow-shots-light env FLO_TEST_APPEARANCE=light scripts/ui-vm-test.sh overflow-shots
 suite overflow-shots-dark env FLO_TEST_APPEARANCE=dark scripts/ui-vm-test.sh overflow-shots
