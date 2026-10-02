@@ -1,9 +1,6 @@
 import AppKit
-import AVFoundation
-import CoreMedia
 import FloCore
 import FloKit
-import ScreenCaptureKit
 
 /// Flowriter: the README hero shots and demo video. VM only, like every window test:
 /// scripts/readme-media-vm.sh runs it on Tests/fixtures/readme-media/first-draft.md once per
@@ -15,10 +12,10 @@ import ScreenCaptureKit
 ///                  step through them with Up, click back into the page, open Overflow (⌥O), stash
 ///                  a sentence (⌘K s). Window stills (screencapture -o -l): readme-hero-<appearance>.png
 ///                  (ghost + Alternatives panel) and readme-hero-all-<appearance>.png (Overflow too).
-///                  With FLO_README_VIDEO=1 the window is recorded the whole time: a ScreenCaptureKit
-///                  stream of this one window into readme-demo.mov, or, when the stream is refused,
-///                  frames the app renders itself (cacheDisplay, 15 fps) into readme-frames/ with
-///                  their times in readme-frames/times.txt.
+///                  With FLO_README_VIDEO=1 the window is recorded the whole time as frames the app
+///                  renders itself (cacheDisplay, 15 fps) into readme-frames/ with their times in
+///                  readme-frames/times.txt. No screen recording: it would put the system's recording
+///                  badge on the window and link ScreenCaptureKit into the shipped app.
 @MainActor
 enum ReadmeMediaScenarios {
     typealias T = SelfTestRunner
@@ -81,11 +78,18 @@ enum ReadmeMediaScenarios {
         ctx.c.textView.setSelectedRange(r)
     }
 
+    /// Stills show an active window (colored traffic lights), whatever the VM session did meanwhile.
+    static func frontmost(_ ctx: Ctx, _ w: NSWindow) async {
+        NSApp.activate(ignoringOtherApps: true)
+        w.makeKeyAndOrderFront(nil)
+        await settle(ctx, 0.3)
+    }
+
     static func shots(_ ctx: Ctx) async {
         guard let w = ctx.wc.window, let ov = ctx.pane.overflow else { T.expect(false, "window and Overflow controller"); return }
         UserDefaults.standard.removeObject(forKey: OverflowSidecarStore.openKey(ctx.file))
         ov.setOpen(false, animated: false)
-        // 1320 x 860 pt, top left of the visible screen (the window stills and the stream are window only)
+        // 1320 x 860 pt, top left of the visible screen (the stills and the frames are window only)
         let vis = (w.screen ?? NSScreen.main)!.visibleFrame
         let size = NSSize(width: min(1320, vis.width - 40), height: min(860, vis.height - 20))
         w.setFrame(NSRect(x: vis.minX + 20, y: vis.maxY - size.height - 10, width: size.width, height: size.height), display: true)
@@ -94,6 +98,7 @@ enum ReadmeMediaScenarios {
         ctx.c.textView.setSelectedRange(NSRange(location: 0, length: 0))
         await settle(ctx, 1.0)
 
+        await frontmost(ctx, w)   // the first frame already shows an active window
         let rec = ProcessInfo.processInfo.environment["FLO_README_VIDEO"] == "1" ? WindowRecorder(window: w, out: ctx.out) : nil
         await rec?.start()
         await settle(ctx, 1.4)
@@ -139,9 +144,18 @@ enum ReadmeMediaScenarios {
             await settle(ctx, 0.9)
         }
         T.expect(text(ctx).contains("come \(versions.last!)"), "the page shows \"\(versions.last!)\"")
-        AltPanelScenarios.clickText(ctx, "Some days", offset: 2)
+        AltPanelScenarios.clickText(ctx, versions.last!, offset: 10)   // inside the alternative, so the panel keeps its versions
         await settle(ctx, 0.9)
-        T.expect(panel.isOpen && w.firstResponder === ctx.c.textView, "a click in the page: focus in the page, the panel stays open")
+        if w.firstResponder !== ctx.c.textView {
+            // The click itself is covered by the alt-panel suite; here the demo only needs the caret back in the page.
+            T.log("click left focus on \(w.firstResponder.map { String(describing: type(of: $0)) } ?? "nil"), panel open \(panel.isOpen); focusing the page")
+            w.makeFirstResponder(ctx.c.textView)
+            let at = text(ctx).range(of: versions.last!).location
+            if at != NSNotFound { ctx.c.textView.setSelectedRange(NSRange(location: at + 10, length: 0)) }
+            await settle(ctx, 0.5)
+        }
+        T.expect(panel.isOpen && w.firstResponder === ctx.c.textView, "back in the page: focus in the page, the panel stays open")
+        await frontmost(ctx, w)
         T.screenshot(ctx, "readme-hero-\(appearance).png")
         await settle(ctx, 0.4)
 
@@ -157,19 +171,19 @@ enum ReadmeMediaScenarios {
         await settle(ctx, 1.0)
         T.expect(ov.text.contains(stash), "⌘K s stashed the sentence in Overflow")
         await settle(ctx, 1.6)
+        await frontmost(ctx, w)
         T.screenshot(ctx, "readme-hero-all-\(appearance).png")
         await settle(ctx, 0.6)
         await rec?.stop()
     }
 }
 
-/// The demo window on video, window only. A ScreenCaptureKit stream of this window when the system
-/// allows it; otherwise frames the app renders itself (cacheDisplay of the window frame view).
+/// The demo window on video, window only: frames the app renders itself (cacheDisplay of the window
+/// frame view), so no screen recording permission and no recording badge.
 @MainActor
 final class WindowRecorder {
     let window: NSWindow
     let out: String
-    private var stream: StreamWriter?
     private var timer: Timer?
     private var frameIndex = 0
     private var times: [String] = []
@@ -179,16 +193,10 @@ final class WindowRecorder {
     init(window: NSWindow, out: String) { self.window = window; self.out = out }
 
     func start() async {
-        let sw = StreamWriter()
-        if await sw.start(windowNumber: CGWindowID(window.windowNumber), url: URL(fileURLWithPath: (out as NSString).appendingPathComponent("readme-demo.mov"))) {
-            stream = sw
-            SelfTestRunner.log("video: ScreenCaptureKit stream of window \(window.windowNumber)")
-            return
-        }
         let dir = (out as NSString).appendingPathComponent("readme-frames")
         try? FileManager.default.removeItem(atPath: dir)
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
-        SelfTestRunner.log("video: stream refused, rendering frames into \(dir)")
+        SelfTestRunner.log("video: rendering frames into \(dir)")
         t0 = Date()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 15, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.frame(dir) }
@@ -211,9 +219,9 @@ final class WindowRecorder {
     }
 
     func stop() async {
-        if let s = stream { await s.stop(); return }
         timer?.invalidate()
         for _ in 0..<6 { while inFlight.wait(timeout: .now()) != .success { await SelfTestRunner.pause(0.02) } }   // every frame written
+        for _ in 0..<6 { inFlight.signal() }   // a semaphore freed below its start value traps
         let dir = (out as NSString).appendingPathComponent("readme-frames")
         times.append(String(format: "end %.4f", Date().timeIntervalSince(t0)))
         try? times.joined(separator: "\n").appending("\n").write(toFile: (dir as NSString).appendingPathComponent("times.txt"), atomically: true, encoding: .utf8)
@@ -224,76 +232,4 @@ final class WindowRecorder {
 private final class RepBox: @unchecked Sendable {
     let rep: NSBitmapImageRep
     init(_ rep: NSBitmapImageRep) { self.rep = rep }
-}
-
-/// ScreenCaptureKit stream of one window into an H.264 .mov (30 fps at the backing scale, no cursor,
-/// no audio, no shadow).
-private func streamLog(_ s: String) { FileHandle.standardOutput.write("selftest: \(s)\n".data(using: .utf8)!) }
-
-private final class StreamWriter: NSObject, SCStreamOutput, @unchecked Sendable {
-    private var stream: SCStream?
-    private var writer: AVAssetWriter?
-    private var input: AVAssetWriterInput?
-    private var started = false
-    private var frames = 0
-    private let queue = DispatchQueue(label: "flowriter.readme.frames")
-
-    func start(windowNumber: CGWindowID, url: URL) async -> Bool {
-        do {
-            let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
-            guard let w = content.windows.first(where: { $0.windowID == windowNumber }) else {
-                streamLog("video: ScreenCaptureKit does not list window \(windowNumber)"); return false
-            }
-            let filter = SCContentFilter(desktopIndependentWindow: w)
-            let config = SCStreamConfiguration()
-            let scale = CGFloat(filter.pointPixelScale)
-            config.width = Int(w.frame.width * scale) & ~1
-            config.height = Int(w.frame.height * scale) & ~1
-            config.minimumFrameInterval = CMTime(value: 1, timescale: 30)
-            config.showsCursor = false
-            config.capturesAudio = false
-            config.pixelFormat = kCVPixelFormatType_32BGRA
-            config.ignoreShadowsSingleWindow = true
-            try? FileManager.default.removeItem(at: url)
-            let writer = try AVAssetWriter(outputURL: url, fileType: .mov)
-            let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
-                AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: config.width, AVVideoHeightKey: config.height,
-                AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 16_000_000],
-            ])
-            input.expectsMediaDataInRealTime = true
-            writer.add(input)
-            guard writer.startWriting() else { streamLog("video: writer failed \(String(describing: writer.error))"); return false }
-            self.writer = writer
-            self.input = input
-            let stream = SCStream(filter: filter, configuration: config, delegate: nil)
-            try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: queue)
-            try await stream.startCapture()
-            self.stream = stream
-            streamLog("video: \(config.width)x\(config.height) px")
-            return true
-        } catch {
-            streamLog("video: ScreenCaptureKit refused: \(error.localizedDescription)")
-            return false
-        }
-    }
-
-    func stream(_ stream: SCStream, didOutputSampleBuffer sb: CMSampleBuffer, of type: SCStreamOutputType) {
-        guard type == .screen, sb.isValid,
-              let att = CMSampleBufferGetSampleAttachmentsArray(sb, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
-              let raw = att.first?[.status] as? Int, SCFrameStatus(rawValue: raw) == .complete,
-              let writer = writer, let input = input else { return }
-        if !started { writer.startSession(atSourceTime: sb.presentationTimeStamp); started = true }
-        if input.isReadyForMoreMediaData, input.append(sb) { frames += 1 }
-    }
-
-    func stop() async {
-        try? await stream?.stopCapture()
-        await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
-            queue.async {
-                self.input?.markAsFinished()
-                if let w = self.writer { w.finishWriting { c.resume() } } else { c.resume() }
-            }
-        }
-        streamLog("video: stopped, \(frames) frames, writer status \(writer?.status.rawValue ?? -1)")
-    }
 }

@@ -7,6 +7,11 @@ losing any of it.
 Flowriter is Swift, AppKit and TextKit 2, with no web view in the editing
 path. It works offline: no account, no network calls, no AI.
 
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/media/flowriter-light.png">
+  <img src="docs/media/flowriter-dark.png" alt="Flowriter window with a Markdown draft titled A quiet first draft. The last line is ghosted, and the Alternatives panel on the left lists three versions of a phrase." width="760">
+</picture>
+
 ## Features
 
 - **Ghost**: fade a sentence instead of deleting it. It stays in the file, out
@@ -25,6 +30,12 @@ path. It works offline: no account, no network calls, no AI.
 
 Ghosts, alternatives and overflow live in a small sidecar file next to the
 document (`.<name>.md.flowriter.json`). The Markdown file itself stays plain.
+
+## Demo
+
+![Typing a line, ghosting it with Option G, adding two versions of a word with Option A, then opening Overflow with Option O and stashing a sentence into it.](docs/media/demo.gif)
+
+The same demo as a video: [demo.mp4](docs/media/demo.mp4) (25 seconds).
 
 ## Build
 

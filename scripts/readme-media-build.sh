@@ -25,7 +25,7 @@ for mode in dark light; do
   echo "flowriter-$mode.png: $(sips -g pixelWidth -g pixelHeight "$DEST/flowriter-$mode.png" | awk '/pixel/{printf "%s ", $2}')px, $(stat -f %z "$DEST/flowriter-$mode.png") bytes (source $(stat -f %z "$src"))"
 done
 
-# 2. video: the ScreenCaptureKit .mov, or the app-rendered frames with their real times
+# 2. video: the app-rendered frames with their real times (a readme-demo.mov from an older run is used only if no frames exist)
 if [[ -f $IN/readme-demo.mov ]]; then
   SRC=(-i "$IN/readme-demo.mov")
 else

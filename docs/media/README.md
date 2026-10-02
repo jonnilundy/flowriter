@@ -48,11 +48,13 @@ real key events through the self test path: the window's key monitor, then the w
    Still: `readme-hero-all-<appearance>.png`.
 
 Stills are `screencapture -o -l <window number>`: the window only, without its shadow.
-With `FLO_README_VIDEO=1` the window is recorded the whole time with a ScreenCaptureKit
-stream of that one window (a desktop independent filter, so no wallpaper, menu bar,
-cursor or other windows). When the system refuses the stream, the app renders its own
-frames instead (`cacheDisplay` of the window frame view, 15 fps, real times in
-`readme-frames/times.txt`), and the build script assembles them at those times.
+With `FLO_README_VIDEO=1` the window is recorded the whole time as frames the app renders
+itself (`cacheDisplay` of the window frame view, 15 fps, real times in
+`readme-frames/times.txt`), and the build script assembles them at those times. There is no
+screen recording: it would put the system's recording badge on the window, and it would link
+ScreenCaptureKit into the shipped app. The click back into the page (step 4) lands inside the
+alternative, so the panel keeps showing its versions. The window is made active before
+recording and before each still, so the traffic lights show their colors.
 
 ## Isolation
 
