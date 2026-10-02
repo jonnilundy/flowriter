@@ -29,4 +29,27 @@ public enum CodeCommands {
         t.dispatch(spec)
         return true
     }
+
+    /// Multi-line text pasted at `pos` in a fenced block inside a list item: every line after the
+    /// first gets the block's content indent (the fence's column) on top of its own indent, or a line
+    /// with less indent ends the list item and the block with it. Empty lines stay empty. Anywhere
+    /// else (a top-level block, a block in a quote, prose) the text is unchanged.
+    public static func indentPaste(_ text: String, state: EditorState, at pos: Int) -> String {
+        guard text.contains("\n") else { return text }
+        var fence: SyntaxNode?
+        state.tree.iterate(from: pos, to: pos, enter: { n, _ in
+            if fence != nil { return false }
+            if n.name == "FencedCode" && n.from <= pos && pos <= n.to { fence = n; return false }
+            return true
+        })
+        guard let f = fence else { return text }
+        var inItem = false, inQuote = false
+        var p = f.parent
+        while let q = p { if q.name == "ListItem" { inItem = true }; if q.name == "Blockquote" { inQuote = true }; p = q.parent }
+        let column = f.from - state.doc.lineAt(f.from).from
+        guard inItem, !inQuote, column > 0 else { return text }
+        let indent = String(repeating: " ", count: column)
+        let lines = text.components(separatedBy: "\n")
+        return lines.enumerated().map { i, l in i == 0 || l.isEmpty ? l : indent + l }.joined(separator: "\n")
+    }
 }

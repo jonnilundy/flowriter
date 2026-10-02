@@ -194,7 +194,12 @@ extension EditorFeatures {
         case "paste", "paste-plain":
             // readText(): plain text only, no image/HTML handling
             guard let text = pasteboard.string(forType: .string), !text.isEmpty else { return }
-            c.run { t in t.dispatch(t.state.replaceSelection(text)); return true }
+            c.run { t in
+                let st = t.state
+                // Flowriter: into a code block inside a list item, the lines keep the block's indent
+                let fitted = st.selection.ranges.count == 1 ? CodeCommands.indentPaste(text, state: st, at: st.selection.main.from) : text
+                t.dispatch(st.replaceSelection(fitted)); return true
+            }
         case "select-all":
             c.run { t in t.dispatch(TransactionSpec(selection: .single(0, t.state.doc.length))); return true }
         case "open-link":

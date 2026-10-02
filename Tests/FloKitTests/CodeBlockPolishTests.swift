@@ -273,4 +273,57 @@ extension CodeBlockRenderTests {
         eq(run("```\n    foo\n```", .cursor(10), ["Shift-Tab"]), ("```\n  foo\n```", 8, 8), "Shift Tab outdents")
         eq(run("text", .cursor(2), ["Tab"]), ("  text", 4, 4), "prose: the line, as before")
     }
+
+    /// The text a paste gives, through the paste chain (⌘V) and through Paste as plain text.
+    func pasted(_ doc: String, at pos: Int, _ text: String) -> (chain: String, plain: String) {
+        let r = KeyReplayer(width: 1000, height: 600)
+        r.load(doc, selection: .cursor(pos))
+        r.controller.features.paste(PastePayload(plain: text))
+        let r2 = KeyReplayer(width: 1000, height: 600)
+        r2.load(doc, selection: .cursor(pos))
+        let pb = NSPasteboard(name: NSPasteboard.Name("flo-test-\(UUID().uuidString)"))
+        pb.clearContents(); pb.setString(text, forType: .string)
+        r2.controller.features.performMenuAction("paste-plain", pasteboard: pb)
+        pb.releaseGlobally()
+        return (r.doc, r2.doc)
+    }
+
+    /// Whether the fenced block that opens at `fence` still runs to the closing fence at the end of
+    /// `doc`, inside a list item.
+    func blockIntact(_ doc: String, fence: Int) -> Bool {
+        let st = EditorState(doc: Text(doc), selection: .cursor(0))
+        var ok = false
+        st.tree.iterate(enter: { n, _ in
+            if n.name == "FencedCode", n.from == fence {
+                var p = n.parent, inItem = false
+                while let q = p { if q.name == "ListItem" { inItem = true }; p = q.parent }
+                ok = inItem && n.to == st.doc.length
+            }
+            return true
+        })
+        return ok
+    }
+
+    /// Multi-line code pasted into a block inside a list item: every line after the first gets the
+    /// block's content indent (on top of its own), so the block and the item stay whole. Before,
+    /// "let c = 3" landed at column 0, which ends the list item and with it the block.
+    func testMultiLinePasteIntoListItemBlockKeepsItsIndent() {
+        let code = "let a = 1\n  let b = 2\n\nlet c = 3"
+        let doc = "- item\n  ```\n  \n  ```"
+        let want = "- item\n  ```\n  let a = 1\n    let b = 2\n\n  let c = 3\n  ```"
+        let p = pasted(doc, at: 15, code)
+        XCTAssertEqual(p.chain, want, "⌘V")
+        XCTAssertEqual(p.plain, want, "Paste as plain text")
+        XCTAssertTrue(blockIntact(want, fence: 9), "the block runs to its closing fence inside the item")
+        XCTAssertFalse(blockIntact("- item\n  ```\n  let a = 1\n  let b = 2\n\nlet c = 3\n  ```", fence: 9), "(the old result breaks the block)")
+        // a nested item: the fence's column (6) is the indent
+        let nested = "- a\n    - ```ts\n      \n      ```"
+        XCTAssertEqual(pasted(nested, at: 22, "x\ny").chain, "- a\n    - ```ts\n      x\n      y\n      ```", "nested item")
+        // mid line: the first line goes at the caret, the rest indented
+        XCTAssertEqual(pasted("- item\n  ```\n  foo()\n  ```", at: 19, "a\nb").chain, "- item\n  ```\n  foo(a\n  b)\n  ```", "mid line")
+        // unchanged: a top-level block, a single line, prose in a list item
+        XCTAssertEqual(pasted("```\n\n```", at: 4, code).chain, "```\n" + code + "\n```", "top-level block")
+        XCTAssertEqual(pasted(doc, at: 15, "one line").chain, "- item\n  ```\n  one line\n  ```", "one line")
+        XCTAssertEqual(pasted("- item text", at: 11, "a\nb").chain, "- item texta\nb", "prose in a list item")
+    }
 }
