@@ -95,9 +95,12 @@ extension EditorFeatures {
         editor.reloadImages()
     }
 
-    /// `handleRichTextPaste`.
+    /// `handleRichTextPaste`. Not in code (Flowriter): code copied from a web page carries a `<pre>`,
+    /// and its Markdown form (a fenced block) pasted into a code block closed the block early.
     func pasteRichText(_ p: PastePayload) -> Bool {
         guard let html = p.html, !html.isEmpty, HTMLToMarkdown.isWorthConverting(html) else { return false }
+        let sel = editor.state.selection.main
+        if editor.touchesCode(NSRange(location: sel.from, length: sel.to - sel.from)) { return false }
         let md = HTMLToMarkdown.convert(html)
         if md.isEmpty { return false }
         if md == (p.plain ?? "") { return false }
@@ -120,6 +123,9 @@ extension EditorFeatures {
                     let line = lines[i]; i += 1
                     return ([Change(from: r.from, to: r.to, insert: line)], .cursor(r.from + line.utf16.count))
                 }
+            } else if st.selection.ranges.count == 1 {
+                // Flowriter: into a code block inside a list item, the lines keep the block's indent
+                spec = st.replaceSelection(CodeCommands.indentPaste(text, state: st, at: st.selection.main.from))
             } else {
                 spec = st.replaceSelection(text)
             }

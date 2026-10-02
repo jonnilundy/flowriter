@@ -386,14 +386,23 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
 
     public var text: String { state.doc.string }
 
+    /// The trailing empty line's style when it is in a code block left open at the end of the
+    /// document, else nil (AttributeApplier.trailingCode).
+    var trailingCode: LineStyle?
+
     /// The trailing empty line after a final newline has no characters to carry
     /// attributes; TextKit lays it out with the typing attributes, so give those
-    /// the body paragraph box (else the caret sits at the far left).
+    /// the body paragraph box (else the caret sits at the far left), or the code
+    /// line's when the line is inside an open code block (else the caret sits at
+    /// the code box's edge, left of the code text).
     func applyDefaultParagraphStyle() {
         let para = NSMutableParagraphStyle()
         let lineH = theme.baseSize * theme.lineHeight
         para.minimumLineHeight = lineH; para.maximumLineHeight = lineH
-        para.firstLineHeadIndent = applier.gutter; para.headIndent = applier.gutter
+        let inset = trailingCode.map { applier.codeInset($0) } ?? 0
+        para.firstLineHeadIndent = applier.gutter + inset; para.headIndent = applier.gutter + inset
+        // the last row of the code box: its padding and gap (LayoutFragment draws the box's end)
+        if trailingCode != nil { para.paragraphSpacing = AttributeApplier.codeBoxGap + AttributeApplier.codeBoxPadding }
         textView.defaultParagraphStyle = para
         var attrs = textView.typingAttributes
         attrs[.paragraphStyle] = para
@@ -519,6 +528,17 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
         lineSigs = newSigs
         plan = newPlan
         renderCount += 1
+        let tail = applier.trailingCode(plan: newPlan, doc: doc)
+        if tail != trailingCode {
+            trailingCode = tail
+            applyDefaultParagraphStyle()
+            // the trailing line is laid out with the last paragraph: lay that out again
+            if doc.length > 0, let tlm = textView.textLayoutManager, let tcm = tlm.textContentManager,
+               let a = tcm.location(tcm.documentRange.location, offsetBy: doc.length - 1),
+               let r = NSTextRange(location: a, end: tcm.documentRange.endLocation) {
+                tlm.invalidateLayout(for: r)
+            }
+        }
     }
 
     // MARK: state <-> text storage
@@ -622,6 +642,31 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
             clampSelectionOutOfFolds(forward: fwd)
         }
         return true
+    }
+
+    /// Whether `range` touches code: a fenced code block's lines, or an indented code block or inline
+    /// code span. Code gets no spelling or grammar marks and no automatic substitutions (smart quotes,
+    /// dashes, text replacement, autocorrect), FloTextView.handleTextCheckingResults. Fenced lines are
+    /// read from the text storage (a character typed at a block's end carries its line's attributes
+    /// before the next render); the spans from the syntax tree, while it matches the storage.
+    public func touchesCode(_ range: NSRange) -> Bool {
+        guard let storage = textView.textStorage, storage.length > 0 else { return false }
+        let r = NSIntersectionRange(range, NSRange(location: 0, length: storage.length))
+        let probe = r.length > 0 ? r : NSRange(location: min(range.location, storage.length - 1), length: 1)
+        var fenced = false
+        storage.enumerateAttribute(.floLine, in: probe) { v, _, stop in
+            if let box = v as? LineBox, case .fencedCode = box.style.kind { fenced = true; stop.pointee = true }
+        }
+        if fenced { return true }
+        guard state.doc.length == storage.length else { return false }
+        var inside = false
+        state.tree.iterate(from: probe.location, to: NSMaxRange(probe), enter: { n, _ in
+            if inside { return false }
+            if ["InlineCode", "CodeBlock", "FencedCode"].contains(n.name),
+               n.from < NSMaxRange(probe), n.to > probe.location { inside = true; return false }
+            return true
+        })
+        return inside
     }
 
     /// Typed text. Plain inserts stay on the native NSTextView path (so text
@@ -1034,6 +1079,18 @@ public final class FloTextView: NSTextView {
         if !menu.items.isEmpty { menu.insertItem(.separator(), at: 0) }
         for it in items.reversed() { menu.insertItem(it, at: 0) }
         return menu
+    }
+
+    /// Spelling, grammar and substitution results that touch code are dropped: code is not prose
+    /// (EditorController.touchesCode). Dropping them also clears marks left from before the text
+    /// became code, since the checked range is cleared before the results are applied.
+    public override func handleTextCheckingResults(_ results: [NSTextCheckingResult], forRange range: NSRange,
+                                                   types checkingTypes: NSTextCheckingTypes,
+                                                   options: [NSSpellChecker.OptionKey: Any] = [:],
+                                                   orthography: NSOrthography, wordCount: Int) {
+        let kept = controller.map { c in results.filter { $0.resultType == .orthography || !c.touchesCode($0.range) } } ?? results
+        super.handleTextCheckingResults(kept, forRange: range, types: checkingTypes, options: options,
+                                        orthography: orthography, wordCount: wordCount)
     }
 
     /// NSTextView's own completion popup (Esc / F5) is replaced by the wiki autocomplete.

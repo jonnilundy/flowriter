@@ -33,10 +33,12 @@ final class CodeBlockRenderTests: XCTestCase {
     }
 
     /// Load `doc` in an offscreen editor with Flowriter's dark or light colours and draw it.
-    func shot(_ doc: String, _ sel: EditorSelection, dark: Bool, reading: Bool, keys: [String] = [], name: String) -> Shot {
+    func shot(_ doc: String, _ sel: EditorSelection, dark: Bool, reading: Bool, keys: [String] = [], name: String,
+              bulletSpacing: CGFloat? = nil) -> Shot {
         RenderPlanner.readingView = reading
         let r = KeyReplayer(width: 1000, height: 600)
         let t = r.controller.theme
+        if let b = bulletSpacing { t.bulletSpacing = b }   // Flowriter's is 4 (FlowriterSettings)
         if dark {
             t.foreground = NSColor(hex: "#EDEDED"); t.background = NSColor(hex: "#1B1A18")
             t.selectionOverride = NSColor(hex: "#ECAA7F").withAlphaComponent(0.32)
@@ -176,8 +178,13 @@ final class CodeBlockRenderTests: XCTestCase {
                             XCTAssertTrue(boxDrawn(s, line: n), "\(tag): box on line \(n)")
                         }
                         let frames = fragmentFrames(s)
+                        // one text line, plus the box's gap and padding above its first row and below its last
+                        // (TextKit drops the spacing after the document's last paragraph: the unclosed block)
+                        let lastRow = c.close ?? -1
+                        let edge = AttributeApplier.codeBoxGap + AttributeApplier.codeBoxPadding
                         for n in fences + c.content where n - 1 < frames.count {
-                            XCTAssertEqual(frames[n - 1].height, 27, accuracy: 0.5, "\(tag): line \(n) height")
+                            let h = 27 + (n == c.open ? edge : 0) + (n == lastRow ? edge : 0)
+                            XCTAssertEqual(frames[n - 1].height, h, accuracy: 0.5, "\(tag): line \(n) height")
                         }
                         // code text: drawn, not clear
                         for n in c.content {

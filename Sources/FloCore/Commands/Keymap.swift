@@ -54,6 +54,7 @@ public enum Keymap {
         bind("Backspace", ListCommands.listBackspace)
         bind("Mod-Backspace", ListCommands.listDeleteToContentStart)
         bind("Enter", ListCommands.listEnter)
+        bind("Tab", CodeCommands.tabInCode)   // Flowriter: in code, Tab types at the caret
         bind("Tab", OrderedListIndent.indent)
         bind("Shift-Tab", OrderedListIndent.outdent)
         bind("Tab", ListCommands.listIndent)

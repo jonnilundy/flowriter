@@ -85,6 +85,22 @@ final class AttributeApplier {
         return false
     }
 
+    /// Fenced code box: space outside it (above the first row, below the last) and padding inside it
+    /// (above the first row's text, below the last row's).
+    static let codeBoxGap: CGFloat = 8
+    static let codeBoxPadding: CGFloat = 4
+
+    /// The trailing empty line (after a final newline) has no characters to style: EditorController
+    /// gives it the typing attributes' paragraph box. Inside a code block left open at the end of the
+    /// document it takes the code line's inset (the 12 pt padding below), so the caret on it sits at
+    /// the code text, not at the box's edge.
+    func trailingCode(plan: RenderPlan, doc: Text) -> LineStyle? {
+        guard doc.length > 0, doc.lines == plan.lines.count, let ls = plan.lines.last,
+              doc.line(doc.lines).from == doc.length, case .fencedCode = ls.kind else { return nil }
+        return ls
+    }
+    func codeInset(_ ls: LineStyle) -> CGFloat { CGFloat(ls.paddingLeftCh) * theme.ch + (ls.blockquoteDepth == 0 ? 12 : 0) }
+
     func lineSignature(plan: RenderPlan, line: Line, index: Int) -> Int {
         var h = Hasher()
         h.combine(plan.lines[index])
@@ -451,6 +467,14 @@ final class AttributeApplier {
             break
         default:
             after = theme.paragraphSpacing
+        }
+        // Fenced code (Flowriter): the box keeps a gap from the line above and below (a list line's
+        // 4 pt bullet spacing left it butting against the bullet), and its first and last rows get
+        // padding inside the box so the fences do not sit on its edges. LayoutFragment draws the box
+        // over the padding, not over the gap. Depends on the block alone, never on the selection.
+        if blockWidget == nil, case .fencedCode(let first, let last) = ls.kind {
+            if first { before += Self.codeBoxGap + Self.codeBoxPadding }
+            if last { after += Self.codeBoxGap + Self.codeBoxPadding }
         }
         // Images: a block image is followed by an 8px gap; an inline image sits
         // on the baseline, growing the line box above the strut.

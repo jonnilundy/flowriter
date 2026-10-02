@@ -85,6 +85,7 @@ enum WritingMenu {
         guard c.textView.isContinuousSpellCheckingEnabled else { return nil }
         let s = c.state.doc.string as NSString
         guard s.length > 0, pos >= 0, pos <= s.length else { return nil }
+        if c.touchesCode(NSRange(location: pos, length: 0)) { return nil }   // code is not spell checked
         let para = s.paragraphRange(for: NSRange(location: min(pos, s.length - 1), length: 0))
         let p = s.substring(with: para)
         let local = pos - para.location
