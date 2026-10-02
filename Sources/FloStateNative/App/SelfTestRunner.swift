@@ -63,7 +63,7 @@ enum SelfTestRunner {
         }
         Task { @MainActor in
             // Flowriter: the integrity and space scenarios run in the writing space's document window
-            if FlowriterSpace.enabled && (["integrity", "space", "quiet", "combined", "restart-combined", "panels", "writing-menu", "hints", "hints-restart", "overflow-typing", "restart-overflow-typing"] + ViewTogglesScenarios.names + FileNameScenarios.names + DefaultLocationScenarios.names + RecentScenarios.names + SelectionBarScenarios.names + ToolsScenarios.names + AltPanelScenarios.names + OutlineScenarios.names).contains(scenario) { await model.editor.openCompactFile(file) }
+            if FlowriterSpace.enabled && (["integrity", "space", "quiet", "combined", "restart-combined", "panels", "writing-menu", "hints", "hints-restart", "overflow-typing", "restart-overflow-typing"] + ViewTogglesScenarios.names + FileNameScenarios.names + DefaultLocationScenarios.names + RecentScenarios.names + SelectionBarScenarios.names + ToolsScenarios.names + AltPanelScenarios.names + OutlineScenarios.names + ReadmeMediaScenarios.names).contains(scenario) { await model.editor.openCompactFile(file) }
             else { await model.openWorkspace(root, openFile: file, keepSession: false) }
             wc.flush()
             guard let pane = await waitFor(5, { wc.root.area.activeFilePane?.controller != nil ? wc.root.area.activeFilePane : nil }),
@@ -209,6 +209,7 @@ enum SelfTestScenarios {
             if await ToolsScenarios.run(name, ctx) { return }
             if await SelectionBarScenarios.run(name, ctx) { return }   // Flowriter: the selection bar (SelectionBarSelfTest.swift)   // Flowriter: the count is the tools switch (ToolsSwitchSelfTest.swift)
             if await runOverflowScenario(name, ctx) { return }   // Flowriter: Overflow
+            if await ReadmeMediaScenarios.run(name, ctx) { return }   // Flowriter: README hero shots and demo video (ReadmeMediaSelfTest.swift)
             T.log("unknown scenario \(name)"); T.failures.append("unknown scenario")
         }
     }
