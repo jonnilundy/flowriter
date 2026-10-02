@@ -245,4 +245,32 @@ extension CodeBlockRenderTests {
         XCTAssertEqual(run("- a\n    - b", 11, ["Enter", "t:```ts", "Enter", "t:x"]), "- a\n    - b\n    - ```ts\n      x", "fence on a nested item")
         XCTAssertEqual(run("- ```\n  code\n  ```", 19, ["Enter", "t:next"]), "- ```\n  code\n  ```\n  next", "after the closing fence: still the item's indent")
     }
+
+    // MARK: Tab and multi-line paste in code (approved follow-ups, 2026-10-02)
+
+    /// In a fenced code block, Tab with no selection puts 2 spaces at the caret (it indented the whole line
+    /// from its start, also with the caret mid line). A selection still indents its lines; Shift Tab
+    /// and Tab outside code are unchanged.
+    func testTabInCodeInsertsAtTheCaret() {
+        func run(_ doc: String, _ sel: EditorSelection, _ keys: [String]) -> (String, Int, Int) {
+            let r = KeyReplayer(width: 1000, height: 600)
+            r.load(doc, selection: sel)
+            for k in keys { r.press(k) }
+            return (r.doc, r.selection.main.from, r.selection.main.to)
+        }
+        func eq(_ a: (String, Int, Int), _ b: (String, Int, Int), _ m: String) {
+            XCTAssertEqual(a.0, b.0, m); XCTAssertEqual([a.1, a.2], [b.1, b.2], "\(m): selection")
+        }
+        eq(run("```\nfoo\n```", .cursor(6), ["Tab"]), ("```\nfo  o\n```", 8, 8), "mid line: at the caret")
+        eq(run("```\nfoo\n```", .cursor(7), ["Tab", "t:x"]), ("```\nfoo  x\n```", 10, 10), "line end: at the caret")
+        eq(run("```\nfoo\n```", .cursor(4), ["Tab"]), ("```\n  foo\n```", 6, 6), "line start")
+        eq(run("```\nfoo\n```", .cursor(4), ["Tab", "Tab"]), ("```\n    foo\n```", 8, 8), "twice")
+        eq(run("- item\n\n  ```\n  code", .cursor(20), ["Tab", "t:x"]), ("- item\n\n  ```\n  code  x", 23, 23), "block in a list item")
+        // indented code is left alone: "    * foo" is as often an over-indented list item (keys parity)
+        eq(run("Intro\n\n    indented code", .cursor(14), ["Tab"]), ("Intro\n\n      indented code", 16, 16), "indented code: the line, as before")
+        // unchanged: a selection indents its lines, Shift Tab outdents, prose indents the line
+        eq(run("```\nfoo\nbar\n```", .single(4, 11), ["Tab"]), ("```\n  foo\n  bar\n```", 6, 15), "selection indents lines")
+        eq(run("```\n    foo\n```", .cursor(10), ["Shift-Tab"]), ("```\n  foo\n```", 8, 8), "Shift Tab outdents")
+        eq(run("text", .cursor(2), ["Tab"]), ("  text", 4, 4), "prose: the line, as before")
+    }
 }
