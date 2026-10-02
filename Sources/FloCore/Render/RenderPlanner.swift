@@ -332,7 +332,10 @@ struct Planner {
                 if marksShown(n.from, n.to) { break }
                 for m in children(n, named: ["EscapeMark"]) { apply(m.from, m.to) { $0.hidden = .zeroSize } }
             case "FencedCode":
-                if !marksShown(n.from, n.to) {
+                // Reading view: the fence the selection is in keeps its marks, or a fence being typed
+                // (and its language) stays invisible and a selection on it paints an empty slab. The
+                // hidden marks keep their advance (.transparent), so showing them moves nothing.
+                if !marksShown(n.from, n.to) && !(marksHidden && selectionSharesLine(n.from, n.to)) {
                     for m in children(n, named: ["CodeMark", "CodeInfo"]) { apply(m.from, m.to) { $0.hidden = .transparent } }
                 }
             case "Blockquote":

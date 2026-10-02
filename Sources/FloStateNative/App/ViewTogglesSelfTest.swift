@@ -24,12 +24,13 @@ enum ViewTogglesScenarios {
     static var appearance: String { ProcessInfo.processInfo.environment["FLO_TEST_APPEARANCE"] ?? "light" }
     static let toolsKey = "viewToggleTestToolsWere"
     /// Run in the writing space's document window (SelfTestRunner.run).
-    static let names = ["view-toggles", "restart-view-toggles", "integrity-reading"]
+    static let names = ["view-toggles", "restart-view-toggles", "integrity-reading", "code-blocks"]
 
     static func run(_ name: String, _ ctx: Ctx) async -> Bool {
         switch name {
         case "view-toggles": await toggles(ctx)
         case "restart-view-toggles": await restart(ctx)
+        case "code-blocks": await codeBlocks(ctx)   // CodeBlockSelfTest.swift
         case "integrity-reading":
             ViewToggles.readingView = true
             await T.pause(0.3)
