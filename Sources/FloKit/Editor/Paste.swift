@@ -95,9 +95,12 @@ extension EditorFeatures {
         editor.reloadImages()
     }
 
-    /// `handleRichTextPaste`.
+    /// `handleRichTextPaste`. Not in code (Flowriter): code copied from a web page carries a `<pre>`,
+    /// and its Markdown form (a fenced block) pasted into a code block closed the block early.
     func pasteRichText(_ p: PastePayload) -> Bool {
         guard let html = p.html, !html.isEmpty, HTMLToMarkdown.isWorthConverting(html) else { return false }
+        let sel = editor.state.selection.main
+        if editor.touchesCode(NSRange(location: sel.from, length: sel.to - sel.from)) { return false }
         let md = HTMLToMarkdown.convert(html)
         if md.isEmpty { return false }
         if md == (p.plain ?? "") { return false }

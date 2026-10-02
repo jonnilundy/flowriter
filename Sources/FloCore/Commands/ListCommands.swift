@@ -87,6 +87,17 @@ public enum ListCommands {
 
     static func currentLineIndentLen(_ text: String) -> Int { CMText.leadingSpaceTab(text) }
 
+    /// Where a fenced code block opens on `line` (its first backtick or tilde), if one does.
+    static func fenceOpening(_ state: EditorState, _ line: Line) -> Int? {
+        var at: Int?
+        state.tree.iterate(from: line.from, to: line.to, enter: { node, _ in
+            if at != nil { return false }
+            if node.name == "FencedCode", node.from >= line.from, node.from <= line.to { at = node.from; return false }
+            return true
+        })
+        return at
+    }
+
     static func isOnListLine(_ state: EditorState, _ pos: Int) -> Bool {
         let line = state.doc.lineAt(pos)
         var found = false
@@ -233,6 +244,14 @@ public enum ListCommands {
         let sel = state.selection.main
         if !isOnListLine(state, sel.head) { return false }
         let line = state.doc.lineAt(sel.head)
+        // Flowriter: an item whose text opens a fenced code block ("- ```ts"): Enter goes into the
+        // block (the indent of the item's text), not to a new item
+        if let fence = fenceOpening(state, line), sel.head >= fence {
+            let indent = String(repeating: " ", count: fence - line.from)
+            t.dispatch(TransactionSpec(changes: [Change(from: sel.head, insert: "\n" + indent)],
+                                       selection: .single(sel.head + 1 + indent.utf16.count), userEvent: "input"))
+            return true
+        }
         if EMPTY_LIST_LINE_RE.test(line.text) {
             t.dispatch(TransactionSpec(changes: [Change(from: line.from, to: line.to)], selection: .single(line.from),
                                        userEvent: "delete.empty-list-marker"))

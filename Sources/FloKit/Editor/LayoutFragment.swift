@@ -45,7 +45,19 @@ final class FloLayoutFragment: NSTextLayoutFragment {
             let top = point.y + (para?.paragraphSpacingBefore ?? 0)
             let bottom = point.y + layoutFragmentFrame.height - (para?.paragraphSpacing ?? 0)
             switch ls.kind {
-            case .fencedCode(let first, let last), .tableSource(let first, let last):
+            case .fencedCode(let first, var last):
+                // The empty line after a final newline is laid out in the last paragraph's fragment;
+                // in a block left open at the end of the document it is the box's last row.
+                if editor.trailingCode != nil, let end = textElement?.elementRange?.endLocation,
+                   let docEnd = textLayoutManager?.documentRange.endLocation, end.compare(docEnd) != .orderedAscending {
+                    last = true
+                }
+                // the box covers its padding (part of the paragraph spacing, AttributeApplier)
+                let pad = AttributeApplier.codeBoxPadding
+                let y0 = top - (first ? pad : 0), y1 = bottom + (last ? pad : 0)
+                let rect = CGRect(x: columnLeft, y: y0, width: columnRight - columnLeft, height: y1 - y0)
+                fillRounded(rect, radius: 0.4 * theme.rem, top: first, bottom: last, color: theme.codeBackground)
+            case .tableSource(let first, let last):
                 let rect = CGRect(x: columnLeft, y: top, width: columnRight - columnLeft, height: bottom - top)
                 fillRounded(rect, radius: 0.4 * theme.rem, top: first, bottom: last, color: theme.codeBackground)
             default: break
