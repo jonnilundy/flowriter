@@ -35,6 +35,14 @@ final class CodeBlockRenderTests: XCTestCase {
     /// Load `doc` in an offscreen editor with Flowriter's dark or light colours and draw it.
     func shot(_ doc: String, _ sel: EditorSelection, dark: Bool, reading: Bool, keys: [String] = [], name: String,
               bulletSpacing: CGFloat? = nil) -> Shot {
+        let r = makeReplayer(dark: dark, reading: reading, bulletSpacing: bulletSpacing)
+        r.load(doc, selection: sel)
+        for k in keys { r.press(k) }
+        return capture(r, dark: dark, reading: reading, name: name)
+    }
+
+    /// An offscreen editor with Flowriter's dark or light colours (nothing loaded yet).
+    func makeReplayer(dark: Bool, reading: Bool, bulletSpacing: CGFloat? = nil) -> KeyReplayer {
         RenderPlanner.readingView = reading
         let r = KeyReplayer(width: 1000, height: 600)
         let t = r.controller.theme
@@ -50,8 +58,12 @@ final class CodeBlockRenderTests: XCTestCase {
         tv.drawsBackground = true
         tv.backgroundColor = t.background
         tv.selectedTextAttributes = [.backgroundColor: t.selectionColor]
-        r.load(doc, selection: sel)
-        for k in keys { r.press(k) }
+        return r
+    }
+
+    /// Draw the editor as it is now (cacheDisplay of the visible rect).
+    func capture(_ r: KeyReplayer, dark: Bool, reading: Bool, name: String) -> Shot {
+        let tv = r.controller.textView
         let tlm = tv.textLayoutManager!
         tlm.ensureLayout(for: tlm.documentRange)
         let rect = tv.visibleRect
@@ -178,13 +190,9 @@ final class CodeBlockRenderTests: XCTestCase {
                             XCTAssertTrue(boxDrawn(s, line: n), "\(tag): box on line \(n)")
                         }
                         let frames = fragmentFrames(s)
-                        // one text line, plus the box's gap and padding above its first row and below its last
-                        // (TextKit drops the spacing after the document's last paragraph: the unclosed block)
-                        let lastRow = c.close ?? -1
-                        let edge = AttributeApplier.codeBoxGap + AttributeApplier.codeBoxPadding
+                        // one text line each (the box's space and padding sit on the lines around it)
                         for n in fences + c.content where n - 1 < frames.count {
-                            let h = 27 + (n == c.open ? edge : 0) + (n == lastRow ? edge : 0)
-                            XCTAssertEqual(frames[n - 1].height, h, accuracy: 0.5, "\(tag): line \(n) height")
+                            XCTAssertEqual(frames[n - 1].height, 27, accuracy: 0.5, "\(tag): line \(n) height")
                         }
                         // code text: drawn, not clear
                         for n in c.content {
