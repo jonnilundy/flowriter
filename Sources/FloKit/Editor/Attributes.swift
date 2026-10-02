@@ -90,6 +90,16 @@ final class AttributeApplier {
     static let codeBoxGap: CGFloat = 8
     static let codeBoxPadding: CGFloat = 4
 
+    /// Whether line `index` sits right below a code box (its last row is the line above) and right
+    /// above one (its first row is the line below): it carries the box's space on that side.
+    func codeEdge(_ plan: RenderPlan, _ index: Int) -> (before: Bool, after: Bool) {
+        guard index >= 0, index < plan.lines.count else { return (false, false) }
+        var before = false, after = false
+        if index > 0, case .fencedCode(_, true) = plan.lines[index - 1].kind { before = true }
+        if index + 1 < plan.lines.count, case .fencedCode(true, _) = plan.lines[index + 1].kind { after = true }
+        return (before, after)
+    }
+
     /// The trailing empty line (after a final newline) has no characters to style: EditorController
     /// gives it the typing attributes' paragraph box. Inside a code block left open at the end of the
     /// document it takes the code line's inset (the 12 pt padding below), so the caret on it sits at
@@ -105,6 +115,8 @@ final class AttributeApplier {
         var h = Hasher()
         h.combine(plan.lines[index])
         h.combine(listFollowsText(plan, index))   // spacing depends on the line above
+        let edge = codeEdge(plan, index)            // and on a code box above or below
+        h.combine(edge.before); h.combine(edge.after)
         var i = runIndex(plan, line.from)
         // positions relative to the line, so lines that merely shifted keep their signature
         while i < plan.runs.count, plan.runs[i].from <= line.to {
@@ -469,13 +481,15 @@ final class AttributeApplier {
             after = theme.paragraphSpacing
         }
         // Fenced code (Flowriter): the box keeps a gap from the line above and below (a list line's
-        // 4 pt bullet spacing left it butting against the bullet), and its first and last rows get
-        // padding inside the box so the fences do not sit on its edges. LayoutFragment draws the box
-        // over the padding, not over the gap. Depends on the block alone, never on the selection.
-        if blockWidget == nil, case .fencedCode(let first, let last) = ls.kind {
-            if first { before += Self.codeBoxGap + Self.codeBoxPadding }
-            if last { after += Self.codeBoxGap + Self.codeBoxPadding }
-        }
+        // 4 pt bullet spacing left it butting against the bullet), and padding around its first and
+        // last rows' text. The space sits on the neighbouring lines, not on the code rows: the empty
+        // line after a final newline is laid out with the last paragraph's style whenever the caret
+        // is elsewhere, so space on a code row leaked into that line and moving the caret changed
+        // its height. LayoutFragment draws the padding part. Depends on the lines alone, never on
+        // the selection.
+        let edge = codeEdge(plan, index)
+        if edge.before { before += Self.codeBoxGap + Self.codeBoxPadding }
+        if edge.after { after += Self.codeBoxGap + Self.codeBoxPadding }
         // Images: a block image is followed by an 8px gap; an inline image sits
         // on the baseline, growing the line box above the strut.
         if blockImage != nil { after += 8 }

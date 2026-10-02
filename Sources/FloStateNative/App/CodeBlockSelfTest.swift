@@ -65,6 +65,7 @@ extension ViewTogglesScenarios {
         T.screenshot(ctx, "code-blocks-reading-typed-selected-\(look).png")
 
         await reportedUnderNestedList(ctx)
+        await typedKeyByKey(ctx)
 
         ViewToggles.readingView = false
         await relayout(ctx)
@@ -165,5 +166,83 @@ extension ViewTogglesScenarios {
         T.expect(checked != nil, "text checking ran over the code")
         T.expect(checked?.marked == false, "no spelling or grammar mark on dkfjsdfd")
         T.screenshot(ctx, "code-blocks-reported-checked-\(look).png")
+    }
+
+    /// Build 853fd18 (reported 2026-10-02, dark, reading view): ``` Enter sdkfsdf typed at the end,
+    /// no closing fence and no final newline: the box ended in the middle of the last line and the
+    /// caret stuck out below it. Typed one key at a time with the reading view on; after every key
+    /// the drawn text view (cacheDisplay) must have the box under each code line's whole line box
+    /// and its padding, and under the caret. Screenshots code-blocks-typed-{a,b-enter,b}-<appearance>.png.
+    static func typedKeyByKey(_ ctx: Ctx) async {
+        let c = ctx.c, tv = c.textView
+        let look = appearance
+        ViewToggles.readingView = true
+        func text() -> NSString { c.state.doc.string as NSString }
+        // a fresh document: ⌘A, Backspace (logged: what a writer gets), then clear what is left
+        T.key(ctx, "a", code: 0, mods: [.command])
+        T.backspace(ctx)
+        await relayout(ctx)
+        T.log("after ⌘A Backspace in the reading view: \((text() as String).debugDescription)")
+        c.run { t in t.dispatch(TransactionSpec(changes: [Change(from: 0, to: t.state.doc.length, insert: "")], selection: .cursor(0))); return true }
+        T.type(ctx, "Intro paragraph")
+        T.key(ctx, "\r", code: 36)
+        T.key(ctx, "\r", code: 36)
+        await relayout(ctx)
+        T.expect(text() as String == "Intro paragraph\n\n", "fresh document: \((text() as String).debugDescription)")
+
+        func caretRect(_ pos: Int) -> CGRect? {
+            guard let tlm = tv.textLayoutManager, let tcm = tlm.textContentManager,
+                  let loc = tcm.location(tcm.documentRange.location, offsetBy: pos) else { return nil }
+            var rect: CGRect?
+            tlm.enumerateTextSegments(in: NSTextRange(location: loc), type: .selection, options: [.rangeNotRequired]) { _, r, _, _ in rect = r; return false }
+            return rect?.offsetBy(dx: tv.textContainerOrigin.x, dy: tv.textContainerOrigin.y)
+        }
+        /// Every line of the open block (from the fence to the end) and the caret: box drawn above,
+        /// on and below them, with 4 pt of padding past the first and last rows.
+        func check(_ step: String) -> Bool {
+            let doc = c.state.doc
+            guard let fenceAt = Optional(text().range(of: "```", options: .backwards).location), fenceAt != NSNotFound else { return true }
+            let first = doc.lineAt(fenceAt).number
+            let rect = tv.visibleRect
+            guard let rep = tv.bitmapImageRepForCachingDisplay(in: rect) else { return false }
+            tv.cacheDisplay(in: rect, to: rep)
+            let scale = CGFloat(rep.pixelsWide) / rect.width
+            func rgb(_ x: CGFloat, _ y: CGFloat) -> (Int, Int, Int) {
+                let col = rep.colorAt(x: Int((x - rect.minX) * scale), y: Int((y - rect.minY) * scale))?.usingColorSpace(.sRGB) ?? .black
+                return (Int(col.redComponent * 255), Int(col.greenComponent * 255), Int(col.blueComponent * 255))
+            }
+            let page = rgb(rect.minX + 2, rect.minY + 2)
+            let x = tv.textContainerOrigin.x + (tv.textContainer?.size.width ?? 0) - 6
+            func inBox(_ y: CGFloat) -> Bool { let p = rgb(x, y); return max(abs(p.0 - page.0), abs(p.1 - page.1), abs(p.2 - page.2)) > 5 }
+            var bad: [String] = []
+            for n in first...doc.lines {
+                guard let r = caretRect(doc.line(n).from) else { continue }
+                var y = r.minY + 0.5
+                while y < r.maxY { if !inBox(y) { bad.append("line \(n) at y \(y)"); break }; y += 1 }
+                if n == first && !inBox(r.minY - 3) { bad.append("no padding above line \(n)") }
+                if n == doc.lines && !inBox(r.maxY + 3) { bad.append("no padding below line \(n)") }
+            }
+            if let car = caretRect(c.state.selection.main.head), !(inBox(car.minY + 1) && inBox(car.maxY - 1)) { bad.append("caret outside the box") }
+            if !bad.isEmpty { T.log("\(step): \(bad.joined(separator: ", "))") }
+            return bad.isEmpty
+        }
+        var failed: [String] = []
+        func key(_ ch: String, _ code: UInt16 = 0) async {
+            T.key(ctx, ch, code: ch == " " ? 49 : code)
+            await relayout(ctx)
+            let step = "after \((text() as String).suffix(12).debugDescription)"
+            if !check(step) { failed.append(step) }
+        }
+        for ch in "```" { await key(String(ch), 50) }
+        await key("\r", 36)
+        for ch in "sdkfsdf" { await key(String(ch)) }
+        T.expect(text().hasSuffix("```\nsdkfsdf"), "sequence a typed: \((text() as String).suffix(20).debugDescription)")
+        T.screenshot(ctx, "code-blocks-typed-a-\(look).png")
+        await key("\r", 36)
+        T.screenshot(ctx, "code-blocks-typed-b-enter-\(look).png")
+        for ch in "second" { await key(String(ch)) }
+        T.expect(text().hasSuffix("```\nsdkfsdf\nsecond"), "sequence b typed: \((text() as String).suffix(24).debugDescription)")
+        T.screenshot(ctx, "code-blocks-typed-b-\(look).png")
+        T.expect(failed.isEmpty, "reading view, key by key: the box holds every code line and the caret after all 15 keys (\(failed.count) failed: \(failed.prefix(3).joined(separator: "; ")))")
     }
 }

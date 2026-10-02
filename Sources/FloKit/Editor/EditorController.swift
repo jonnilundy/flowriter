@@ -401,8 +401,9 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
         para.minimumLineHeight = lineH; para.maximumLineHeight = lineH
         let inset = trailingCode.map { applier.codeInset($0) } ?? 0
         para.firstLineHeadIndent = applier.gutter + inset; para.headIndent = applier.gutter + inset
-        // the last row of the code box: its padding and gap (LayoutFragment draws the box's end)
-        if trailingCode != nil { para.paragraphSpacing = AttributeApplier.codeBoxGap + AttributeApplier.codeBoxPadding }
+        // No paragraph spacing: the box's padding under this row is drawn from the text line
+        // (LayoutFragment), and TextKit applied the spacing only when the last paragraph happened to
+        // be laid out again, so moving the caret changed the height of a block open at the end.
         textView.defaultParagraphStyle = para
         var attrs = textView.typingAttributes
         attrs[.paragraphStyle] = para
@@ -482,7 +483,9 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
             }
             let edited = editedLines
             for r in dirty {
-                for i in r where i < doc.lines {
+                // one line around each re-planned range too: a line's spacing depends on its
+                // neighbours (a code box above or below it, AttributeApplier.codeEdge)
+                for i in max(0, r.lowerBound - 1)..<max(0, min(doc.lines, r.upperBound + 1)) {
                     let sig = applier.lineSignature(plan: newPlan, line: doc.line(i + 1), index: i)
                     if sig != newSigs[i] || edited?.contains(i) == true { toApply.append(i) }
                     newSigs[i] = sig
@@ -579,7 +582,13 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
 
     public func textView(_ textView: NSTextView, shouldChangeTypingAttributes old: [String: Any], toAttributes new: [NSAttributedString.Key: Any]) -> [NSAttributedString.Key: Any] {
         var n = new
-        if n[.paragraphStyle] == nil, let p = textView.defaultParagraphStyle { n[.paragraphStyle] = p }
+        // Always the trailing line's box (applyDefaultParagraphStyle): TextKit lays out the empty line
+        // after a final newline with the typing attributes, and NSTextView takes them from the
+        // character at the caret. Moving the caret into another paragraph gave that line the other
+        // paragraph's box, so with a code block open at the end it changed height when the block's
+        // last line was laid out again (the reading view's fences). Typed text gets its line's
+        // attributes from the next render either way.
+        if let p = textView.defaultParagraphStyle { n[.paragraphStyle] = p }
         return n
     }
 

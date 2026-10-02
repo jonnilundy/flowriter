@@ -13,7 +13,8 @@ final class FloLayoutFragment: NSTextLayoutFragment {
         // Hashes hang left of the text column and widgets may exceed glyph bounds.
         // Block images and backgrounds span the whole column, beyond the glyphs.
         let full = CGRect(x: -layoutFragmentFrame.minX, y: 0, width: containerWidth, height: layoutFragmentFrame.height)
-        return super.renderingSurfaceBounds.union(full).insetBy(dx: -120, dy: -4)
+        // (dy: the code box's padding is drawn just outside its first and last rows)
+        return super.renderingSurfaceBounds.union(full).insetBy(dx: -120, dy: -8)
     }
 
     /// The point passed to draw(at:): widget rects are drawn relative to it.
@@ -52,9 +53,18 @@ final class FloLayoutFragment: NSTextLayoutFragment {
                    let docEnd = textLayoutManager?.documentRange.endLocation, end.compare(docEnd) != .orderedAscending {
                     last = true
                 }
-                // the box covers its padding (part of the paragraph spacing, AttributeApplier)
+                // The box's first and last rows: padding around the laid-out text lines. Not from the
+                // paragraph spacing: TextKit drops the spacing before the document's first paragraph
+                // and after its last, so a box measured from it cut through a last line with no final
+                // newline (build 853fd18) or a fence on the first line.
                 let pad = AttributeApplier.codeBoxPadding
-                let y0 = top - (first ? pad : 0), y1 = bottom + (last ? pad : 0)
+                let textTop = point.y + (textLineFragments.first?.typographicBounds.minY ?? 0)
+                // (the empty line after a final newline is in this fragment too: the box's last row only
+                // when the block is still open, not under a closing fence)
+                let lastLine = (last && editor.trailingCode == nil ? textLineFragments.last { $0.characterRange.length > 0 } : nil)
+                    ?? textLineFragments.last
+                let textBottom = point.y + (lastLine?.typographicBounds.maxY ?? layoutFragmentFrame.height)
+                let y0 = first ? textTop - pad : top, y1 = last ? textBottom + pad : bottom
                 let rect = CGRect(x: columnLeft, y: y0, width: columnRight - columnLeft, height: y1 - y0)
                 fillRounded(rect, radius: 0.4 * theme.rem, top: first, bottom: last, color: theme.codeBackground)
             case .tableSource(let first, let last):
