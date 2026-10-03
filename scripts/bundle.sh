@@ -70,8 +70,12 @@ for l in $LANGS; do LOCALIZATIONS+="<string>$l</string>"; done
 # (monotonic, what Sparkle compares).
 SHORT_VERSION=$(tr -d ' \n' < "$ROOT/VERSION")
 BUILD_NUMBER=${BUILD_NUMBER:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}
-# Fork: no SUFeedURL / SUPublicEDKey, so Sparkle has nothing to check (ForkIdentity.updatesEnabled
-# is false as well, so the updater is never even created).
+# Updates: Sparkle checks the feed (appcast.xml in this repo) once a day and installs on quit.
+# SUPublicEDKey is the public half of the release signing key, kept in scripts/sparkle-public-key.txt
+# (scripts/release.sh header says how the key is made). While it is the placeholder the app does not start Sparkle (AppUpdater.isConfigured).
+# Test overrides: FLOWRITER_FEED_URL, FLOWRITER_PUBLIC_ED_KEY.
+FEED_URL=${FLOWRITER_FEED_URL:-https://raw.githubusercontent.com/jonnilundy/flowriter/main/appcast.xml}
+PUBLIC_ED_KEY=${FLOWRITER_PUBLIC_ED_KEY:-$(tr -d ' \n' < "$ROOT/scripts/sparkle-public-key.txt")}
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -86,9 +90,12 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>${SHORT_VERSION}</string>
   <key>CFBundleVersion</key><string>${BUILD_NUMBER}</string>
-  <key>SUEnableAutomaticChecks</key><false/>
-  <key>SUAutomaticallyUpdate</key><false/>
-  <key>SUAllowsAutomaticUpdates</key><false/>
+  <key>SUFeedURL</key><string>${FEED_URL}</string>
+  <key>SUPublicEDKey</key><string>${PUBLIC_ED_KEY}</string>
+  <key>SUEnableAutomaticChecks</key><true/>
+  <key>SUScheduledCheckInterval</key><integer>86400</integer>
+  <key>SUAutomaticallyUpdate</key><true/>
+  <key>SUAllowsAutomaticUpdates</key><true/>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   ${ICON_NAME_PLIST}
   <key>LSMinimumSystemVersion</key><string>14.0</string>
