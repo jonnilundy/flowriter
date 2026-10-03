@@ -5,15 +5,23 @@ import AppKit
 /// Return on the last visible line moved the page by half a window); a code editor moves one line.
 extension FloTextView {
     nonisolated(unsafe) public static var minimalCaretFollow = true
+    /// Tracking mode (ViewToggles.tracking): the caret line stays on the vertical centre of the view.
+    nonisolated(unsafe) public static var trackingMode = false
 
     public override func scrollRangeToVisible(_ range: NSRange) {
-        guard Self.minimalCaretFollow, let r = rectForScroll(range), let clip = enclosingScrollView?.contentView else {
+        guard Self.minimalCaretFollow || Self.trackingMode, let r = rectForScroll(range), let clip = enclosingScrollView?.contentView else {
             super.scrollRangeToVisible(range); return
         }
         let vis = clip.bounds
         var y = vis.minY
-        if r.maxY > vis.maxY { y = r.maxY - vis.height }
-        if r.minY < y { y = r.minY }
+        if Self.trackingMode, range.length == 0 {
+            y = r.midY - vis.height / 2
+            // the padding (EditorController.layoutColumn) lets the first and last line reach the centre
+            y = min(y, max(0, frame.height - vis.height))
+        } else {
+            if r.maxY > vis.maxY { y = r.maxY - vis.height }
+            if r.minY < y { y = r.minY }
+        }
         guard abs(y - vis.minY) > 0.5 else { return }
         clip.scroll(to: NSPoint(x: vis.minX, y: max(0, y)))
         enclosingScrollView?.reflectScrolledClipView(clip)
