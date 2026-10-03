@@ -3,6 +3,9 @@ import FloCore
 
 /// Flowriter: the view toggle at the top of a document window (ViewTogglesBar.swift draws it,
 /// the View menu has it):
+///   - tracking: the caret line stays on the vertical centre of the view, like a typewriter
+///     (CaretFollow.swift scrolls, EditorController.layoutColumn pads). Off = the page moves only
+///     as far as the caret needs.
 ///   - readingView: Markdown marks hidden on every line, the caret line included
 ///     (RenderPlanner.readingView, ReadingView.swift). Off = the writing view, marks visible.
 /// App wide and persisted in UserDefaults (FLO_VIEW_DEFAULTS=<suite> picks another domain: the VM
@@ -15,6 +18,7 @@ public enum ViewToggles {
     /// The old dots toggle's stored value: `restore()` drops it (decorations are always shown now).
     public static let retiredAlternativesKey = "FlowriterShowAlternatives"
     public static let readingKey = "FlowriterReadingView"
+    public static let trackingKey = "FlowriterTrackingMode"
 
     public static var defaults: UserDefaults {
         if let suite = ProcessInfo.processInfo.environment["FLO_VIEW_DEFAULTS"], let d = UserDefaults(suiteName: suite) { return d }
@@ -33,9 +37,22 @@ public enum ViewToggles {
         }
     }
 
+    /// Tracking mode (default off).
+    public static var tracking: Bool {
+        get { defaults.bool(forKey: trackingKey) }
+        set {
+            guard newValue != tracking || newValue != FloTextView.trackingMode else { return }
+            defaults.set(newValue, forKey: trackingKey)
+            FloTextView.trackingMode = newValue
+            for c in editors() { c.trackingChanged() }
+            NotificationCenter.default.post(name: didChange, object: nil)
+        }
+    }
+
     /// At process start, before any editor renders: the persisted view.
     nonisolated public static func restore() {
         MainActor.assumeIsolated {
+            FloTextView.trackingMode = defaults.bool(forKey: trackingKey)
             defaults.removeObject(forKey: retiredAlternativesKey)   // a stored "hidden" must not outlive the toggle
             RenderPlanner.readingView = defaults.bool(forKey: readingKey)
         }
@@ -54,6 +71,15 @@ public enum ViewToggles {
 }
 
 extension EditorController {
+    /// Tracking mode switched: pad the page for it, then put the caret line on the centre (on) or
+    /// leave the page where it is (off, padding back to normal).
+    public func trackingChanged() {
+        layoutColumn()
+        textView.refreshDocumentHeight()
+        if FloTextView.trackingMode { textView.scrollRangeToVisible(NSRange(location: state.selection.main.head, length: 0)) }
+        textView.needsDisplay = true
+    }
+
     /// The reading view switched: render every line again (one reflow), keeping the visual line
     /// that was at the top of the viewport at the same height on screen.
     public func viewModeChanged() {

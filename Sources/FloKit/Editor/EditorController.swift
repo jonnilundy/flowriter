@@ -300,7 +300,9 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
         if state.doc.lines > 0, let ps = textView.textStorage?.length ?? 0 > 0 ? textView.textStorage?.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle : nil {
             firstPad = ps.paragraphSpacingBefore
         }
-        textView.textContainerInset = NSSize(width: max(0, left), height: topInset + firstPad)
+        // tracking mode: the first line may reach the vertical centre (a line is about 30 pt tall)
+        let trackingTop = FloTextView.trackingMode ? max(0, scrollView.contentSize.height / 2 - 15) : 0
+        textView.textContainerInset = NSSize(width: max(0, left), height: max(topInset + firstPad, trackingTop))
         let widthChanged = textView.textContainer?.size.width != textW + applier.gutter
         textView.textContainer?.size = NSSize(width: textW + applier.gutter, height: .greatestFiniteMagnitude)
         if widthChanged { scheduleFullLayout() }
@@ -321,7 +323,8 @@ public final class EditorController: NSObject, NSTextViewDelegate, NSTextLayoutM
         textView.frame.size.width = w
         textView.minSize = NSSize(width: w, height: scrollView.contentSize.height)
         // bottom padding 40vh
-        let bottom = 0.4 * (scrollView.window?.frame.height ?? 800) + bottomExtra
+        var bottom = 0.4 * (scrollView.window?.frame.height ?? 800) + bottomExtra
+        if FloTextView.trackingMode { bottom = max(bottom, scrollView.contentSize.height / 2 + bottomExtra) }   // the last line reaches the centre
         textView.bottomPadding = bottom
         MainActor.assumeIsolated { alternatives?.layoutChanged() }
     }

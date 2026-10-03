@@ -71,6 +71,8 @@ final class ViewTogglesView: FlippedView {
     // MARK: menu
 
     static let readingTitle = "Reading View"
+    static let trackingTitle = "Tracking Mode"
+    static let trackingKey = (key: "t", mods: NSEvent.ModifierFlags([.control, .command]), label: "⌃⌘T")
 
     /// View menu: the toggle under Appearance, checked while on (the shortcut line does not list it).
     static func installMenu(in main: NSMenu) {
@@ -81,16 +83,25 @@ final class ViewTogglesView: FlippedView {
         }
         // after the writing space's group (Appearance, Show Shortcut Hints) and its separator
         let at = view.items.first?.title == "Appearance" ? (view.items.firstIndex(where: \.isSeparatorItem).map { $0 + 1 } ?? 0) : 0
+        let tracking = ClosureMenuItem(trackingTitle, key: trackingKey.key, modifiers: trackingKey.mods, checked: ViewToggles.tracking) {
+            ViewToggles.tracking.toggle()
+        }
+        // Tracking Mode replaces upstream's Toggle Typewriter Scrolling (caret at 70%, not saved)
+        if let old = view.items.first(where: { $0.title == L("Toggle Typewriter Scrolling") }) { view.removeItem(old) }
         view.insertItem(.separator(), at: at)
+        view.insertItem(tracking, at: at)
         view.insertItem(reading, at: at)
         menuItem = reading
+        trackingItem = tracking
         menuObserver = NotificationCenter.default.addObserver(forName: ViewToggles.didChange, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated {
                 menuItem?.state = ViewToggles.readingView ? .on : .off
+                trackingItem?.state = ViewToggles.tracking ? .on : .off
             }
         }
     }
     private(set) static var menuItem: ClosureMenuItem?
+    private(set) static var trackingItem: ClosureMenuItem?
     nonisolated(unsafe) private static var menuObserver: NSObjectProtocol?
 }
 
