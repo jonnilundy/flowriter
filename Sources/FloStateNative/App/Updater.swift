@@ -4,11 +4,11 @@ import FloCore
 
 /// In-app updates (Sparkle 2). The feed and EdDSA public key come from the
 /// Info.plist written by scripts/bundle.sh (SUFeedURL, SUPublicEDKey,
-/// SUEnableAutomaticChecks, SUScheduledCheckInterval).
+/// SUEnableAutomaticChecks, SUScheduledCheckInterval). The feed is appcast.xml in the Flowriter repo.
 ///
 /// Debug/testing feed override (e.g. a locally served appcast):
 ///   FLOSTATE_FEED_URL=http://localhost:8000/appcast.xml
-///   defaults write app.flostate.native FloStateFeedURL http://localhost:8000/appcast.xml
+///   defaults write app.flowriter.Flowriter FloStateFeedURL http://localhost:8000/appcast.xml
 @MainActor
 final class AppUpdater: NSObject {
     nonisolated static let feedOverrideEnv = "FLOSTATE_FEED_URL"
@@ -19,12 +19,16 @@ final class AppUpdater: NSObject {
     private let delegate = UpdaterDelegate()
     private(set) var controller: SPUStandardUpdaterController!
 
-    /// Only a real, fully configured bundle updates itself (not tests or a bare binary).
+    /// bundle.sh writes this until the release key exists; Sparkle must not start with it.
+    nonisolated static let placeholderKey = "REPLACE-WITH-PUBLIC-KEY"
+
+    /// Only a real, fully configured bundle updates itself (not tests, a bare binary, or a build
+    /// made before the release key exists).
     nonisolated static func isConfigured(_ bundle: Bundle = .main) -> Bool {
-        ForkIdentity.updatesEnabled
-            && bundle.bundleURL.pathExtension == "app"
-            && bundle.object(forInfoDictionaryKey: "SUFeedURL") != nil
-            && bundle.object(forInfoDictionaryKey: "SUPublicEDKey") != nil
+        guard ForkIdentity.updatesEnabled, bundle.bundleURL.pathExtension == "app",
+              bundle.object(forInfoDictionaryKey: "SUFeedURL") != nil,
+              let key = bundle.object(forInfoDictionaryKey: "SUPublicEDKey") as? String else { return false }
+        return key != placeholderKey
     }
 
     nonisolated static func feedOverride(env: [String: String] = ProcessInfo.processInfo.environment,
