@@ -33,6 +33,84 @@ final class PaletteInputField: NSTextField {
     var onKey: ((Selector) -> Bool)?
 }
 
+/// The destination button at the right end of the new-note input row: the location's name and a small
+/// chevron. Quiet: no border until hover. Clicking it drops the menu of locations.
+final class PaletteDestinationChip: FlippedView {
+    static let height: CGFloat = 26
+    static let padding: CGFloat = 8
+    static let chevronWidth: CGFloat = 7
+    static let gap: CGFloat = 5
+    var palette: ShellPalette?
+    var font: NSFont = .systemFont(ofSize: 12)
+    var chip: PaletteDestination.Chip? {
+        didSet { toolTip = chip?.tooltip; if chip != oldValue { hovering = false; needsDisplay = true } }
+    }
+    var hovering = false { didSet { if hovering != oldValue { needsDisplay = true } } }
+    var onClick: (() -> Void)?
+    private let kern: CGFloat = -0.26
+
+    private var style: TextStyle? {
+        guard let p = palette else { return nil }
+        return TextStyle(font: font, color: hovering ? p.textSecondary : p.textMuted, kern: kern)
+    }
+
+    /// The width that holds the name and chevron, at most `max`.
+    func fittingWidth(max: CGFloat) -> CGFloat {
+        guard let c = chip, let p = palette else { return 0 }
+        let text = TextStyle(font: font, color: p.textMuted, kern: kern).width(c.name)
+        let extra = c.hasMenu ? Self.gap + Self.chevronWidth : 0
+        return min(max, (text + extra + 2 * Self.padding).rounded(.up))
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let c = chip, let p = palette, let st = style, let ctx = NSGraphicsContext.current?.cgContext else { return }
+        if hovering && c.hasMenu { p.surfaceSubtle.setFill(); roundedPath(bounds, 7).fill() }
+        let extra = c.hasMenu ? Self.gap + Self.chevronWidth : 0
+        let maxText = bounds.width - 2 * Self.padding - extra
+        let textW = min(maxText, st.width(c.name))
+        st.draw(c.name, x: Self.padding, lineTop: (bounds.height - 18) / 2 - 1.5, lineHeight: 18, maxWidth: maxText, in: ctx)
+        guard c.hasMenu else { return }
+        let x = Self.padding + textW + Self.gap, y = bounds.height / 2 - 3
+        let chev = NSBezierPath()
+        chev.move(to: CGPoint(x: x, y: y)); chev.line(to: CGPoint(x: x + Self.chevronWidth / 2, y: y + 3.5))
+        chev.line(to: CGPoint(x: x + Self.chevronWidth, y: y))
+        chev.lineWidth = 1.2; chev.lineCapStyle = .round; chev.lineJoinStyle = .round
+        st.color.setStroke(); chev.stroke()
+    }
+
+    override func updateTrackingAreas() {
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self))
+    }
+    override func mouseEntered(with event: NSEvent) { hovering = true }
+    override func mouseExited(with event: NSEvent) { hovering = false }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override var acceptsFirstResponder: Bool { false }
+    override func mouseDown(with event: NSEvent) {
+        guard chip?.hasMenu == true else { return }
+        hovering = true
+        onClick?()
+        hovering = false
+    }
+
+    /// The drop-down: every location by name (full path as tooltip), a check on the current one, the
+    /// default marked, a location with a problem listed but disabled with the reason.
+    static func makeMenu(_ entries: [PaletteDestination.MenuEntry], target: AnyObject, action: Selector) -> NSMenu {
+        let menu = NSMenu(title: "")
+        menu.autoenablesItems = false
+        for e in entries {
+            let item = NSMenuItem(title: e.title, action: action, keyEquivalent: "")
+            item.target = target
+            item.representedObject = e.path
+            item.state = e.checked ? .on : .off
+            item.isEnabled = e.enabled
+            item.toolTip = e.tooltip
+            menu.addItem(item)
+        }
+        return menu
+    }
+}
+
 /// Full-window overlay: click outside closes; the card holds input + list.
 final class PaletteOverlayView: FlippedView, NSTextFieldDelegate {
     let model: ShellModel   // strong: AppKit can still lay a view out after its window controller (the other owner) is gone
@@ -41,6 +119,8 @@ final class PaletteOverlayView: FlippedView, NSTextFieldDelegate {
     /// Live blur behind the card (CSS backdrop-filter: blur(16px)).
     let backdrop = NSVisualEffectView()
     let input = PaletteInputField()
+    /// New note only: where the note goes.
+    let chip = PaletteDestinationChip()
     let scroll = NSScrollView()
     let list = PaletteListView()
 
@@ -64,6 +144,9 @@ final class PaletteOverlayView: FlippedView, NSTextFieldDelegate {
         input.cell?.usesSingleLineMode = true
         input.cell?.lineBreakMode = .byTruncatingTail
         card.addSubview(input)
+        chip.isHidden = true
+        chip.onClick = { [unowned self] in showDestinationMenu() }
+        card.addSubview(chip)
         scroll.drawsBackground = false
         scroll.automaticallyAdjustsContentInsets = false
         scroll.hasVerticalScroller = false
@@ -89,6 +172,10 @@ final class PaletteOverlayView: FlippedView, NSTextFieldDelegate {
         let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: pal.textMuted, .kern: -0.26]
         input.placeholderAttributedString = NSAttributedString(string: v.placeholder, attributes: attrs)
         if resetField || (input.currentEditor() == nil && input.stringValue != p.query) { input.stringValue = p.query }
+        chip.palette = pal
+        chip.font = NSFont(descriptor: font.fontDescriptor, size: 12) ?? font
+        chip.chip = v.destination
+        input.cell?.isScrollable = v.destination != nil   // a long note name scrolls beside the chip
         list.palette = pal
         list.font = font
         list.data = v
@@ -107,7 +194,17 @@ final class PaletteOverlayView: FlippedView, NSTextFieldDelegate {
         card.frame = CGRect(x: base.minX, y: base.minY, width: base.width, height: 1 + PaletteGeometry.inputHeight + listH + 1)
         backdrop.frame = card.frame
         shadowView.frame = card.frame
-        input.frame = CGRect(x: 1 + 16, y: 1 + 14 + 0.25, width: base.width - 2 - 32, height: 20)
+        var inputWidth = base.width - 2 - 32
+        if v.destination != nil {
+            let w = chip.fittingWidth(max: min(220, base.width * 0.4))
+            chip.frame = CGRect(x: base.width - 1 - 10 - w, y: 1 + (PaletteGeometry.inputHeight - PaletteDestinationChip.height) / 2,
+                                width: w, height: PaletteDestinationChip.height)
+            chip.isHidden = false
+            inputWidth = chip.frame.minX - 6 - (1 + 16)
+        } else {
+            chip.isHidden = true
+        }
+        input.frame = CGRect(x: 1 + 16, y: 1 + 14 + 0.25, width: inputWidth, height: 20)
         scroll.frame = CGRect(x: 1, y: 1 + PaletteGeometry.inputHeight, width: base.width - 2, height: listH)
         list.frame = CGRect(x: 0, y: 0, width: base.width - 2, height: l.content)
         list.layoutInfo = l
@@ -134,8 +231,30 @@ final class PaletteOverlayView: FlippedView, NSTextFieldDelegate {
         case #selector(NSResponder.moveUp(_:)): model.movePaletteSelection(-1); return true
         case #selector(NSResponder.insertNewline(_:)): model.runSelectedPaletteItem(); return true
         case #selector(NSResponder.cancelOperation(_:)): model.palette = nil; return true
+        case #selector(NSResponder.insertTab(_:)), #selector(NSResponder.insertBacktab(_:)):
+            // new note: Tab and Shift-Tab step through the locations; the other palettes do not use them
+            guard model.palette?.intent == .createFile else { return false }
+            model.cyclePaletteDestination(sel == #selector(NSResponder.insertTab(_:)) ? 1 : -1)
+            return true
         default: return false
         }
+    }
+
+    /// The drop-down under the chip (nil when there are no locations).
+    func destinationMenu() -> NSMenu? {
+        let d = model.paletteDestination()
+        let entries = d.menuEntries(d.resolve())
+        return entries.isEmpty ? nil : PaletteDestinationChip.makeMenu(entries, target: self, action: #selector(pickDestination(_:)))
+    }
+
+    func showDestinationMenu() {
+        guard let menu = destinationMenu() else { return }
+        menu.popUp(positioning: nil, at: CGPoint(x: 0, y: chip.bounds.height + 4), in: chip)
+        focus()   // typing goes back to the name
+    }
+
+    @objc func pickDestination(_ sender: NSMenuItem) {
+        if let path = sender.representedObject as? String { model.chooseDestination(path) }
     }
 
     func dump() -> [String: Any]? {
@@ -147,6 +266,9 @@ final class PaletteOverlayView: FlippedView, NSTextFieldDelegate {
             "placeholder": v.placeholder,
             "heading": v.heading as Any? ?? NSNull(),
             "empty": v.empty as Any? ?? NSNull(),
+            "destination": v.destination.map { c -> [String: Any] in
+                ["name": c.name, "tooltip": c.tooltip, "menu": c.hasMenu, "rect": chip.frameInRoot().dumpArray]
+            } as Any? ?? NSNull(),
         ]
         out["items"] = v.items.enumerated().map { i, it -> [String: Any] in
             let r = list.convertToRootRect(CGRect(x: 6, y: l.items[i], width: list.bounds.width - 12, height: PaletteGeometry.itemHeight(it)))
