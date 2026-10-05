@@ -12,6 +12,9 @@
 # Run it as it is. Never pipe it into tail or grep before && (the pipe hides the exit code).
 # The pre-push hook (.githooks/pre-push) and CI (.github/workflows/ci.yml) run this script.
 setopt no_nomatch
+# Never ask for the keychain: SwiftPM popped github.com keychain dialogs on Jonni's screen.
+# The dependencies are public, so anonymous HTTPS is enough. No git credential helper, no prompt.
+export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0=
 cd "$(dirname "$0")/.."
 BP=.build-test
 # test.sh stops a test that prints nothing for $STALL s (default 15). Some tests run 13 s quietly on a
@@ -24,7 +27,7 @@ mkdir -p build
 # 1. build the app (same build folder as test.sh, so the test build is incremental)
 [[ -d $BP/artifacts/sparkle/Sparkle/Sparkle.xcframework ]] || scripts/seed-sparkle.sh $BP >> "$LOG" 2>&1
 THROTTLE=${THROTTLE-$( (( $+commands[slowbuild] )) && print slowbuild )}
-${=THROTTLE} swift build --build-path $BP -j ${JOBS:-8} --product FloStateNative >> "$LOG" 2>&1
+${=THROTTLE} swift build --disable-keychain --build-path $BP -j ${JOBS:-8} --product FloStateNative >> "$LOG" 2>&1
 code=$?
 if (( code )); then
   echo "CHECK FAIL (build): $( { grep -m1 -E ':[0-9]+:[0-9]+: .*error' "$LOG" || grep -m1 -E 'error:' "$LOG"; } | perl -pe 's/\e\[[0-9;]*m//g' | cut -c1-200) (log: $LOG)"

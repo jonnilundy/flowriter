@@ -21,8 +21,8 @@ ICON_FALLBACK="$ROOT/Resources/AppIcon.icns"
 # SwiftPM's own Sparkle download hangs on some Macs: seed it by hand when it is missing.
 [[ -d "$SCRATCH/artifacts/sparkle/Sparkle/Sparkle.xcframework" ]] || "$ROOT/scripts/seed-sparkle.sh" "$SCRATCH"
 # JOBS caps parallel compile jobs; wrap with $THROTTLE (e.g. a nice/taskpolicy wrapper) if set
-${=THROTTLE:-} swift build -c release -j "${JOBS:-8}" --product FloStateNative --scratch-path "$SCRATCH"
-BIN_DIR=$(swift build -c release --product FloStateNative --scratch-path "$SCRATCH" --show-bin-path)
+${=THROTTLE:-} swift build --disable-keychain -c release -j "${JOBS:-8}" --product FloStateNative --scratch-path "$SCRATCH"
+BIN_DIR=$(swift build --disable-keychain -c release --product FloStateNative --scratch-path "$SCRATCH" --show-bin-path)
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"

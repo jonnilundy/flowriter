@@ -61,7 +61,7 @@ watch() {
 [[ -d $BP/artifacts/sparkle/Sparkle/Sparkle.xcframework ]] || scripts/seed-sparkle.sh $BP >> "$LOG" 2>&1 \
   || { echo "TESTS CRASH: scripts/seed-sparkle.sh failed (in build) (log: $LOG)"; exit 1; }
 THROTTLE=${THROTTLE-$( (( $+commands[slowbuild] )) && print slowbuild )}
-JOBS=${JOBS:-8} ${=THROTTLE} swift build --build-tests --build-path $BP -j ${JOBS:-8} >> "$LOG" 2>&1 &
+JOBS=${JOBS:-8} ${=THROTTLE} swift build --disable-keychain --build-tests --build-path $BP -j ${JOBS:-8} >> "$LOG" 2>&1 &
 BPID=$!
 watch "$BPID:$LOG"
 wait $BPID || { echo "TESTS CRASH: $(grep -m1 -E "error:" "$LOG" | cut -c1-200) (in build) (log: $LOG)"; exit 1; }
@@ -69,12 +69,12 @@ wait $BPID || { echo "TESTS CRASH: $(grep -m1 -E "error:" "$LOG" | cut -c1-200) 
 # 2. run
 pids=()
 if (( $# )); then
-  nice -n 10 swift test --skip-build --build-path $BP "$@" > build/test-filtered.log 2>&1 &
+  nice -n 10 swift test --disable-keychain --skip-build --build-path $BP "$@" > build/test-filtered.log 2>&1 &
   pids+=("$!:build/test-filtered.log")
 else
   # one bundle per test target (Swift Build, Xcode 27+), else SwiftPM's combined package bundle
   COMBINED="$ROOT/$BP/debug/FloStateNativePackageTests.xctest"
-  classes=$(swift test --skip-build --build-path $BP list 2>/dev/null | cut -d/ -f1 | sort -u)
+  classes=$(swift test --disable-keychain --skip-build --build-path $BP list 2>/dev/null | cut -d/ -f1 | sort -u)
   for mod in FloStateNativeTests FloCoreTests FloKitTests; do
     sel=$(print -r -- "$classes" | grep "^$mod\." | paste -sd, -)
     [[ -n $sel ]] || continue
