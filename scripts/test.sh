@@ -57,6 +57,9 @@ watch() {
 }
 
 # 1. build ($THROTTLE wraps it, e.g. THROTTLE=nice; default slowbuild when it is on the PATH, else none)
+# SwiftPM's own Sparkle download hangs on some Macs: seed it by hand when it is missing.
+[[ -d $BP/artifacts/sparkle/Sparkle/Sparkle.xcframework ]] || scripts/seed-sparkle.sh $BP >> "$LOG" 2>&1 \
+  || { echo "TESTS CRASH: scripts/seed-sparkle.sh failed (in build) (log: $LOG)"; exit 1; }
 THROTTLE=${THROTTLE-$( (( $+commands[slowbuild] )) && print slowbuild )}
 JOBS=${JOBS:-8} ${=THROTTLE} swift build --build-tests --build-path $BP -j ${JOBS:-8} >> "$LOG" 2>&1 &
 BPID=$!
@@ -85,10 +88,11 @@ code=0
 for pl in "${pids[@]}"; do wait ${pl%%:*} || code=1; done
 for f in build/test-*.log(N); do cat "$f" >> "$LOG"; done
 
-# 3. summary (the last "Executed" line of each module log is its total)
+# 3. summary (the "Executed" line with the most tests in each log is its total; swift test
+#    --filter ends with an empty "Executed 0 tests" suite, so the last line is not enough)
 total=0; failed=0
 for pl in "${pids[@]}"; do
-  line=$(grep -E "Executed [0-9]+ tests?, with" "${pl#*:}" | tail -1)
+  line=$(grep -E "Executed [0-9]+ tests?, with" "${pl#*:}" | sed -E 's/.*Executed ([0-9]+) .*/\1 &/' | sort -n | tail -1 | cut -d' ' -f2-)
   [[ -n $line ]] || { total=-1; break; }
   n=$(print -r -- "$line" | sed -E 's/.*Executed ([0-9]+) tests?.*/\1/')
   f=$(print -r -- "$line" | sed -E 's/.* ([0-9]+) failures?.*/\1/')

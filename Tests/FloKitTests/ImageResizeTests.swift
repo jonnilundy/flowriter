@@ -185,8 +185,12 @@ final class ImageResizeTests: XCTestCase {
             NSEvent.mouseEvent(with: t, location: NSPoint(x: corner.x + dx, y: corner.y), modifierFlags: [], timestamp: 0,
                                windowNumber: w.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!
         }
-        // queued events come back offset by the (offscreen, x = -10000) window origin: compensate
-        let o = -w.frame.origin.x
+        // Queued events can come back shifted by the offscreen window origin (x = -10000). macOS 26
+        // shifts them, macOS 27 does not. Measure the shift with one probe event, then compensate.
+        NSApp.postEvent(ev(.leftMouseDragged, dx: 0), atStart: false)
+        let probe = try XCTUnwrap(w.nextEvent(matching: .leftMouseDragged, until: Date(timeIntervalSinceNow: 2),
+                                              inMode: .eventTracking, dequeue: true), "probe event came back")
+        let o = corner.x - probe.locationInWindow.x
         NSApp.postEvent(ev(.leftMouseDragged, dx: -150 + o), atStart: false)
         NSApp.postEvent(ev(.leftMouseUp, dx: -200 + o), atStart: false)
         c.imageOverlay.mouseDown(with: ev(.leftMouseDown, dx: 0))

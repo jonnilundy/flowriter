@@ -80,6 +80,10 @@ swift test
 The unit and parity tests need no network, no browser and no files outside
 the repo.
 
+Before a push, run `scripts/check.sh`: it builds the app, runs the unit tests and
+ends with one `CHECK PASS` or `CHECK FAIL` line. `git config core.hooksPath .githooks`
+makes git run it before every push. CI runs the same script.
+
 The window tests (`scripts/*-vm-test.sh`, all of them through
 `scripts/all-vm-suites.sh`) open real windows and drive them with synthetic
 key and mouse events. Run them in a macOS virtual machine, never on your own

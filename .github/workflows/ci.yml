@@ -1,0 +1,28 @@
+name: check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # bundle.sh and the tests read the commit count
+      - name: Use the newest Xcode on the runner
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)" && xcodebuild -version
+      - name: Check (build + unit tests)
+        shell: zsh {0}
+        env:
+          STALL: "120"        # CI runners are slower than a desk Mac
+          BUILD_STALL: "900"
+        run: scripts/check.sh
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-logs
+          path: build/*.log
