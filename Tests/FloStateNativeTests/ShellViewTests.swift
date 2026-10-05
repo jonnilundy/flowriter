@@ -54,8 +54,13 @@ final class ShellViewTests: XCTestCase {
         var box = CGRect(x: 0, y: 0, width: 300, height: 400)
         let ctx = CGContext(URL(fileURLWithPath: pdf) as CFURL, mediaBox: &box, nil)!
         ctx.beginPDFPage(nil); ctx.setFillColor(NSColor.systemBlue.cgColor); ctx.fill(CGRect(x: 40, y: 40, width: 220, height: 320)); ctx.endPDFPage(); ctx.beginPDFPage(nil); ctx.endPDFPage(); ctx.closePDF()
-        let img = NSImage(size: NSSize(width: 64, height: 32)); img.lockFocus(); NSColor.red.setFill(); NSRect(x: 0, y: 0, width: 64, height: 32).fill(); img.unlockFocus()
-        try NSBitmapImageRep(data: img.tiffRepresentation!)!.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: png))
+        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 128, pixelsHigh: 64, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                   isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        NSColor.red.setFill(); NSRect(x: 0, y: 0, width: 128, height: 64).fill()
+        NSGraphicsContext.restoreGraphicsState()
+        try rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: png))
         let before = try Data(contentsOf: URL(fileURLWithPath: png))
         for (path, kind) in [(pdf, WorkspaceFS.ViewerKind.pdf), (png, .image)] {
             try await f.model.editor.openFileInTabOrFocus(path)
