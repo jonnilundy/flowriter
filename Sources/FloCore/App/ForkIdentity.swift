@@ -3,7 +3,8 @@ import Foundation
 /// Flowriter: this fork's identity, kept in one file so upstream merges stay easy.
 /// A distinct bundle id, app-data folder, CLI name and single-instance channel mean the fork
 /// can sit next to upstream Flo State without either one replacing, forwarding to, or
-/// sharing sessions with the other. The fork never updates itself (no Sparkle feed checks).
+/// sharing sessions with the other. Updates come from the fork's own Sparkle feed (appcast.xml in
+/// this repo, signed with the fork's own EdDSA key), never from upstream's.
 public enum ForkIdentity {
     public static let appName = "Flowriter"
     public static let bundleID = "app.flowriter.Flowriter"
@@ -15,8 +16,9 @@ public enum ForkIdentity {
     public static let openNotificationName = "app.flowriter.Flowriter.open"
     /// `/usr/local/bin/<cliName>` symlink (upstream: "flostate").
     public static let cliName = "flowriter"
-    /// Sparkle stays linked but is never started: no feed checks, no updates.
-    public static let updatesEnabled = false
+    /// Sparkle runs only in a bundle built by scripts/bundle.sh that carries a real SUPublicEDKey
+    /// (AppUpdater.isConfigured): not tests, a bare binary, or a build made before the key exists.
+    public static let updatesEnabled = true
     /// Upstream makes itself the default Markdown / plain-text app on first launch from
     /// /Applications. The fork leaves the user's default apps alone.
     public static let claimsDefaultTextHandlers = false

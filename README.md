@@ -53,8 +53,28 @@ command (for example `nice -n 10`) to lower its priority. The app is ad-hoc
 signed unless `DEVELOPER_ID` is set (`scripts/sign.sh`). The bundle id is
 `app.flowriter.Flowriter`; set `BUNDLE_ID` to build under another one.
 
-The app does not update itself. Sparkle stays linked from upstream but is never
-started, and the bundle has no feed URL.
+## Updates and releases
+
+Flowriter updates itself with Sparkle 2. It reads `appcast.xml` in this repo
+(`https://raw.githubusercontent.com/jonnilundy/flowriter/main/appcast.xml`) once a day,
+downloads a newer version in the background and installs it when you quit.
+Flowriter menu, Check for Updates… does it on demand. Each update is checked
+against the release key (`scripts/sparkle-public-key.txt`) before it installs.
+Releases are ad hoc signed, not notarized, so the first install needs
+right-click, Open. Later versions install themselves.
+
+To cut a release, on a clean `main` that matches GitHub:
+
+```sh
+scripts/release.sh 0.2.1              # dry run: build, sign, appcast; nothing is published
+scripts/release.sh 0.2.1 --publish    # commit, tag v0.2.1, GitHub release, push main
+```
+
+Put the notes in `release-notes/0.2.1.md` first (or pass `--notes-file`). The signing
+key lives in 1Password; the header of `scripts/release.sh` says how it is made and
+read. `scripts/test-update.sh` runs a real headless update with a throwaway key
+(`--wrong-key`: an update signed with another key must be refused). The `v0.1.x` tags
+in this repo are upstream Flo State's, so Flowriter versions start at 0.2.0.
 
 `FLO_SPACE=0 swift run FloStateNative` runs the upstream Flo State shell
 (sidebar, tabs, properties table) instead of the writing space.
@@ -123,7 +143,7 @@ Bundled or ported third-party code:
 | [beautiful-mermaid](https://www.npmjs.com/package/beautiful-mermaid), bundled with [elkjs](https://github.com/kieler/elkjs) and [entities](https://github.com/fb55/entities) | `Sources/FloCore/Resources/mermaid/mermaid-widget.js` | MIT; elkjs: EPL-2.0; entities: BSD-2-Clause |
 | [CodeMirror 6](https://codemirror.net) (`@codemirror/language`, `language-data`, `lang-*`) and [Lezer](https://lezer.codemirror.net) parsers (`@lezer/*`) | `Sources/FloCore/Resources/codehl.js` (bundled); `Sources/FloCore/Markdown` is a Swift port of `@lezer/markdown` | MIT |
 | [DOMPurify](https://github.com/cure53/DOMPurify) | `Sources/FloCore/Resources/htmlblock/sanitize.js` | MPL-2.0 or Apache-2.0 |
-| [Sparkle](https://sparkle-project.org) 2 (linked, never started) | `Package.swift` | MIT |
+| [Sparkle](https://sparkle-project.org) 2 (updates) | `Package.swift` | MIT |
 | CommonMark/GFM spec examples from `@lezer/markdown`'s tests | `oracle/corpus-spec.json`, `fixtures/trees.json` | MIT |
 
 The bundled JavaScript files are minified builds; their sources are the npm
