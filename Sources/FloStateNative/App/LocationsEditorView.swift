@@ -82,10 +82,22 @@ struct LocationsState: Equatable {
     }
 }
 
-/// One location: default marker, nickname, path, Change… and remove.
+/// The default marker: a circle that fills when the location is the default. Its drawn circle sits a
+/// little inside the button, so the alignment rect is pulled in: the circle then starts exactly at the
+/// left edge of the column (the same edge as Add Location… and the File associations box).
+final class DefaultMarkerButton: NSButton {
+    static let size: CGFloat = 18
+    /// How far the symbol's drawn circle sits inside the button's left edge.
+    static let inkInset: CGFloat = 4
+    override var alignmentRectInsets: NSEdgeInsets { NSEdgeInsets(top: 0, left: Self.inkInset, bottom: 0, right: 0) }
+}
+
+/// One location: default marker, nickname, path, Change… and remove. The nickname, Change… and remove
+/// keep their width. The path takes what is left of the row and cuts its middle when it is too long
+/// (the tooltip has the full path), so a long folder never widens the pane.
 @MainActor
 final class LocationRowView: NSStackView {
-    let marker = NSButton()
+    let marker = DefaultMarkerButton()
     let nickname = NSTextField(string: "")
     let pathLabel = NSTextField(labelWithString: "")
     let changeButton = NSButton(title: L("Change…"), target: nil, action: nil)
@@ -95,27 +107,36 @@ final class LocationRowView: NSStackView {
     var onRemove: () -> Void = {}
 
     static let nicknameWidth: CGFloat = 110
-    static let pathWidth: CGFloat = 190
+    /// The least the path keeps; the editor gives it more.
+    static let pathMinWidth: CGFloat = 60
+    /// Between the controls of a row.
+    static let gap: CGFloat = 8
 
     init() {
         super.init(frame: .zero)
         orientation = .horizontal
-        spacing = 8
+        spacing = Self.gap
         alignment = .centerY
 
         marker.isBordered = false
         marker.imagePosition = .imageOnly
         marker.imageScaling = .scaleProportionallyDown
         marker.target = self; marker.action = #selector(markerClicked)
-        marker.widthAnchor.constraint(equalToConstant: 18).isActive = true
-        marker.heightAnchor.constraint(equalToConstant: 18).isActive = true
+        marker.widthAnchor.constraint(equalToConstant: DefaultMarkerButton.size).isActive = true
+        marker.heightAnchor.constraint(equalToConstant: DefaultMarkerButton.size).isActive = true
 
         nickname.widthAnchor.constraint(equalToConstant: Self.nicknameWidth).isActive = true
         nickname.lineBreakMode = .byTruncatingTail
         nickname.cell?.sendsActionOnEndEditing = true
 
+        // The flexible part. Compression resistance and hugging below the fitting priority: the row's
+        // fitting width does not depend on the text, and the path is the one view that gives way.
         pathLabel.lineBreakMode = .byTruncatingMiddle
-        pathLabel.widthAnchor.constraint(equalToConstant: Self.pathWidth).isActive = true
+        pathLabel.cell?.usesSingleLineMode = true
+        pathLabel.maximumNumberOfLines = 1
+        pathLabel.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(1), for: .horizontal)
+        pathLabel.setContentHuggingPriority(NSLayoutConstraint.Priority(1), for: .horizontal)
+        pathLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: Self.pathMinWidth).isActive = true
 
         changeButton.bezelStyle = .rounded
         changeButton.controlSize = .small
@@ -128,6 +149,11 @@ final class LocationRowView: NSStackView {
         removeButton.setAccessibilityLabel(L("Remove"))
         removeButton.target = self; removeButton.action = #selector(removeClicked)
 
+        // these three never give way
+        for v in [marker, nickname, changeButton, removeButton] {
+            v.setContentCompressionResistancePriority(.required, for: .horizontal)
+            v.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        }
         for v in [marker, nickname, pathLabel, changeButton, removeButton] { addArrangedSubview(v) }
     }
     required init?(coder: NSCoder) { fatalError() }
@@ -172,12 +198,20 @@ final class LocationsEditorView: NSStackView, NSTextFieldDelegate {
     let addButton = NSButton(title: L("Add Location…"), target: nil, action: nil)
     private var shown: [String]?
 
+    /// The gap between rows, and between the last row and Add Location… (the pane grid's row gap).
+    static let rowGap: CGFloat = 8
+    /// The width of the editor: marker, nickname, a path of about 170 pt, Change… and remove.
+    static let contentWidth: CGFloat = 410
+
     init(backend: SettingsBackend) {
         self.backend = backend
         super.init(frame: .zero)
         orientation = .vertical
         alignment = .leading
-        spacing = 6
+        spacing = Self.rowGap
+        // The editor keeps one width, empty or not, long paths or not: the File associations box
+        // below it takes the same width, so their right edges line up. Rows grow it when they must.
+        widthAnchor.constraint(greaterThanOrEqualToConstant: Self.contentWidth).withPriority(NSLayoutConstraint.Priority(999)).isActive = true
         emptyLabel.textColor = .secondaryLabelColor
         addButton.bezelStyle = .rounded
         addButton.controlSize = .small
@@ -212,7 +246,10 @@ final class LocationsEditorView: NSStackView, NSTextFieldDelegate {
             row.onRemove = { [weak self] in self?.edit { $0.remove(at: i); return true } }
             return row
         }
-        for (i, r) in rows.enumerated() { insertArrangedSubview(r, at: i) }
+        for (i, r) in rows.enumerated() {
+            insertArrangedSubview(r, at: i)
+            r.widthAnchor.constraint(equalTo: widthAnchor).isActive = true   // the path takes the rest of the row
+        }
         emptyLabel.isHidden = !rows.isEmpty
         shown = structure
         if rows.count != hadRows || hadRows == 0 { layoutSubtreeIfNeeded(); onSizeChange() }

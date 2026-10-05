@@ -17,7 +17,7 @@ import FloKit
 /// Hooks: ShellRootView (the view, one layout line), ShellWindowController.flush (refresh, window
 /// title and representedURL).
 @MainActor
-final class FileNameView: FlippedView {
+final class FileNameView: FlippedView, PointerCursorProviding {
     let model: ShellModel
     private(set) var path: String?
     private(set) var name = ""
@@ -159,6 +159,14 @@ final class FileNameView: FlippedView {
     }
     override func mouseEntered(with event: NSEvent) { hovering = true }
     override func mouseExited(with event: NSEvent) { hovering = false }
+
+    // The pointer: the page's I-beam is under this view (PointerCursor.swift). No name: no menu, nothing to point at.
+    var pointerRects: [PointerCursor.Rect] { name.isEmpty ? [] : PointerCursor.hand(bounds) }
+    override func resetCursorRects() { PointerCursor.reset(self) }
+    override var frame: NSRect { didSet { if frame != oldValue { PointerCursor.invalidate(self) } } }
+    override func viewDidMoveToWindow() { super.viewDidMoveToWindow(); PointerCursor.invalidate(self) }
+    override func viewDidHide() { super.viewDidHide(); PointerCursor.invalidate(self) }
+    override func viewDidUnhide() { super.viewDidUnhide(); PointerCursor.invalidate(self) }
     override func hitTest(_ point: NSPoint) -> NSView? { isHidden || name.isEmpty ? nil : super.hitTest(point) }
     /// Native menus open on mouse down (and the title-bar strip never delivers the mouse-up).
     override func mouseDown(with event: NSEvent) { showMenu() }
