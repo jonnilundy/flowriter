@@ -36,7 +36,8 @@ final class SettingsWindowTests: XCTestCase {
         XCTAssertFalse(w.styleMask.contains(.resizable))
         XCTAssertTrue(w.styleMask.contains(.titled) && w.styleMask.contains(.closable))
         XCTAssertEqual(w.toolbarStyle, .preference)
-        XCTAssertEqual(w.toolbar?.items.map { $0.label }, ["General", "Editor", "Appearance", "Theme", "Files"])
+        XCTAssertEqual(w.toolbar?.items.map { $0.label }, ["General", "Editor", "Theme", "Files"])
+        XCTAssertEqual(SettingsPanes.all.map { $0.id }, ["general", "editor", "theme", "files"])
         XCTAssertNil(w.appearance, "follows the system light/dark")
         for p in SettingsPanes.all {
             wc.select(p.id)
@@ -53,7 +54,7 @@ final class SettingsWindowTests: XCTestCase {
             heights.append(vc.preferredContentSize.height)
             XCTAssertLessThan(vc.preferredContentSize.height, 700, "\(p.id) fits a laptop screen")
         }
-        XCTAssertGreaterThan(Set(heights).count, 3, "panes resize the window")
+        XCTAssertGreaterThan(Set(heights).count, 2, "panes resize the window")
     }
 
     func testEverySettingHasANativeControl() {
@@ -77,12 +78,25 @@ final class SettingsWindowTests: XCTestCase {
     }
 
     func testCheckboxWritesConfigAndBroadcasts() {
-        let c = pane("appearance").control("appearance.sidebar-show-search")!
-        XCTAssertEqual(c.checkbox?.state, .off)
-        c.checkbox!.state = .on
+        let c = pane("editor").control("editor.show-outline")!
+        XCTAssertEqual(c.checkbox?.state, .on)
+        c.checkbox!.state = .off
         c.changed(c.checkbox)
-        XCTAssertTrue(config.contains("appearance.sidebar-show-search = true"))
+        XCTAssertTrue(config.contains("editor.show-outline = false"))
         XCTAssertEqual(changes, 1)
+    }
+
+    /// Settings for workspace windows only, and the ones that did nothing, have no control.
+    func testWorkspaceOnlyAndRemovedSettingsHaveNoControl() {
+        for p in SettingsPanes.all { _ = pane(p.id) }
+        let shown = Set(SettingsPanes.allKeys)
+        for key in ["appearance.sidebar-file-label", "appearance.sidebar-show-search", "appearance.sidebar-show-recents",
+                    "fonts.mono", "window.restore-workspace", "workspace.restore-open-files"] {
+            XCTAssertNotNil(SettingsSchema.def(key), "\(key) is still a setting")
+            XCTAssertTrue(SettingsPanes.hiddenKeys.contains(key), key)
+            XCTAssertFalse(shown.contains(key), key)
+        }
+        XCTAssertTrue(pane("editor").controls.contains { $0.def.key == "fonts.editor" }, "the font moved to the Editor pane")
     }
 
     func testStepperAndFieldForNumbers() {
@@ -123,7 +137,7 @@ final class SettingsWindowTests: XCTestCase {
         files.commitTokens()
         XCTAssertTrue(config.contains("files.associations = *.md\nfiles.associations = *.txt"))
 
-        let font = pane("appearance").control("fonts.editor")!
+        let font = pane("editor").control("fonts.editor")!
         font.popup!.selectItem(withTitle: "Menlo")
         font.changed(font.popup)
         XCTAssertTrue(config.contains("fonts.editor = Menlo, -apple-system-body"), config)
@@ -153,9 +167,9 @@ final class SettingsWindowTests: XCTestCase {
     }
 
     func testExternalChangesSync() {
-        let c = pane("appearance").control("appearance.sidebar-show-recents")!
+        let c = pane("editor").control("editor.show-outline")!
         XCTAssertEqual(c.checkbox?.state, .on)
-        TFS.write(data + "/config", "appearance.sidebar-show-recents = false\n")
+        TFS.write(data + "/config", "editor.show-outline = false\n")
         backend.reloadFromDisk()
         wc.syncAll()
         XCTAssertEqual(c.checkbox?.state, .off)

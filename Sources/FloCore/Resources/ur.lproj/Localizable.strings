@@ -232,17 +232,11 @@
 /* SettingsWindow.swift */
 "File name" = "فائل کا نام";
 
-/* SettingsWindow.swift; Editor width option (vs Narrow). */
-"Wide" = "چوڑا";
-
 /* SettingsWindow.swift; Unit: pixels. */
 "px" = "px";
 
 /* SettingsWindow.swift; Unit: minutes (short). */
 "min" = "منٹ";
-
-/* SettingsWindow.swift; Unit: milliseconds. */
-"ms" = "ms";
 
 /* SettingsWindow.swift; SettingsWindow.swift (Settings pane / toolbar tab); SettingsWindow.swift (Settings group label, shown with a colon) */
 "Appearance" = "ظاہری شکل";
@@ -252,9 +246,6 @@
 
 /* SettingsWindow.swift */
 "File labels" = "فائل لیبلز";
-
-/* SettingsWindow.swift */
-"Editor width" = "ایڈیٹر کی چوڑائی";
 
 /* SettingsWindow.swift; ShellWindow.swift */
 "Show sidebar" = "سائڈبار دکھائیں";
@@ -290,9 +281,6 @@
 "Files" = "فائلیں";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"On launch" = "لانچ پر";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Daily notes" = "روزانہ نوٹس";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
@@ -302,16 +290,7 @@
 "Spacing" = "فاصلہ";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Headings" = "سرخیاں";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Outline" = "خاکہ";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Sidebar" = "سائڈبار";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Fonts" = "فونٹس";
 
 /* ShellMenus.swift; ShellWindow.swift; Context menu item (open a file) and the open-panel confirm button. */
 "Open" = "کھولیں";
@@ -716,12 +695,6 @@
 /* Settings description / tooltip (editor.line-height) */
 "Line height multiplier for the editor" = "ایڈیٹر کی لائن اونچائی کا ضارب";
 
-/* Settings label (editor.tab-size) */
-"Tab size" = "ٹیب سائز";
-
-/* Settings description / tooltip (editor.tab-size) */
-"Number of spaces per tab" = "فی ٹیب اسپیسز کی تعداد";
-
 /* Settings label (editor.auto-insert-daily-heading) */
 "Insert today's date heading" = "آج کی تاریخ کی سرخی داخل کریں";
 
@@ -733,12 +706,6 @@
 
 /* Settings description / tooltip (editor.show-outline) */
 "The tick marks at the right edge of the editor that expand into a document outline on hover" = "ایڈیٹر کے دائیں کنارے پر نشانات جو ہوور کرنے پر دستاویز کے خاکے میں پھیل جاتے ہیں";
-
-/* Settings label (editor.show-heading-chevrons) */
-"Show heading fold arrows" = "سرخی سمیٹنے کے تیر دکھائیں";
-
-/* Settings description / tooltip (editor.show-heading-chevrons) */
-"The arrow beside each heading for collapsing its section. Headings can still be folded from the View menu when hidden" = "ہر سرخی کے ساتھ والا تیر جو اس کا حصہ سمیٹتا ہے۔ چھپا ہونے پر بھی سرخیاں منظر مینو سے سمیٹی جا سکتی ہیں";
 
 /* Settings label (editor.jump-to-bottom-after-minutes) */
 "Jump to bottom after (minutes)" = "آخر پر جائیں، اتنے منٹ بعد";
@@ -757,12 +724,6 @@
 
 /* Settings description / tooltip (editor.heading-space-after) */
 "Extra vertical space below a heading" = "سرخی کے نیچے اضافی عمودی جگہ";
-
-/* Settings label (editor.subheading-color) */
-"Subheading colour" = "ذیلی سرخی کا رنگ";
-
-/* Settings description / tooltip (editor.subheading-color) */
-"Colour for level 2 and 3 headings" = "سطح 2 اور 3 کی سرخیوں کا رنگ";
 
 /* Settings label (editor.paragraph-spacing) */
 "Paragraph spacing" = "پیراگراف کا فاصلہ";
@@ -787,12 +748,6 @@
 
 /* Settings description / tooltip (appearance.sidebar-show-recents) */
 "Show the Recents section in the sidebar" = "سائڈبار میں حالیہ سیکشن دکھائیں";
-
-/* Settings description / tooltip (appearance.editor-width) */
-"Editor content width mode" = "ایڈیٹر کے مواد کی چوڑائی کا موڈ";
-
-/* Settings option (appearance.editor-width); Editor width option (vs Wide). */
-"Narrow" = "تنگ";
 
 /* Settings label (fonts.editor) */
 "Editor font" = "ایڈیٹر فونٹ";
@@ -877,12 +832,6 @@
 
 /* Settings description / tooltip (workspace.restore-open-files) */
 "Reopen previously open files when opening a workspace" = "ورک اسپیس کھولتے وقت پہلے سے کھلی فائلیں دوبارہ کھولیں";
-
-/* Settings label (workspace.max-recent-workspaces) */
-"Max recent workspaces" = "زیادہ سے زیادہ حالیہ ورک اسپیسز";
-
-/* Settings description / tooltip (workspace.max-recent-workspaces) */
-"Maximum number of recent workspaces to remember" = "یاد رکھی جانے والی حالیہ ورک اسپیسز کی زیادہ سے زیادہ تعداد";
 
 /* Settings label (window.restore-workspace) */
 "Restore workspace" = "ورک اسپیس بحال کریں";

@@ -844,7 +844,7 @@ final class ShellGeometryTests: XCTestCase {
     }
 
     func testSettingsPanesCoverEverySettingOnce() {
-        XCTAssertEqual(SettingsPanes.all.map { $0.title }, ["General", "Editor", "Appearance", "Theme", "Files"])
+        XCTAssertEqual(SettingsPanes.all.map { $0.title }, ["General", "Editor", "Theme", "Files"])
         let keys = SettingsPanes.allKeys
         XCTAssertEqual(keys.count, Set(keys).count, "no duplicates")
         XCTAssertTrue(Set(keys).isDisjoint(with: SettingsPanes.hiddenKeys))
@@ -853,7 +853,7 @@ final class ShellGeometryTests: XCTestCase {
         XCTAssertEqual(SettingControl.sentenceCase("Font Size"), "Font size")
         XCTAssertEqual(SettingControl.sentenceCase("UI font"), "UI font")
         XCTAssertEqual(SettingsPanes.optionTitle("appearance.theme", "system"), "Match System")
-        XCTAssertEqual(SettingsPanes.optionTitle("appearance.editor-width", "full"), "Wide")
+        XCTAssertEqual(SettingsPanes.optionTitle("appearance.sidebar-file-label", "filename"), "File name")
         XCTAssertEqual(SettingsPanes.presetTitle("Writer"), "Flowriter")
         XCTAssertEqual(SettingsPanes.presetName("Flowriter"), "Writer")
     }

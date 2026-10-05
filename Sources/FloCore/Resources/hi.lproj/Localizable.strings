@@ -232,17 +232,11 @@
 /* SettingsWindow.swift */
 "File name" = "फ़ाइल का नाम";
 
-/* SettingsWindow.swift; Editor width option (vs Narrow). */
-"Wide" = "चौड़ा";
-
 /* SettingsWindow.swift; Unit: pixels. */
 "px" = "px";
 
 /* SettingsWindow.swift; Unit: minutes (short). */
 "min" = "मिनट";
-
-/* SettingsWindow.swift; Unit: milliseconds. */
-"ms" = "ms";
 
 /* SettingsWindow.swift; SettingsWindow.swift (Settings pane / toolbar tab); SettingsWindow.swift (Settings group label, shown with a colon) */
 "Appearance" = "दिखावट";
@@ -252,9 +246,6 @@
 
 /* SettingsWindow.swift */
 "File labels" = "फ़ाइल लेबल";
-
-/* SettingsWindow.swift */
-"Editor width" = "एडिटर की चौड़ाई";
 
 /* SettingsWindow.swift; ShellWindow.swift */
 "Show sidebar" = "साइडबार दिखाएँ";
@@ -290,9 +281,6 @@
 "Files" = "फ़ाइलें";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"On launch" = "लॉन्च पर";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Daily notes" = "दैनिक नोट्स";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
@@ -302,16 +290,7 @@
 "Spacing" = "स्पेसिंग";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Headings" = "शीर्षक";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Outline" = "रूपरेखा";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Sidebar" = "साइडबार";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Fonts" = "फ़ॉन्ट";
 
 /* ShellMenus.swift; ShellWindow.swift; Context menu item (open a file) and the open-panel confirm button. */
 "Open" = "खोलें";
@@ -716,12 +695,6 @@
 /* Settings description / tooltip (editor.line-height) */
 "Line height multiplier for the editor" = "एडिटर के लिए पंक्ति ऊँचाई गुणक";
 
-/* Settings label (editor.tab-size) */
-"Tab size" = "टैब आकार";
-
-/* Settings description / tooltip (editor.tab-size) */
-"Number of spaces per tab" = "प्रति टैब स्पेस की संख्या";
-
 /* Settings label (editor.auto-insert-daily-heading) */
 "Insert today's date heading" = "आज की तिथि का शीर्षक डालें";
 
@@ -733,12 +706,6 @@
 
 /* Settings description / tooltip (editor.show-outline) */
 "The tick marks at the right edge of the editor that expand into a document outline on hover" = "एडिटर के दाएँ किनारे पर निशान, जो होवर करने पर दस्तावेज़ की रूपरेखा में फैल जाते हैं";
-
-/* Settings label (editor.show-heading-chevrons) */
-"Show heading fold arrows" = "शीर्षक फ़ोल्ड तीर दिखाएँ";
-
-/* Settings description / tooltip (editor.show-heading-chevrons) */
-"The arrow beside each heading for collapsing its section. Headings can still be folded from the View menu when hidden" = "हर शीर्षक के पास का तीर, जो उसके सेक्शन को संक्षिप्त करता है। छिपे होने पर भी शीर्षकों को दृश्य मेनू से फ़ोल्ड किया जा सकता है";
 
 /* Settings label (editor.jump-to-bottom-after-minutes) */
 "Jump to bottom after (minutes)" = "इतने समय बाद अंत पर जाएँ (मिनट)";
@@ -757,12 +724,6 @@
 
 /* Settings description / tooltip (editor.heading-space-after) */
 "Extra vertical space below a heading" = "शीर्षक के नीचे अतिरिक्त लंबवत स्पेस";
-
-/* Settings label (editor.subheading-color) */
-"Subheading colour" = "उपशीर्षक का रंग";
-
-/* Settings description / tooltip (editor.subheading-color) */
-"Colour for level 2 and 3 headings" = "स्तर 2 और 3 के शीर्षकों का रंग";
 
 /* Settings label (editor.paragraph-spacing) */
 "Paragraph spacing" = "पैराग्राफ़ स्पेसिंग";
@@ -787,12 +748,6 @@
 
 /* Settings description / tooltip (appearance.sidebar-show-recents) */
 "Show the Recents section in the sidebar" = "साइडबार में हालिया सेक्शन दिखाएँ";
-
-/* Settings description / tooltip (appearance.editor-width) */
-"Editor content width mode" = "एडिटर सामग्री की चौड़ाई का मोड";
-
-/* Settings option (appearance.editor-width); Editor width option (vs Wide). */
-"Narrow" = "संकरा";
 
 /* Settings label (fonts.editor) */
 "Editor font" = "एडिटर फ़ॉन्ट";
@@ -877,12 +832,6 @@
 
 /* Settings description / tooltip (workspace.restore-open-files) */
 "Reopen previously open files when opening a workspace" = "वर्कस्पेस खोलते समय पहले खुली फ़ाइलें फिर से खोलें";
-
-/* Settings label (workspace.max-recent-workspaces) */
-"Max recent workspaces" = "अधिकतम हालिया वर्कस्पेस";
-
-/* Settings description / tooltip (workspace.max-recent-workspaces) */
-"Maximum number of recent workspaces to remember" = "याद रखे जाने वाले हालिया वर्कस्पेस की अधिकतम संख्या";
 
 /* Settings label (window.restore-workspace) */
 "Restore workspace" = "वर्कस्पेस पुनर्स्थापित करें";

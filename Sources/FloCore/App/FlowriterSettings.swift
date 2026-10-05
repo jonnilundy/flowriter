@@ -18,7 +18,6 @@ public enum FlowriterSettings {
         "editor.heading-space-after": .number(4),
         "editor.bullet-spacing": .number(4),
         "editor.show-outline": .bool(false),
-        "editor.show-heading-chevrons": .bool(false),
         "editor.auto-insert-daily-heading": .bool(false),
         "editor.jump-to-bottom-after-minutes": .number(0),
         "appearance.sidebar-visible": .bool(false),

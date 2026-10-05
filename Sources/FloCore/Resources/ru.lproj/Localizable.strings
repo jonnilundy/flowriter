@@ -232,17 +232,11 @@
 /* SettingsWindow.swift */
 "File name" = "Имя файла";
 
-/* SettingsWindow.swift; Editor width option (vs Narrow). */
-"Wide" = "Широкий";
-
 /* SettingsWindow.swift; Unit: pixels. */
 "px" = "px";
 
 /* SettingsWindow.swift; Unit: minutes (short). */
 "min" = "мин";
-
-/* SettingsWindow.swift; Unit: milliseconds. */
-"ms" = "мс";
 
 /* SettingsWindow.swift; SettingsWindow.swift (Settings pane / toolbar tab); SettingsWindow.swift (Settings group label, shown with a colon) */
 "Appearance" = "Оформление";
@@ -252,9 +246,6 @@
 
 /* SettingsWindow.swift */
 "File labels" = "Названия файлов";
-
-/* SettingsWindow.swift */
-"Editor width" = "Ширина редактора";
 
 /* SettingsWindow.swift; ShellWindow.swift */
 "Show sidebar" = "Показать боковую панель";
@@ -290,9 +281,6 @@
 "Files" = "Файлы";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"On launch" = "При запуске";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Daily notes" = "Ежедневные заметки";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
@@ -302,16 +290,7 @@
 "Spacing" = "Интервалы";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Headings" = "Заголовки";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Outline" = "Структура";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Sidebar" = "Боковая панель";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Fonts" = "Шрифты";
 
 /* ShellMenus.swift; ShellWindow.swift; Context menu item (open a file) and the open-panel confirm button. */
 "Open" = "Открыть";
@@ -716,12 +695,6 @@
 /* Settings description / tooltip (editor.line-height) */
 "Line height multiplier for the editor" = "Множитель высоты строки в редакторе";
 
-/* Settings label (editor.tab-size) */
-"Tab size" = "Размер табуляции";
-
-/* Settings description / tooltip (editor.tab-size) */
-"Number of spaces per tab" = "Число пробелов в одной табуляции";
-
 /* Settings label (editor.auto-insert-daily-heading) */
 "Insert today's date heading" = "Вставлять заголовок с датой";
 
@@ -733,12 +706,6 @@
 
 /* Settings description / tooltip (editor.show-outline) */
 "The tick marks at the right edge of the editor that expand into a document outline on hover" = "Метки у правого края редактора, которые при наведении раскрываются в структуру документа";
-
-/* Settings label (editor.show-heading-chevrons) */
-"Show heading fold arrows" = "Показывать стрелки сворачивания";
-
-/* Settings description / tooltip (editor.show-heading-chevrons) */
-"The arrow beside each heading for collapsing its section. Headings can still be folded from the View menu when hidden" = "Стрелка рядом с заголовком сворачивает его раздел. Если стрелки скрыты, заголовки можно свернуть в меню «Вид»";
 
 /* Settings label (editor.jump-to-bottom-after-minutes) */
 "Jump to bottom after (minutes)" = "Переход в конец через (мин)";
@@ -757,12 +724,6 @@
 
 /* Settings description / tooltip (editor.heading-space-after) */
 "Extra vertical space below a heading" = "Дополнительный отступ под заголовком";
-
-/* Settings label (editor.subheading-color) */
-"Subheading colour" = "Цвет подзаголовков";
-
-/* Settings description / tooltip (editor.subheading-color) */
-"Colour for level 2 and 3 headings" = "Цвет заголовков 2 и 3 уровня";
 
 /* Settings label (editor.paragraph-spacing) */
 "Paragraph spacing" = "Интервал между абзацами";
@@ -787,12 +748,6 @@
 
 /* Settings description / tooltip (appearance.sidebar-show-recents) */
 "Show the Recents section in the sidebar" = "Показывать раздел «Недавние» в боковой панели";
-
-/* Settings description / tooltip (appearance.editor-width) */
-"Editor content width mode" = "Режим ширины содержимого редактора";
-
-/* Settings option (appearance.editor-width); Editor width option (vs Wide). */
-"Narrow" = "Узкий";
 
 /* Settings label (fonts.editor) */
 "Editor font" = "Шрифт редактора";
@@ -877,12 +832,6 @@
 
 /* Settings description / tooltip (workspace.restore-open-files) */
 "Reopen previously open files when opening a workspace" = "Снова открывать ранее открытые файлы при открытии рабочей области";
-
-/* Settings label (workspace.max-recent-workspaces) */
-"Max recent workspaces" = "Макс. недавних областей";
-
-/* Settings description / tooltip (workspace.max-recent-workspaces) */
-"Maximum number of recent workspaces to remember" = "Сколько недавних рабочих областей запоминать";
 
 /* Settings label (window.restore-workspace) */
 "Restore workspace" = "Восстанавливать рабочую область";

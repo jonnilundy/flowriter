@@ -70,7 +70,7 @@ Every row below: marks hidden when the caret is off the node's lines, shown when
 ### 1.3 Block syntax
 - **ATX headings** (`heading-decorations.ts`, `syntaxHighlighting.ts:36`):
   - Sizes: H1 1.6em, H2 1.4em, H3 1.2em, H4–H6 1em (body size). All weight 600.
-  - Colours: H1 `theme.*.heading-color`. H2 and H3 `editor.subheading-color` (default #3a3a3a, the same in both modes; see §9). H4–H6 body colour.
+  - Colours: H1 `theme.*.heading-color`. H2 and H3 the same heading colour. H4–H6 body colour. (The web app used a fixed grey #3a3a3a for H2 and H3, nearly invisible on dark. Flowriter removed that setting.)
   - **Hash marks hang in the left margin**: absolutely positioned at `right: 100%`, 0.4em right padding, muted colour. The highlight style adds opacity 0.4. They are visible **only while the caret is on that heading line**; otherwise opacity 0 (never font-size 0), `prosemark-theme.css:268-283, 396-399`. Heading text is always flush with body text.
   - **No-go zone** `[lineStart, hashEnd)`: a transaction filter clamps any caret or selection endpoint inside it to the first heading character (`heading-decorations.ts:238-252`).
     - Example: clicking before `## Foo` puts the caret before `F`.
@@ -83,7 +83,7 @@ Every row below: marks hidden when the caret is off the node's lines, shown when
   - Mousedown toggles the fold.
   - A section runs from the end of the heading line to the line before the next heading of the same or shallower depth, or to end of document. Headings with nothing beneath them are not foldable.
   - The folded placeholder is invisible (it must still occupy a navigable position so Down-arrow works).
-  - Setting `editor.show-heading-chevrons=false` hides the chevrons; folding still works from the menu.
+  - Flowriter hides the chevrons; folding still works from the menu.
 - **Horizontal rule** `---` / `***` on its own line: replaced by a 1.4em-tall flex row with `<hr>` at opacity 0.2. Hidden unless the selection touches it; clicking selects its source (`fold/horizontalRule.ts`).
 - **Blockquote**:
   - Each line gets `.cm-blockquote-line`: a 0.3em vertical bar in `--blockquote-border` colour at inset 0 (theme override), text inset 1em.
@@ -364,15 +364,12 @@ The Preferences page shows a section per category (13px muted header); the Theme
 - **Editor**:
   - `editor.font-size` 16
   - `editor.line-height` 1.5
-  - `editor.tab-size` 2 (**unused anywhere**)
   - `editor.auto-insert-daily-heading` true
   - `editor.show-outline` true
-  - `editor.show-heading-chevrons` true
   - `editor.outline-indent-per-level` 12
   - `editor.jump-to-bottom-after-minutes` 10
   - `editor.heading-space-before` 0px
   - `editor.heading-space-after` 8px
-  - `editor.subheading-color` #3a3a3a
   - `editor.paragraph-spacing` 0px
   - `editor.bullet-spacing` 12px
 - **Status bar**: `statusbar.show-words`, `statusbar.show-characters`, `statusbar.show-paragraphs`, all false.
@@ -383,16 +380,13 @@ The Preferences page shows a section per category (13px muted header); the Theme
   - `appearance.sidebar-file-label` title
   - `appearance.sidebar-show-search` false
   - `appearance.sidebar-show-recents` true
-  - `appearance.editor-width` full (see §9)
 - **Fonts**: `fonts.ui`, `fonts.editor`, `fonts.mono` (stacks in §1.1).
 - **Theme**: `theme.{light,dark}.{preset, accent, background, foreground, heading-color, translucent, contrast}` (values in §1.1).
 - **Files**:
   - `files.associations` [*.md, *.mdx, *.markdown, *.csv]
-  - `files.default-encoding` utf-8
   - `files.insert-final-newline` true
   - `files.trim-trailing-whitespace` false
-- **Workspace / window**: `workspace.restore-open-files` true, `workspace.max-recent-workspaces` 10, `window.restore-workspace` true.
-- **Search**: `search.debounce-ms` 150, `search.max-results` 50.
+- **Workspace / window**: `workspace.restore-open-files` true, `window.restore-workspace` true.
 
 ## 4. Tauri backend commands (`src-tauri/src/lib.rs:725-767`)
 | Command | Semantics |
@@ -426,11 +420,8 @@ The Preferences page shows a section per category (13px muted header); the Theme
 
 ## 9. Quirks to decide on (copy or fix)
 1. **Cmd-K never inserts a link.** The menu's Search… takes the key equivalent first.
-2. **`appearance.editor-width` has no effect.** `--writer-editor-max-width` is set on a child element, but `--writer-editor-outer-width` was already resolved at `:root`, so the column stays 734px.
-3. **Subheading colour #3a3a3a is the same in both modes**, so H2 and H3 are nearly invisible on a dark background.
-4. **The syntax palette for code blocks is the dark one in light mode too** (`lightTheme` is never installed).
-5. **`editor.tab-size` is unused.** Indent on non-list lines uses CodeMirror's default indent unit.
-6. **Sidebar auto-hide below 850px also blocks showing it.** The toggle only flips the saved preference, so the sidebar cannot be shown at that width.
-7. **An external file change silently discards unsaved edits.**
-8. **Date formats differ**: the daily heading uses `YYYY.MM.DD`, "Insert current date" uses `YYYY-MM-DD`.
-9. **The comment at `prosemark-theme.css:276` says clicking the hash folds the section; the code only places the caret.**
+2. **The syntax palette for code blocks is the dark one in light mode too** (`lightTheme` is never installed).
+3. **Sidebar auto-hide below 850px also blocks showing it.** The toggle only flips the saved preference, so the sidebar cannot be shown at that width.
+4. **An external file change silently discards unsaved edits.**
+5. **Date formats differ**: the daily heading uses `YYYY.MM.DD`, "Insert current date" uses `YYYY-MM-DD`.
+6. **The comment at `prosemark-theme.css:276` says clicking the hash folds the section; the code only places the caret.**

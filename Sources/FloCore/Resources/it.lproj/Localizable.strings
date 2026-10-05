@@ -232,17 +232,11 @@
 /* SettingsWindow.swift */
 "File name" = "Nome file";
 
-/* SettingsWindow.swift; Editor width option (vs Narrow). */
-"Wide" = "Ampia";
-
 /* SettingsWindow.swift; Unit: pixels. */
 "px" = "px";
 
 /* SettingsWindow.swift; Unit: minutes (short). */
 "min" = "min";
-
-/* SettingsWindow.swift; Unit: milliseconds. */
-"ms" = "ms";
 
 /* SettingsWindow.swift; SettingsWindow.swift (Settings pane / toolbar tab); SettingsWindow.swift (Settings group label, shown with a colon) */
 "Appearance" = "Aspetto";
@@ -252,9 +246,6 @@
 
 /* SettingsWindow.swift */
 "File labels" = "Etichette file";
-
-/* SettingsWindow.swift */
-"Editor width" = "Larghezza editor";
 
 /* SettingsWindow.swift; ShellWindow.swift */
 "Show sidebar" = "Mostra barra laterale";
@@ -290,9 +281,6 @@
 "Files" = "File";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"On launch" = "All'avvio";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Daily notes" = "Note giornaliere";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
@@ -302,16 +290,7 @@
 "Spacing" = "Spaziatura";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Headings" = "Titoli";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Outline" = "Struttura";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Sidebar" = "Barra laterale";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Fonts" = "Font";
 
 /* ShellMenus.swift; ShellWindow.swift; Context menu item (open a file) and the open-panel confirm button. */
 "Open" = "Apri";
@@ -716,12 +695,6 @@
 /* Settings description / tooltip (editor.line-height) */
 "Line height multiplier for the editor" = "Moltiplicatore dell'interlinea dell'editor";
 
-/* Settings label (editor.tab-size) */
-"Tab size" = "Larghezza tabulazione";
-
-/* Settings description / tooltip (editor.tab-size) */
-"Number of spaces per tab" = "Numero di spazi per tabulazione";
-
 /* Settings label (editor.auto-insert-daily-heading) */
 "Insert today's date heading" = "Inserisci titolo con la data di oggi";
 
@@ -733,12 +706,6 @@
 
 /* Settings description / tooltip (editor.show-outline) */
 "The tick marks at the right edge of the editor that expand into a document outline on hover" = "Le tacche sul bordo destro dell'editor che, al passaggio del puntatore, si espandono nella struttura del documento";
-
-/* Settings label (editor.show-heading-chevrons) */
-"Show heading fold arrows" = "Mostra frecce per comprimere i titoli";
-
-/* Settings description / tooltip (editor.show-heading-chevrons) */
-"The arrow beside each heading for collapsing its section. Headings can still be folded from the View menu when hidden" = "La freccia accanto a ogni titolo per comprimerne la sezione. Se nascosta, i titoli si possono comunque comprimere dal menu Vista";
 
 /* Settings label (editor.jump-to-bottom-after-minutes) */
 "Jump to bottom after (minutes)" = "Vai in fondo dopo (minuti)";
@@ -757,12 +724,6 @@
 
 /* Settings description / tooltip (editor.heading-space-after) */
 "Extra vertical space below a heading" = "Spazio verticale aggiuntivo sotto un titolo";
-
-/* Settings label (editor.subheading-color) */
-"Subheading colour" = "Colore sottotitoli";
-
-/* Settings description / tooltip (editor.subheading-color) */
-"Colour for level 2 and 3 headings" = "Colore dei titoli di livello 2 e 3";
 
 /* Settings label (editor.paragraph-spacing) */
 "Paragraph spacing" = "Spaziatura paragrafi";
@@ -787,12 +748,6 @@
 
 /* Settings description / tooltip (appearance.sidebar-show-recents) */
 "Show the Recents section in the sidebar" = "Mostra la sezione Recenti nella barra laterale";
-
-/* Settings description / tooltip (appearance.editor-width) */
-"Editor content width mode" = "Larghezza del contenuto dell'editor";
-
-/* Settings option (appearance.editor-width); Editor width option (vs Wide). */
-"Narrow" = "Stretta";
 
 /* Settings label (fonts.editor) */
 "Editor font" = "Font editor";
@@ -877,12 +832,6 @@
 
 /* Settings description / tooltip (workspace.restore-open-files) */
 "Reopen previously open files when opening a workspace" = "Riapre i file aperti in precedenza quando si apre uno spazio di lavoro";
-
-/* Settings label (workspace.max-recent-workspaces) */
-"Max recent workspaces" = "Spazi di lavoro recenti (max)";
-
-/* Settings description / tooltip (workspace.max-recent-workspaces) */
-"Maximum number of recent workspaces to remember" = "Numero massimo di spazi di lavoro recenti da ricordare";
 
 /* Settings label (window.restore-workspace) */
 "Restore workspace" = "Ripristina spazio di lavoro";

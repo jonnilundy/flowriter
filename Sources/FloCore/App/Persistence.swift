@@ -167,7 +167,7 @@ public final class SessionAutosaver {
 // MARK: - Recent workspaces (recent_workspaces.json)
 
 public final class RecentWorkspacesStore {
-    /// Hard-coded in the Rust (`truncate(10)`), independent of `workspace.max-recent-workspaces`.
+    /// Hard-coded in the Rust (`truncate(10)`).
     public static let maxCount = 10
     public let url: URL
 

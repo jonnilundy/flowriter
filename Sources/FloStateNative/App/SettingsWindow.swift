@@ -59,20 +59,12 @@ enum SettingsPanes {
     static let all: [Pane] = [
         Pane(id: "general", title: "General", symbol: "gearshape", groups: [
             ("Appearance", ["appearance.theme"]),
-            ("On launch", ["window.restore-workspace", "workspace.restore-open-files"]),
-            (nil, ["workspace.max-recent-workspaces"]),
             ("Daily notes", ["editor.auto-insert-daily-heading", "editor.jump-to-bottom-after-minutes"]),
         ]),
         Pane(id: "editor", title: "Editor", symbol: "text.alignleft", groups: [
-            ("Text", ["editor.font-size", "editor.line-height", "editor.tab-size", "appearance.editor-width"]),
+            ("Text", ["fonts.editor", "editor.font-size", "editor.line-height"]),
             ("Spacing", ["editor.heading-space-before", "editor.heading-space-after", "editor.paragraph-spacing", "editor.bullet-spacing"]),
-            (nil, ["editor.subheading-color"]),
-            ("Headings", ["editor.show-heading-chevrons"]),
             ("Outline", ["editor.show-outline"]),
-        ]),
-        Pane(id: "appearance", title: "Appearance", symbol: "sidebar.left", groups: [
-            ("Sidebar", ["appearance.sidebar-file-label", "appearance.sidebar-show-search", "appearance.sidebar-show-recents"]),
-            ("Fonts", ["fonts.editor", "fonts.mono"]),
         ]),
         Pane(id: "theme", title: "Theme", symbol: "paintpalette", groups: [
             ("Light", ["theme.light.preset", "theme.light.background", "theme.light.foreground",
@@ -92,9 +84,12 @@ enum SettingsPanes {
         "editor.outline-indent-per-level",
         "appearance.sidebar-visible", "appearance.sidebar-width",  // Cmd-\ and the resize handle
         "fonts.ui",
-        "files.default-encoding", "files.insert-final-newline", "files.trim-trailing-whitespace",
-        "search.debounce-ms", "search.max-results",
-        "theme.light.accent", "theme.dark.accent",  // unused: accents follow the system accent colour
+        "files.insert-final-newline", "files.trim-trailing-whitespace",
+        // workspace windows only: Flowriter has one document per window, no sidebar, no workspace
+        "appearance.sidebar-file-label", "appearance.sidebar-show-search", "appearance.sidebar-show-recents",
+        "fonts.mono", "window.restore-workspace", "workspace.restore-open-files",
+        // links, selection, find highlights and heading links use the accent; the theme presets set it
+        "theme.light.accent", "theme.dark.accent",
     ]
 
     /// Theme preset display names ("Writer" is the legacy preset id, kept in config).
@@ -109,7 +104,6 @@ enum SettingsPanes {
         case ("appearance.theme", "system"): return L("Match System")
         case ("appearance.sidebar-file-label", "title"): return L("Document title")
         case ("appearance.sidebar-file-label", "filename"): return L("File name")
-        case ("appearance.editor-width", "full"): return L("Wide")   // not the full window width
         default: return L(option.prefix(1).uppercased() + option.dropFirst())
         }
     }
@@ -117,7 +111,6 @@ enum SettingsPanes {
     static func unit(_ def: SettingDef) -> String? {
         if def.cssFormat == "px" || def.key == "appearance.sidebar-width" || def.key == "editor.outline-indent-per-level" { return L("px") }
         if def.key.hasSuffix("-minutes") { return L("min") }
-        if def.key.hasSuffix("-ms") { return L("ms") }
         return nil
     }
 
@@ -126,7 +119,6 @@ enum SettingsPanes {
         switch def.key {
         case "editor.line-height": return (1, 3, 0.05)
         case "appearance.sidebar-width": return (220, 420, 1)
-        case "search.debounce-ms": return (0, 2000, 10)
         default: return (0, 1000, 1)
         }
     }
@@ -329,7 +321,7 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
     static let folderKey = "files.default-note-location"
 
     static let inlineHelp: Set<String> = ["editor.jump-to-bottom-after-minutes", "editor.auto-insert-daily-heading",
-                                          "files.associations", "appearance.editor-width"]
+                                          "files.associations"]
 
     /// Native wording where the schema label reads oddly in a Settings window.
     static func displayLabel(_ def: SettingDef) -> String {
@@ -337,7 +329,6 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
         case "appearance.theme": return L("Appearance")
         case "appearance.sidebar-width": return L("Default width")
         case "appearance.sidebar-file-label": return L("File labels")
-        case "appearance.editor-width": return L("Editor width")
         case "appearance.sidebar-visible": return L("Show sidebar")
         case "appearance.sidebar-show-search": return L("Show search button")
         case "appearance.sidebar-show-recents": return L("Show recents")
