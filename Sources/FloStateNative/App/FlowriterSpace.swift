@@ -93,6 +93,7 @@ enum FlowriterSpace {
             ShortcutHintsView.installMenu(in: view, at: 0)
             view.insertItem(top, at: 0)
         }
+        WritingSpaceMenu.install(in: main)   // File, View, Window: the items that need tabs, a sidebar or a workspace go
     }
 
     final class AppearanceMenuDelegate: NSObject, NSMenuDelegate {

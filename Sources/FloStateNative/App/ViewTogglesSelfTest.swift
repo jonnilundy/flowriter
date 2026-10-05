@@ -211,6 +211,9 @@ enum ViewTogglesScenarios {
         let tracking = items.filter { $0.title == ViewTogglesView.trackingTitle }
         T.expect(tracking.count == 1 && tracking.first.map { chord($0) == "\(ViewTogglesView.trackingKey.mods.rawValue)-t" } == true, "View menu: Tracking Mode on ⌃⌘T (\(tracking.count) item)")
         T.expect(!items.contains { $0.title == L("Toggle Typewriter Scrolling") }, "View menu: no Toggle Typewriter Scrolling item")
+        // the writing space prunes the tab, sidebar and workspace items (WritingSpaceMenu); ⌘W is Close Window
+        T.expect(!items.contains { [L("New Tab"), L("Close Tab"), L("Toggle Sidebar"), L("Go to Tab")].contains($0.title) }, "no tab or sidebar items in the menus")
+        T.expect(items.first { $0.title == L("Close Window") }.map { chord($0) == "\(NSEvent.ModifierFlags.command.rawValue)-w" } ?? false, "Close Window takes ⌘W")
         if let t = tracking.first {
             T.expect(items.filter { $0 !== t && chord($0) == chord(t) }.isEmpty, "no other menu item on Tracking Mode's shortcut")
             let was = ViewToggles.tracking
