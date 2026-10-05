@@ -437,7 +437,7 @@ final class OverflowTextView: NSTextView {
 // MARK: - toggle button
 
 @MainActor
-final class OverflowToggleButton: NSButton {
+final class OverflowToggleButton: NSButton, PointerCursorProviding {
     static let size: CGFloat = 28
     var idleColor = NSColor.tertiaryLabelColor
     var hoverColor = NSColor.secondaryLabelColor
@@ -470,6 +470,14 @@ final class OverflowToggleButton: NSButton {
     }
     override func mouseEntered(with event: NSEvent) { hovering = true }
     override func mouseExited(with event: NSEvent) { hovering = false }
+
+    // The pointer: the page's I-beam is under this view (PointerCursor.swift).
+    var pointerRects: [PointerCursor.Rect] { PointerCursor.hand(bounds) }
+    override func resetCursorRects() { PointerCursor.reset(self) }
+    override var frame: NSRect { didSet { if frame != oldValue { PointerCursor.invalidate(self) } } }
+    override func viewDidMoveToWindow() { super.viewDidMoveToWindow(); PointerCursor.invalidate(self) }
+    override func viewDidHide() { super.viewDidHide(); PointerCursor.invalidate(self) }
+    override func viewDidUnhide() { super.viewDidUnhide(); PointerCursor.invalidate(self) }
 }
 
 extension EditorPaneView {

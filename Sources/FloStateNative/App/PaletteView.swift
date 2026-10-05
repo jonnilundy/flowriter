@@ -35,7 +35,7 @@ final class PaletteInputField: NSTextField {
 
 /// The destination button at the right end of the new-note input row: the location's name and a small
 /// chevron. Quiet: no border until hover. Clicking it drops the menu of locations.
-final class PaletteDestinationChip: FlippedView {
+final class PaletteDestinationChip: FlippedView, PointerCursorProviding {
     static let height: CGFloat = 26
     static let padding: CGFloat = 8
     static let chevronWidth: CGFloat = 7
@@ -43,7 +43,7 @@ final class PaletteDestinationChip: FlippedView {
     var palette: ShellPalette?
     var font: NSFont = .systemFont(ofSize: 12)
     var chip: PaletteDestination.Chip? {
-        didSet { toolTip = chip?.tooltip; if chip != oldValue { hovering = false; needsDisplay = true } }
+        didSet { toolTip = chip?.tooltip; if chip != oldValue { hovering = false; needsDisplay = true; PointerCursor.invalidate(self) } }
     }
     var hovering = false { didSet { if hovering != oldValue { needsDisplay = true } } }
     var onClick: (() -> Void)?
@@ -86,6 +86,15 @@ final class PaletteDestinationChip: FlippedView {
     override func mouseExited(with event: NSEvent) { hovering = false }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override var acceptsFirstResponder: Bool { false }
+
+    // The pointer: the page's I-beam is under this view (PointerCursor.swift). A drop-down while there are
+    // locations to pick from, else a plain label.
+    var pointerRects: [PointerCursor.Rect] { chip?.hasMenu == true ? PointerCursor.hand(bounds) : PointerCursor.arrow(bounds) }
+    override func resetCursorRects() { PointerCursor.reset(self) }
+    override var frame: NSRect { didSet { if frame != oldValue { PointerCursor.invalidate(self) } } }
+    override func viewDidMoveToWindow() { super.viewDidMoveToWindow(); PointerCursor.invalidate(self) }
+    override func viewDidHide() { super.viewDidHide(); PointerCursor.invalidate(self) }
+    override func viewDidUnhide() { super.viewDidUnhide(); PointerCursor.invalidate(self) }
     override func mouseDown(with event: NSEvent) {
         guard chip?.hasMenu == true else { return }
         hovering = true

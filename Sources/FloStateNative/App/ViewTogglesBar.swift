@@ -108,7 +108,7 @@ final class ViewTogglesView: FlippedView {
 /// One quiet icon toggle: the count's muted colour while off, a little stronger while on, the
 /// text colour's secondary strength under the pointer.
 @MainActor
-final class ViewToggleButton: FlippedView {
+final class ViewToggleButton: FlippedView, PointerCursorProviding {
     let icon: Icon
     /// Width of the drawn icon (strokes included, viewBox units), for optical spacing.
     let ink: CGFloat
@@ -137,6 +137,14 @@ final class ViewToggleButton: FlippedView {
     }
     override func mouseEntered(with event: NSEvent) { hovering = true }
     override func mouseExited(with event: NSEvent) { hovering = false }
+
+    // The pointer: the page's I-beam is under this view (PointerCursor.swift).
+    var pointerRects: [PointerCursor.Rect] { PointerCursor.hand(bounds) }
+    override func resetCursorRects() { PointerCursor.reset(self) }
+    override var frame: NSRect { didSet { if frame != oldValue { PointerCursor.invalidate(self) } } }
+    override func viewDidMoveToWindow() { super.viewDidMoveToWindow(); PointerCursor.invalidate(self) }
+    override func viewDidHide() { super.viewDidHide(); PointerCursor.invalidate(self) }
+    override func viewDidUnhide() { super.viewDidUnhide(); PointerCursor.invalidate(self) }
     /// Tracked here like IconButton: in the title-bar strip AppKit never delivers the mouse-up.
     override func mouseDown(with event: NSEvent) {
         guard let w = window else { return }

@@ -311,7 +311,7 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
             // wrap onto more lines rather than clipping patterns off the end
             t.cell?.wraps = true
             t.cell?.isScrollable = false
-            t.widthAnchor.constraint(equalToConstant: 300).isActive = true
+            t.widthAnchor.constraint(equalToConstant: 300).withPriority(.defaultHigh).isActive = true   // the pane can set another
             t.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
             tokens = t; built = t
         }
@@ -475,17 +475,19 @@ final class SettingsPaneController: NSViewController {
                     let row = grid.addRow(with: [c.label, c.view])
                     row.yPlacement = .center
                     if let e = c.locations {
-                        // the label lines up with the first location, not the middle of the list
-                        row.yPlacement = .top
-                        let pad = NSStackView(views: [c.label])
-                        pad.edgeInsets = NSEdgeInsets(top: 3, left: 0, bottom: 0, right: 0)
-                        row.cell(at: 0).contentView = pad
+                        // the label shares a baseline with the first location (its nickname), not the middle of the list
+                        row.rowAlignment = .firstBaseline
                         e.onSizeChange = { [weak self] in self?.refit() }
+                        locationsEditor = e
                     }
                     if firstInGroup && gi > 0 { row.topPadding = 14 }
                     firstInGroup = false
                     if let h = c.help { grid.addRow(with: [NSGridCell.emptyContentView, h]).topPadding = -3 }
                 }
+            }
+            // the File associations box is as wide as the locations above it: one left edge, one right edge
+            if let e = locationsEditor, let t = controls.compactMap(\.tokens).first {
+                t.widthAnchor.constraint(equalTo: e.widthAnchor).isActive = true
             }
             grid.column(at: 0).xPlacement = .trailing
             grid.column(at: 1).xPlacement = .leading
@@ -513,6 +515,7 @@ final class SettingsPaneController: NSViewController {
     }
 
     private weak var grid: NSGridView?
+    private weak var locationsEditor: LocationsEditorView?
 
     /// Size the pane to its grid; again after a control (the locations list) changes height.
     func refit() {
@@ -521,7 +524,9 @@ final class SettingsPaneController: NSViewController {
         let size = NSSize(width: max(520, ceil(fit.width)), height: ceil(fit.height))
         guard size != preferredContentSize else { return }
         preferredContentSize = size
-        view.frame = NSRect(origin: .zero, size: size)
+        // Not once the tab view hosts the pane: a frame set by hand turns into fixed constraints
+        // there (a stale gap below the pane), and the window then never shrinks again.
+        if view.superview == nil { view.frame = NSRect(origin: .zero, size: size) }
         if let wc = view.window?.windowController as? SettingsWindowController, wc.selectedPane === self {
             wc.resizeToPane(animate: false)
         }
@@ -613,7 +618,8 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         DispatchQueue.main.async { [weak self] in MainActor.assumeIsolated { self?.resizeToPane(animate: false) } }
     }
 
-    /// Fit the window to the selected pane, keeping its top edge.
+    /// Fit the window to the selected pane: the top edge stays, the window grows or shrinks around its
+    /// centre line and stays on its screen.
     func resizeToPane(animate: Bool) {
         guard let w = window else { return }
         _ = selectedPane.view
@@ -621,7 +627,11 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let frame = w.frameRect(forContentRect: NSRect(origin: .zero, size: size))
         var f = w.frame
         f.origin.y += f.height - frame.height
+        f.origin.x += (f.width - frame.width) / 2
         f.size = frame.size
+        if let screen = w.screen?.visibleFrame, f.width <= screen.width {
+            f.origin.x = min(max(f.origin.x, screen.minX), screen.maxX - f.width)
+        }
         w.setFrame(f, display: true, animate: animate)
     }
 
