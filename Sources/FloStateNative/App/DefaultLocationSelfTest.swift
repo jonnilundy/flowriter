@@ -90,8 +90,9 @@ enum DefaultLocationScenarios {
             let frameView = w.contentView!.superview!
             frameView.layoutSubtreeIfNeeded()
             frameView.display()
-            let control = wc.selectedPane.control("files.default-note-location")
-            T.expect(control?.folderLabel?.stringValue == NewNoteLocation.abbreviated(dest), "Settings row shows the path (\(control?.folderLabel?.stringValue ?? "nil"))")
+            let row = wc.selectedPane.control("files.note-locations")?.locations?.rows.first
+            T.expect(row?.pathLabel.stringValue == NewNoteLocation.abbreviated(dest), "Settings row shows the path (\(row?.pathLabel.stringValue ?? "nil"))")
+            T.expect(row?.marker.toolTip?.hasPrefix(L("Default location for new notes")) == true, "the row is marked as the default")
             let rep = frameView.bitmapImageRepForCachingDisplay(in: frameView.bounds)!
             frameView.cacheDisplay(in: frameView.bounds, to: rep)
             let png = (ctx.out as NSString).appendingPathComponent("default-location-settings-\(appearance).png")
