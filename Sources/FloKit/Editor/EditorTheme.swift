@@ -14,7 +14,6 @@ public final class EditorTheme {
     public var foreground: NSColor
     public var accent: NSColor
     public var headingColor: NSColor
-    public var subheadingColor: NSColor
     public var contrast: CGFloat
     public var background: NSColor
     /// Root font size for `rem` units (the web app's html font-size).
@@ -25,7 +24,7 @@ public final class EditorTheme {
                 headingSpaceAfter: CGFloat = 8, paragraphSpacing: CGFloat = 0, bulletSpacing: CGFloat = 12,
                 fontFamilies: [String] = ["Proxima Nova"], foreground: NSColor = NSColor(hex: "#0D0D0D"),
                 accent: NSColor = .controlAccentColor, headingColor: NSColor = NSColor(hex: "#191919"),
-                subheadingColor: NSColor = NSColor(hex: "#4A86E8"), contrast: CGFloat = 0.36,
+                contrast: CGFloat = 0.36,
                 background: NSColor = NSColor(hex: "#F9F9F9")) {
         self.baseSize = baseSize
         self.lineHeight = lineHeight
@@ -37,7 +36,6 @@ public final class EditorTheme {
         self.foreground = foreground
         self.accent = accent
         self.headingColor = headingColor
-        self.subheadingColor = subheadingColor
         self.contrast = contrast
         self.background = background
     }
@@ -61,7 +59,7 @@ public final class EditorTheme {
         case .muted: return mutedColor
         case .link: return accent
         case .heading1: return headingColor
-        case .subheading: return subheadingColor
+        case .subheading: return headingColor   // H2/H3 take the heading colour
         case .transparent: return .clear
         case .invalid: return NSColor(oklchL: 0.7593, c: 0.182, h: 28.91)
         case .syntax(let name): return Self.syntaxColors[name] ?? textColor

@@ -232,17 +232,11 @@
 /* SettingsWindow.swift */
 "File name" = "اسم الملف";
 
-/* SettingsWindow.swift; Editor width option (vs Narrow). */
-"Wide" = "عريض";
-
 /* SettingsWindow.swift; Unit: pixels. */
 "px" = "px";
 
 /* SettingsWindow.swift; Unit: minutes (short). */
 "min" = "دقيقة";
-
-/* SettingsWindow.swift; Unit: milliseconds. */
-"ms" = "ms";
 
 /* SettingsWindow.swift; SettingsWindow.swift (Settings pane / toolbar tab); SettingsWindow.swift (Settings group label, shown with a colon) */
 "Appearance" = "المظهر";
@@ -252,9 +246,6 @@
 
 /* SettingsWindow.swift */
 "File labels" = "تسميات الملفات";
-
-/* SettingsWindow.swift */
-"Editor width" = "عرض المحرر";
 
 /* SettingsWindow.swift; ShellWindow.swift */
 "Show sidebar" = "إظهار الشريط الجانبي";
@@ -290,9 +281,6 @@
 "Files" = "الملفات";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"On launch" = "عند التشغيل";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Daily notes" = "الملاحظات اليومية";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
@@ -302,16 +290,7 @@
 "Spacing" = "التباعد";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Headings" = "العناوين";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Outline" = "المخطط";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Sidebar" = "الشريط الجانبي";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Fonts" = "الخطوط";
 
 /* ShellMenus.swift; ShellWindow.swift; Context menu item (open a file) and the open-panel confirm button. */
 "Open" = "فتح";
@@ -716,12 +695,6 @@
 /* Settings description / tooltip (editor.line-height) */
 "Line height multiplier for the editor" = "مُضاعِف ارتفاع السطر في المحرر";
 
-/* Settings label (editor.tab-size) */
-"Tab size" = "حجم علامة الجدولة";
-
-/* Settings description / tooltip (editor.tab-size) */
-"Number of spaces per tab" = "عدد المسافات لكل علامة جدولة";
-
 /* Settings label (editor.auto-insert-daily-heading) */
 "Insert today's date heading" = "إدراج عنوان بتاريخ اليوم";
 
@@ -733,12 +706,6 @@
 
 /* Settings description / tooltip (editor.show-outline) */
 "The tick marks at the right edge of the editor that expand into a document outline on hover" = "العلامات على الحافة اليمنى للمحرر التي تتوسع إلى مخطط المستند عند التمرير فوقها";
-
-/* Settings label (editor.show-heading-chevrons) */
-"Show heading fold arrows" = "إظهار أسهم طي العناوين";
-
-/* Settings description / tooltip (editor.show-heading-chevrons) */
-"The arrow beside each heading for collapsing its section. Headings can still be folded from the View menu when hidden" = "السهم بجانب كل عنوان لطي قسمه. يمكن طي العناوين من قائمة عرض حتى عند إخفائه";
 
 /* Settings label (editor.jump-to-bottom-after-minutes) */
 "Jump to bottom after (minutes)" = "الانتقال إلى الأسفل بعد (دقائق)";
@@ -757,12 +724,6 @@
 
 /* Settings description / tooltip (editor.heading-space-after) */
 "Extra vertical space below a heading" = "مسافة رأسية إضافية أسفل العنوان";
-
-/* Settings label (editor.subheading-color) */
-"Subheading colour" = "لون العناوين الفرعية";
-
-/* Settings description / tooltip (editor.subheading-color) */
-"Colour for level 2 and 3 headings" = "لون عناوين المستويين ٢ و٣";
 
 /* Settings label (editor.paragraph-spacing) */
 "Paragraph spacing" = "تباعد الفقرات";
@@ -787,12 +748,6 @@
 
 /* Settings description / tooltip (appearance.sidebar-show-recents) */
 "Show the Recents section in the sidebar" = "إظهار قسم الأحدث في الشريط الجانبي";
-
-/* Settings description / tooltip (appearance.editor-width) */
-"Editor content width mode" = "وضع عرض محتوى المحرر";
-
-/* Settings option (appearance.editor-width); Editor width option (vs Wide). */
-"Narrow" = "ضيق";
 
 /* Settings label (fonts.editor) */
 "Editor font" = "خط المحرر";
@@ -877,12 +832,6 @@
 
 /* Settings description / tooltip (workspace.restore-open-files) */
 "Reopen previously open files when opening a workspace" = "إعادة فتح الملفات المفتوحة سابقًا عند فتح مساحة عمل";
-
-/* Settings label (workspace.max-recent-workspaces) */
-"Max recent workspaces" = "الحد الأقصى لمساحات العمل الحديثة";
-
-/* Settings description / tooltip (workspace.max-recent-workspaces) */
-"Maximum number of recent workspaces to remember" = "الحد الأقصى لعدد مساحات العمل الحديثة التي يتم تذكرها";
 
 /* Settings label (window.restore-workspace) */
 "Restore workspace" = "استعادة مساحة العمل";

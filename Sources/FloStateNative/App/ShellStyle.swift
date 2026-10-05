@@ -205,7 +205,7 @@ extension EditorTheme {
             headingSpaceBefore: CGFloat(v.editorHeadingSpaceBefore), headingSpaceAfter: CGFloat(v.editorHeadingSpaceAfter),
             paragraphSpacing: CGFloat(v.editorParagraphSpacing), bulletSpacing: CGFloat(v.editorBulletSpacing),
             fontFamilies: FontStack.editorFamilies(v.fontsEditor), foreground: t.fgBase.ns, accent: .controlAccentColor,
-            headingColor: t.headingColor.ns, subheadingColor: NSColor(hex: v.editorSubheadingColor),
+            headingColor: t.headingColor.ns,
             contrast: CGFloat(t.contrast), background: t.bgBase.mixedWithTransparent(t.bgOpacity).ns)
     }
 }

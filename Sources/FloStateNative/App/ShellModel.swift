@@ -215,7 +215,7 @@ final class ShellModel {
         values = settings.values
         notify(.settings)
         let editorKeys = ["editor.font-size", "editor.line-height", "editor.heading-space-before", "editor.heading-space-after",
-                          "editor.paragraph-spacing", "editor.bullet-spacing", "editor.subheading-color", "fonts.editor", "appearance.theme"]
+                          "editor.paragraph-spacing", "editor.bullet-spacing", "fonts.editor", "appearance.theme"]
         let themeChanged = SettingsSchema.all.contains { $0.key.hasPrefix("theme.") && old.raw[$0.key] != values.raw[$0.key] }
         if themeChanged || editorKeys.contains(where: { old.raw[$0] != values.raw[$0] }) { notify(.editorFont) }
         if themeChanged || old.raw["appearance.theme"] != values.raw["appearance.theme"] { notify(.theme) }

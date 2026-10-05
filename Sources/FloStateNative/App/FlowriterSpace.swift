@@ -24,8 +24,6 @@ enum FlowriterSpace {
         t.accent = accent
         t.selectionOverride = accent.withAlphaComponent(mode == .dark ? 0.32 : 0.22)
         t.maxTextWidth = (columnChars * t.ch).rounded()
-        // H2/H3 in the text colour (upstream: one fixed grey for light and dark)
-        t.subheadingColor = t.headingColor
     }
 
     // MARK: launch
