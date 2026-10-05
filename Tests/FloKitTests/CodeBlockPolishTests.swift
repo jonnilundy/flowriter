@@ -185,7 +185,7 @@ extension CodeBlockRenderTests {
     }
 
     /// With the user's substitutions turned on (Edit > Substitutions), prose gets them and code does not.
-    func testCodeGetsNoSubstitutions() {
+    func testCodeGetsNoSubstitutions() throws {
         for (name, doc, isCode) in [("prose", "text", false), ("fenced", "```\ncode", true), ("fenced-closed", "```\ncode\n```", true)] {
             let r = KeyReplayer(width: 1000, height: 600)
             let end = name == "fenced-closed" ? 8 : (doc as NSString).length
@@ -201,7 +201,9 @@ extension CodeBlockRenderTests {
             if isCode {
                 XCTAssertTrue(r.doc.contains(typed), "\(name): typed as is: \(r.doc.debugDescription)")
             } else {
-                XCTAssertFalse(r.doc.contains(typed), "\(name): prose still gets substitutions: \(r.doc.debugDescription)")
+                // Prose is the control. A host with no text checking service (a CI runner) substitutes nothing,
+                // so "code gets none" would pass for no reason. Skip there instead of passing or failing.
+                try XCTSkipIf(r.doc.contains(typed), "this host does not substitute text in prose: \(r.doc.debugDescription)")
             }
             XCTAssertEqual(r.viewText, r.doc, "\(name): view and state agree")
         }

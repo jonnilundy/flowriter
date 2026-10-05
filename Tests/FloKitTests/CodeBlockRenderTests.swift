@@ -67,7 +67,12 @@ final class CodeBlockRenderTests: XCTestCase {
         let tlm = tv.textLayoutManager!
         tlm.ensureLayout(for: tlm.documentRange)
         let rect = tv.visibleRect
-        let rep = tv.bitmapImageRepForCachingDisplay(in: rect)!
+        // Always 2x: the ink and gap thresholds were tuned on a Retina display, and a 1x host (a CI runner)
+        // would draw a quarter of the pixels with bitmapImageRepForCachingDisplay.
+        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(rect.width * 2), pixelsHigh: Int(rect.height * 2),
+                                   bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                   colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+        rep.size = rect.size
         tv.cacheDisplay(in: rect, to: rep)
         if let dir = ProcessInfo.processInfo.environment["CODEBLOCK_PNG_DIR"] {
             let file = "\(dir)/\(name)-\(reading ? "reading" : "writing")-\(dark ? "dark" : "light").png"
