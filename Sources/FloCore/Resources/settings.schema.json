@@ -341,7 +341,7 @@
     {
       "key": "files.note-locations",
       "label": "Writing locations",
-      "description": "Folders new notes can go in, one per line as \"Nickname|path\". The default location is the one that files.default-note-location names.",
+      "description": "Folders you write in. Give each a nickname and pick one as the default for new notes.",
       "category": "Files",
       "type": "list",
       "default": []
