@@ -257,6 +257,16 @@ public struct SettingsValues {
     // Files
     public var filesAssociations: [String] { list("files.associations") }
     public var filesDefaultNoteLocation: String { str("files.default-note-location") }
+    /// The raw "Nickname|path" lines of `files.note-locations`.
+    public var filesNoteLocationLines: [String] { list("files.note-locations") }
+    /// Every writing location: the list, plus the default folder when the list does not hold it.
+    public var noteLocations: [NoteLocation] {
+        NoteLocations.all(lines: filesNoteLocationLines, defaultPath: filesDefaultNoteLocation)
+    }
+    /// The default writing location, nil when none is set.
+    public var defaultNoteLocation: NoteLocation? {
+        NoteLocations.defaultLocation(in: noteLocations, defaultPath: filesDefaultNoteLocation)
+    }
     public var filesDefaultEncoding: String { str("files.default-encoding") }
     public var filesInsertFinalNewline: Bool { bool("files.insert-final-newline") }
     public var filesTrimTrailingWhitespace: Bool { bool("files.trim-trailing-whitespace") }

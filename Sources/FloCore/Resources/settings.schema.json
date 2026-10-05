@@ -373,6 +373,14 @@
       "default": ""
     },
     {
+      "key": "files.note-locations",
+      "label": "Writing locations",
+      "description": "Folders new notes can go in, one per line as \"Nickname|path\". The default location is the one that files.default-note-location names.",
+      "category": "Files",
+      "type": "list",
+      "default": []
+    },
+    {
       "key": "files.associations",
       "label": "File Associations",
       "description": "File patterns to include in the workspace",
