@@ -8,7 +8,7 @@ public enum ColorRole: Hashable {
     case muted           // --text-muted (fg 54%)
     case link            // --link-color (accent)
     case heading1        // theme heading-color
-    case subheading      // editor.subheading-color (H2/H3)
+    case subheading      // the heading colour (H2/H3)
     case transparent
     case syntax(String)  // code-block token colours by name (keyword, string, ...)
     case invalid

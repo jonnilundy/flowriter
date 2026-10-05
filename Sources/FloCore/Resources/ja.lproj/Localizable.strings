@@ -232,17 +232,11 @@
 /* SettingsWindow.swift */
 "File name" = "ファイル名";
 
-/* SettingsWindow.swift; Editor width option (vs Narrow). */
-"Wide" = "広い";
-
 /* SettingsWindow.swift; Unit: pixels. */
 "px" = "px";
 
 /* SettingsWindow.swift; Unit: minutes (short). */
 "min" = "分";
-
-/* SettingsWindow.swift; Unit: milliseconds. */
-"ms" = "ms";
 
 /* SettingsWindow.swift; SettingsWindow.swift (Settings pane / toolbar tab); SettingsWindow.swift (Settings group label, shown with a colon) */
 "Appearance" = "外観";
@@ -252,9 +246,6 @@
 
 /* SettingsWindow.swift */
 "File labels" = "ファイルのラベル";
-
-/* SettingsWindow.swift */
-"Editor width" = "エディタの幅";
 
 /* SettingsWindow.swift; ShellWindow.swift */
 "Show sidebar" = "サイドバーを表示";
@@ -290,9 +281,6 @@
 "Files" = "ファイル";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"On launch" = "起動時";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Daily notes" = "デイリーノート";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
@@ -302,16 +290,7 @@
 "Spacing" = "間隔";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Headings" = "見出し";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Outline" = "アウトライン";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Sidebar" = "サイドバー";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Fonts" = "フォント";
 
 /* ShellMenus.swift; ShellWindow.swift; Context menu item (open a file) and the open-panel confirm button. */
 "Open" = "開く";
@@ -716,12 +695,6 @@
 /* Settings description / tooltip (editor.line-height) */
 "Line height multiplier for the editor" = "エディタの行の高さの倍率";
 
-/* Settings label (editor.tab-size) */
-"Tab size" = "タブのサイズ";
-
-/* Settings description / tooltip (editor.tab-size) */
-"Number of spaces per tab" = "タブあたりのスペース数";
-
 /* Settings label (editor.auto-insert-daily-heading) */
 "Insert today's date heading" = "今日の日付の見出しを挿入";
 
@@ -733,12 +706,6 @@
 
 /* Settings description / tooltip (editor.show-outline) */
 "The tick marks at the right edge of the editor that expand into a document outline on hover" = "エディタ右端の目盛り。ポインタを重ねると書類のアウトラインが開きます";
-
-/* Settings label (editor.show-heading-chevrons) */
-"Show heading fold arrows" = "見出しの折りたたみ矢印を表示";
-
-/* Settings description / tooltip (editor.show-heading-chevrons) */
-"The arrow beside each heading for collapsing its section. Headings can still be folded from the View menu when hidden" = "各見出しの横にある、セクションを折りたたむための矢印。非表示にしても「表示」メニューから見出しを折りたためます";
 
 /* Settings label (editor.jump-to-bottom-after-minutes) */
 "Jump to bottom after (minutes)" = "末尾に移動するまでの時間（分）";
@@ -757,12 +724,6 @@
 
 /* Settings description / tooltip (editor.heading-space-after) */
 "Extra vertical space below a heading" = "見出しの下に追加する縦の間隔";
-
-/* Settings label (editor.subheading-color) */
-"Subheading colour" = "小見出しの色";
-
-/* Settings description / tooltip (editor.subheading-color) */
-"Colour for level 2 and 3 headings" = "レベル2と3の見出しの色";
 
 /* Settings label (editor.paragraph-spacing) */
 "Paragraph spacing" = "段落の間隔";
@@ -787,12 +748,6 @@
 
 /* Settings description / tooltip (appearance.sidebar-show-recents) */
 "Show the Recents section in the sidebar" = "サイドバーに「最近の項目」セクションを表示";
-
-/* Settings description / tooltip (appearance.editor-width) */
-"Editor content width mode" = "エディタの内容の幅";
-
-/* Settings option (appearance.editor-width); Editor width option (vs Wide). */
-"Narrow" = "狭い";
 
 /* Settings label (fonts.editor) */
 "Editor font" = "エディタのフォント";
@@ -878,12 +833,6 @@
 /* Settings description / tooltip (workspace.restore-open-files) */
 "Reopen previously open files when opening a workspace" = "ワークスペースを開くときに、前回開いていたファイルを再度開きます";
 
-/* Settings label (workspace.max-recent-workspaces) */
-"Max recent workspaces" = "最近のワークスペースの最大数";
-
-/* Settings description / tooltip (workspace.max-recent-workspaces) */
-"Maximum number of recent workspaces to remember" = "記憶する最近のワークスペースの最大数";
-
 /* Settings label (window.restore-workspace) */
 "Restore workspace" = "ワークスペースを復元";
 
@@ -956,3 +905,15 @@
 "Default location for new notes" = "Default location for new notes";
 "New notes" = "New notes";
 "The folder every new note is created in. Empty: next to the open note, or in the workspace folder." = "The folder every new note is created in. Empty: next to the open note, or in the workspace folder.";
+
+/* Writing locations: LocationsEditorView.swift, PaletteDestination.swift, settings schema. English until translated. */
+"Writing locations" = "Writing locations";
+"Add Location…" = "Add Location…";
+"Change…" = "Change…";
+"Remove" = "Remove";
+"Make default" = "Make default";
+"Folder missing" = "Folder missing";
+"Read-only" = "Read-only";
+"The folder \"%@\" is missing." = "The folder \"%@\" is missing.";
+"The folder \"%@\" can't be written to." = "The folder \"%@\" can't be written to.";
+"Folders you write in. Give each a nickname and pick one as the default for new notes." = "Folders you write in. Give each a nickname and pick one as the default for new notes.";

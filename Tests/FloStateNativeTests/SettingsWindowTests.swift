@@ -36,7 +36,8 @@ final class SettingsWindowTests: XCTestCase {
         XCTAssertFalse(w.styleMask.contains(.resizable))
         XCTAssertTrue(w.styleMask.contains(.titled) && w.styleMask.contains(.closable))
         XCTAssertEqual(w.toolbarStyle, .preference)
-        XCTAssertEqual(w.toolbar?.items.map { $0.label }, ["General", "Editor", "Appearance", "Theme", "Files"])
+        XCTAssertEqual(w.toolbar?.items.map { $0.label }, ["General", "Editor", "Theme", "Files"])
+        XCTAssertEqual(SettingsPanes.all.map { $0.id }, ["general", "editor", "theme", "files"])
         XCTAssertNil(w.appearance, "follows the system light/dark")
         for p in SettingsPanes.all {
             wc.select(p.id)
@@ -53,7 +54,7 @@ final class SettingsWindowTests: XCTestCase {
             heights.append(vc.preferredContentSize.height)
             XCTAssertLessThan(vc.preferredContentSize.height, 700, "\(p.id) fits a laptop screen")
         }
-        XCTAssertGreaterThan(Set(heights).count, 3, "panes resize the window")
+        XCTAssertGreaterThan(Set(heights).count, 2, "panes resize the window")
     }
 
     func testEverySettingHasANativeControl() {
@@ -68,8 +69,8 @@ final class SettingsWindowTests: XCTestCase {
                 case .number: XCTAssertNotNil(c.stepper, c.def.key); XCTAssertNotNil(c.field)
                 case .color: XCTAssertNotNil(c.well, c.def.key)
                 case .range: XCTAssertNotNil(c.slider, c.def.key)
-                case .list: XCTAssertNotNil(c.tokens, c.def.key)
-                case .string: XCTAssertTrue(c.field != nil || c.popup != nil || c.folderLabel != nil, c.def.key)
+                case .list: XCTAssertTrue(c.tokens != nil || c.locations != nil, c.def.key)
+                case .string: XCTAssertTrue(c.field != nil || c.popup != nil, c.def.key)
                 }
             }
         }
@@ -77,12 +78,25 @@ final class SettingsWindowTests: XCTestCase {
     }
 
     func testCheckboxWritesConfigAndBroadcasts() {
-        let c = pane("appearance").control("appearance.sidebar-show-search")!
-        XCTAssertEqual(c.checkbox?.state, .off)
-        c.checkbox!.state = .on
+        let c = pane("editor").control("editor.show-outline")!
+        XCTAssertEqual(c.checkbox?.state, .on)
+        c.checkbox!.state = .off
         c.changed(c.checkbox)
-        XCTAssertTrue(config.contains("appearance.sidebar-show-search = true"))
+        XCTAssertTrue(config.contains("editor.show-outline = false"))
         XCTAssertEqual(changes, 1)
+    }
+
+    /// Settings for workspace windows only, and the ones that did nothing, have no control.
+    func testWorkspaceOnlyAndRemovedSettingsHaveNoControl() {
+        for p in SettingsPanes.all { _ = pane(p.id) }
+        let shown = Set(SettingsPanes.allKeys)
+        for key in ["appearance.sidebar-file-label", "appearance.sidebar-show-search", "appearance.sidebar-show-recents",
+                    "fonts.mono", "window.restore-workspace", "workspace.restore-open-files"] {
+            XCTAssertNotNil(SettingsSchema.def(key), "\(key) is still a setting")
+            XCTAssertTrue(SettingsPanes.hiddenKeys.contains(key), key)
+            XCTAssertFalse(shown.contains(key), key)
+        }
+        XCTAssertTrue(pane("editor").controls.contains { $0.def.key == "fonts.editor" }, "the font moved to the Editor pane")
     }
 
     func testStepperAndFieldForNumbers() {
@@ -123,7 +137,7 @@ final class SettingsWindowTests: XCTestCase {
         files.commitTokens()
         XCTAssertTrue(config.contains("files.associations = *.md\nfiles.associations = *.txt"))
 
-        let font = pane("appearance").control("fonts.editor")!
+        let font = pane("editor").control("fonts.editor")!
         font.popup!.selectItem(withTitle: "Menlo")
         font.changed(font.popup)
         XCTAssertTrue(config.contains("fonts.editor = Menlo, -apple-system-body"), config)
@@ -153,9 +167,9 @@ final class SettingsWindowTests: XCTestCase {
     }
 
     func testExternalChangesSync() {
-        let c = pane("appearance").control("appearance.sidebar-show-recents")!
+        let c = pane("editor").control("editor.show-outline")!
         XCTAssertEqual(c.checkbox?.state, .on)
-        TFS.write(data + "/config", "appearance.sidebar-show-recents = false\n")
+        TFS.write(data + "/config", "editor.show-outline = false\n")
         backend.reloadFromDisk()
         wc.syncAll()
         XCTAssertEqual(c.checkbox?.state, .off)
@@ -182,32 +196,126 @@ final class SettingsBroadcastTests: XCTestCase {
     }
 }
 
+/// The Writing locations editor in the Files pane (it replaced the single default folder row).
 @MainActor
 final class DefaultLocationSettingTests: XCTestCase {
-    func testFolderRowChooseAndReset() {
-        let data = TFS.tempDir("settings")
-        let backend = SettingsBackend(dataDir: AppDataDirectory(baseURL: URL(fileURLWithPath: data)))
-        let wc = SettingsWindowController(backend: backend)
+    var data: String!
+    var backend: SettingsBackend!
+    var wc: SettingsWindowController!
+
+    override func setUp() async throws {
+        data = TFS.tempDir("settings")
+        backend = SettingsBackend(dataDir: AppDataDirectory(baseURL: URL(fileURLWithPath: data)))
+        wc = SettingsWindowController(backend: backend)
         wc.window!.setFrameOrigin(NSPoint(x: -10000, y: -10000))
-        defer { wc.window?.close() }
         wc.select("files")
-        let c = wc.selectedPane.control("files.default-note-location")!
-        XCTAssertEqual(c.folderLabel?.stringValue, "Not set")
-        XCTAssertEqual(c.resetButton?.isEnabled, false)
+    }
+
+    override func tearDown() async throws { wc.window?.close() }
+
+    var control: SettingControl { wc.selectedPane.control("files.note-locations")! }
+    var editor: LocationsEditorView { control.locations! }
+    var config: String { TFS.read(data + "/config") ?? "" }
+
+    func testTheOldFolderRowIsGone() {
+        XCTAssertNil(wc.selectedPane.control("files.default-note-location"), "the default is the marker on a row")
+        XCTAssertTrue(SettingsPanes.hiddenKeys.contains("files.default-note-location"))
+        XCTAssertEqual(wc.selectedPane.keys, ["files.note-locations", "files.associations"])
+    }
+
+    func testAddMarkDefaultAndRemove() {
+        XCTAssertTrue(editor.rows.isEmpty)
+        XCTAssertFalse(editor.emptyLabel.isHidden, "Not set")
         let folder = TFS.tempDir("notes")
         var asked: String?
-        c.pickFolder = { asked = $0; return folder + "/" }
-        c.chooseFolder(nil)
+        control.pickFolder = { asked = $0; return folder + "/" }
+        editor.addButton.performClick(nil)
         XCTAssertEqual(asked, "")
+        XCTAssertEqual(backend.values.noteLocations.map(\.path), [folder])
+        XCTAssertEqual(editor.rows.count, 1)
+        XCTAssertTrue(editor.emptyLabel.isHidden)
+        XCTAssertEqual(editor.rows[0].pathLabel.stringValue, NewNoteLocation.abbreviated(folder))
+        XCTAssertEqual(editor.rows[0].pathLabel.toolTip, NewNoteLocation.abbreviated(folder), "the full path")
+        XCTAssertNil(backend.values.defaultNoteLocation, "adding a folder does not make it the default")
+
+        control.pickFolder = { _ in folder }   // the same folder again: not added twice
+        editor.addButton.performClick(nil)
+        XCTAssertEqual(editor.rows.count, 1)
+        control.pickFolder = { _ in nil }   // cancelled: nothing changes
+        editor.addButton.performClick(nil)
+        XCTAssertEqual(backend.values.noteLocations.count, 1)
+
+        editor.rows[0].marker.performClick(nil)
         XCTAssertEqual(backend.values.filesDefaultNoteLocation, folder)
-        XCTAssertEqual(c.folderLabel?.stringValue, NewNoteLocation.abbreviated(folder))
-        XCTAssertEqual(c.resetButton?.isEnabled, true)
-        c.pickFolder = { _ in nil }   // cancelled: nothing changes
-        c.chooseFolder(nil)
-        XCTAssertEqual(backend.values.filesDefaultNoteLocation, folder)
-        c.resetFolder(nil)
+        XCTAssertTrue(editor.rows[0].marker.toolTip?.hasPrefix("Default location") == true)
+        editor.rows[0].marker.performClick(nil)   // click the default again: no default
         XCTAssertEqual(backend.values.filesDefaultNoteLocation, "")
-        XCTAssertEqual(c.folderLabel?.stringValue, "Not set")
-        XCTAssertFalse(TFS.read(data + "/config")?.contains("default-note-location") ?? false)
+        XCTAssertFalse(config.contains("default-note-location"))
+
+        editor.rows[0].marker.performClick(nil)
+        editor.rows[0].removeButton.performClick(nil)
+        XCTAssertTrue(editor.rows.isEmpty)
+        XCTAssertEqual(backend.values.filesDefaultNoteLocation, "", "removing the default clears it")
+        XCTAssertFalse(config.contains("note-locations"), "an empty list is reset, not stored")
+        XCTAssertFalse(editor.emptyLabel.isHidden)
+    }
+
+    func testChangeKeepsNicknameAndDefault() {
+        let a = TFS.tempDir("a"), b = TFS.tempDir("b")
+        backend.setMany([("files.note-locations", .list(["Journal|\(a)"])), ("files.default-note-location", .string(a))])
+        wc.syncAll()
+        XCTAssertTrue(editor.rows[0].marker.toolTip?.hasPrefix("Default location") == true)
+        control.pickFolder = { _ in b }
+        editor.rows[0].changeButton.performClick(nil)
+        XCTAssertEqual(backend.values.noteLocations.map(\.encoded), ["Journal|\(b)"])
+        XCTAssertEqual(backend.values.filesDefaultNoteLocation, b, "the default follows its folder")
+    }
+
+    func testNicknameCommitsOnEndEditingOnly() {
+        let a = TFS.tempDir("a")
+        backend.setMany([("files.note-locations", .list(["|\(a)"]))])
+        wc.syncAll()
+        let row = editor.rows[0]
+        XCTAssertEqual(row.nickname.placeholderString, (a as NSString).lastPathComponent)
+        row.nickname.stringValue = "Journal | daily "
+        XCTAssertEqual(backend.values.noteLocations[0].nickname, "", "typing alone stores nothing")
+        editor.controlTextDidEndEditing(Notification(name: NSControl.textDidEndEditingNotification, object: row.nickname))
+        XCTAssertEqual(backend.values.noteLocations[0].nickname, "Journal / daily")
+        XCTAssertTrue(editor.rows[0] === row, "the row (and its focus) stays")
+        XCTAssertEqual(row.nickname.stringValue, "Journal / daily")
+    }
+
+    func testDefaultSetBeforeTheListIsEditedIntoTheList() {
+        let a = TFS.tempDir("a")
+        backend.setMany([("files.default-note-location", .string(a))])   // the old single-folder setting
+        wc.syncAll()
+        XCTAssertEqual(editor.rows.count, 1, "shown as a location named after its folder")
+        XCTAssertFalse(config.contains("note-locations"))
+        let row = editor.rows[0]
+        row.nickname.stringValue = "Drafts"
+        editor.controlTextDidEndEditing(Notification(name: NSControl.textDidEndEditingNotification, object: row.nickname))
+        XCTAssertEqual(backend.values.filesNoteLocationLines, ["Drafts|\(a)"])
+        XCTAssertEqual(backend.values.filesDefaultNoteLocation, a)
+    }
+
+    func testMissingFolderShowsWhy() {
+        let gone = TFS.tempDir("a") + "/gone"
+        backend.setMany([("files.note-locations", .list(["Ghost|\(gone)"]))])
+        wc.syncAll()
+        let row = editor.rows[0]
+        XCTAssertEqual(row.pathLabel.textColor, .systemOrange)
+        XCTAssertEqual(row.pathLabel.toolTip, "The folder \"\(NewNoteLocation.abbreviated(gone))\" is missing.")
+        XCTAssertEqual(row.nickname.toolTip, row.pathLabel.toolTip)
+    }
+
+    func testRestoreDefaultsClearsLocationsAndDefault() {
+        let a = TFS.tempDir("a")
+        backend.setMany([("files.note-locations", .list(["Journal|\(a)"])), ("files.default-note-location", .string(a))])
+        wc.syncAll()
+        wc.selectedPane.restoreDefaults()
+        XCTAssertTrue(backend.values.noteLocations.isEmpty)
+        XCTAssertEqual(backend.values.filesDefaultNoteLocation, "")
+        XCTAssertTrue(editor.rows.isEmpty)
     }
 }
+

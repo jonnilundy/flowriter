@@ -59,20 +59,12 @@ enum SettingsPanes {
     static let all: [Pane] = [
         Pane(id: "general", title: "General", symbol: "gearshape", groups: [
             ("Appearance", ["appearance.theme"]),
-            ("On launch", ["window.restore-workspace", "workspace.restore-open-files"]),
-            (nil, ["workspace.max-recent-workspaces"]),
             ("Daily notes", ["editor.auto-insert-daily-heading", "editor.jump-to-bottom-after-minutes"]),
         ]),
         Pane(id: "editor", title: "Editor", symbol: "text.alignleft", groups: [
-            ("Text", ["editor.font-size", "editor.line-height", "editor.tab-size", "appearance.editor-width"]),
+            ("Text", ["fonts.editor", "editor.font-size", "editor.line-height"]),
             ("Spacing", ["editor.heading-space-before", "editor.heading-space-after", "editor.paragraph-spacing", "editor.bullet-spacing"]),
-            (nil, ["editor.subheading-color"]),
-            ("Headings", ["editor.show-heading-chevrons"]),
             ("Outline", ["editor.show-outline"]),
-        ]),
-        Pane(id: "appearance", title: "Appearance", symbol: "sidebar.left", groups: [
-            ("Sidebar", ["appearance.sidebar-file-label", "appearance.sidebar-show-search", "appearance.sidebar-show-recents"]),
-            ("Fonts", ["fonts.editor", "fonts.mono"]),
         ]),
         Pane(id: "theme", title: "Theme", symbol: "paintpalette", groups: [
             ("Light", ["theme.light.preset", "theme.light.background", "theme.light.foreground",
@@ -81,20 +73,28 @@ enum SettingsPanes {
                       "theme.dark.heading-color", "theme.dark.translucent", "theme.dark.contrast"]),
         ]),
         Pane(id: "files", title: "Files", symbol: "doc", groups: [
-            ("New notes", ["files.default-note-location"]),
+            ("New notes", ["files.note-locations"]),
             (nil, ["files.associations"]),
         ]),
     ]
 
+    /// Settings a pane's control writes next to its own key; Restore Defaults resets them too.
+    static let companionKeys: [String: [String]] = ["files.note-locations": ["files.default-note-location"]]
+
     /// Settings that still work (defaults / config file) but aren't shown.
     static let hiddenKeys: Set<String> = [
+        "files.default-note-location",  // the default marker in the Writing locations editor
+
         "statusbar.show-words", "statusbar.show-characters", "statusbar.show-paragraphs",  // footer right-click menu
         "editor.outline-indent-per-level",
         "appearance.sidebar-visible", "appearance.sidebar-width",  // Cmd-\ and the resize handle
         "fonts.ui",
-        "files.default-encoding", "files.insert-final-newline", "files.trim-trailing-whitespace",
-        "search.debounce-ms", "search.max-results",
-        "theme.light.accent", "theme.dark.accent",  // unused: accents follow the system accent colour
+        "files.insert-final-newline", "files.trim-trailing-whitespace",
+        // workspace windows only: Flowriter has one document per window, no sidebar, no workspace
+        "appearance.sidebar-file-label", "appearance.sidebar-show-search", "appearance.sidebar-show-recents",
+        "fonts.mono", "window.restore-workspace", "workspace.restore-open-files",
+        // links, selection, find highlights and heading links use the accent; the theme presets set it
+        "theme.light.accent", "theme.dark.accent",
     ]
 
     /// Theme preset display names ("Writer" is the legacy preset id, kept in config).
@@ -109,7 +109,6 @@ enum SettingsPanes {
         case ("appearance.theme", "system"): return L("Match System")
         case ("appearance.sidebar-file-label", "title"): return L("Document title")
         case ("appearance.sidebar-file-label", "filename"): return L("File name")
-        case ("appearance.editor-width", "full"): return L("Wide")   // not the full window width
         default: return L(option.prefix(1).uppercased() + option.dropFirst())
         }
     }
@@ -117,7 +116,6 @@ enum SettingsPanes {
     static func unit(_ def: SettingDef) -> String? {
         if def.cssFormat == "px" || def.key == "appearance.sidebar-width" || def.key == "editor.outline-indent-per-level" { return L("px") }
         if def.key.hasSuffix("-minutes") { return L("min") }
-        if def.key.hasSuffix("-ms") { return L("ms") }
         return nil
     }
 
@@ -126,7 +124,6 @@ enum SettingsPanes {
         switch def.key {
         case "editor.line-height": return (1, 3, 0.05)
         case "appearance.sidebar-width": return (220, 420, 1)
-        case "search.debounce-ms": return (0, 2000, 10)
         default: return (0, 1000, 1)
         }
     }
@@ -153,6 +150,15 @@ final class SettingsBackend {
 
     func set(_ key: String, _ v: ConfigValue) {
         try? settings.setGlobal(key, v)
+        changed()
+    }
+
+    /// Several keys in one write and one change notice (the rows of an editor must not rebuild between
+    /// two of them). nil resets the key.
+    func setMany(_ updates: [(String, ConfigValue?)]) {
+        for (key, v) in updates {
+            if let v { try? settings.setGlobal(key, v) } else if settings.global[key] != nil { try? settings.resetGlobal(key) }
+        }
         changed()
     }
 
@@ -188,10 +194,8 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
     private(set) var slider: NSSlider?
     private(set) var sliderValue: NSTextField?
     private(set) var tokens: NSTokenField?
-    /// The folder row ("files.default-note-location"): the shortened path, Choose… and Reset.
-    private(set) var folderLabel: NSTextField?
-    private(set) var chooseButton: NSButton?
-    private(set) var resetButton: NSButton?
+    /// The Writing locations editor ("files.note-locations").
+    private(set) var locations: LocationsEditorView?
     /// Asks for a folder (tests replace it); nil when cancelled.
     var pickFolder: (_ current: String) -> String? = { current in
         let p = NSOpenPanel()
@@ -238,17 +242,6 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
             p.addItems(withTitles: NSFontManager.shared.availableFontFamilies.sorted())
             p.target = self; p.action = #selector(changed(_:))
             popup = p; built = p
-        case .string where def.key == SettingControl.folderKey:
-            let l = NSTextField(labelWithString: "")
-            l.lineBreakMode = .byTruncatingMiddle
-            l.widthAnchor.constraint(equalToConstant: 220).isActive = true
-            let choose = NSButton(title: L("Choose…"), target: self, action: #selector(chooseFolder(_:)))
-            let reset = NSButton(title: L("Reset"), target: self, action: #selector(resetFolder(_:)))
-            for b in [choose, reset] { b.bezelStyle = .rounded; b.controlSize = .small }
-            folderLabel = l; chooseButton = choose; resetButton = reset
-            let st = NSStackView(views: [l, choose, reset])
-            st.spacing = 8
-            built = st
         case .string where def.key.hasSuffix(".preset"):
             let p = NSPopUpButton(frame: .zero, pullsDown: false)
             for t in ThemePreset.all {
@@ -307,6 +300,10 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
             let st = NSStackView(views: [s, v])
             st.spacing = 6
             built = st
+        case .list where def.key == SettingControl.locationsKey:
+            let e = LocationsEditorView(backend: backend)
+            e.askFolder = { [unowned self] in self.pickFolder($0) }
+            locations = e; built = e
         case .list:
             let t = NSTokenField()
             t.delegate = self
@@ -319,17 +316,18 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
             tokens = t; built = t
         }
         view = built
-        view.toolTip = def.description.isEmpty ? nil : L(def.description)
-        label.toolTip = view.toolTip
+        // the locations editor has its own tooltips (the full path of each row)
+        view.toolTip = def.description.isEmpty || locations != nil ? nil : L(def.description)
+        label.toolTip = def.description.isEmpty ? nil : L(def.description)
         sync()
     }
 
     var value: ConfigValue { backend.value(def.key) }
 
-    static let folderKey = "files.default-note-location"
+    static let locationsKey = "files.note-locations"
 
     static let inlineHelp: Set<String> = ["editor.jump-to-bottom-after-minutes", "editor.auto-insert-daily-heading",
-                                          "files.associations", "appearance.editor-width"]
+                                          "files.associations"]
 
     /// Native wording where the schema label reads oddly in a Settings window.
     static func displayLabel(_ def: SettingDef) -> String {
@@ -337,7 +335,6 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
         case "appearance.theme": return L("Appearance")
         case "appearance.sidebar-width": return L("Default width")
         case "appearance.sidebar-file-label": return L("File labels")
-        case "appearance.editor-width": return L("Editor width")
         case "appearance.sidebar-visible": return L("Show sidebar")
         case "appearance.sidebar-show-search": return L("Show search button")
         case "appearance.sidebar-show-recents": return L("Show recents")
@@ -374,13 +371,7 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
                 }
             }
         }
-        if let l = folderLabel {
-            let path = v.stringValue ?? ""
-            l.stringValue = path.isEmpty ? L("Not set") : NewNoteLocation.abbreviated(path)
-            l.textColor = path.isEmpty ? .secondaryLabelColor : .labelColor
-            l.toolTip = path.isEmpty ? nil : path
-            resetButton?.isEnabled = !path.isEmpty
-        }
+        locations?.sync()
         if let f = field, f.currentEditor() == nil {
             if def.type == .number { f.doubleValue = v.numberValue ?? 0 } else { f.stringValue = v.stringValue ?? "" }
         }
@@ -414,13 +405,6 @@ final class SettingControl: NSObject, NSTextFieldDelegate, NSTokenFieldDelegate 
         default: break
         }
     }
-
-    @objc func chooseFolder(_ sender: Any?) {
-        guard let picked = pickFolder(value.stringValue ?? "") else { return }
-        backend.set(def.key, .string(NewNoteLocation.normalized(picked)))
-    }
-
-    @objc func resetFolder(_ sender: Any?) { backend.reset([def.key]) }
 
     @objc func stepped(_ sender: NSStepper) {
         field?.doubleValue = sender.doubleValue
@@ -490,6 +474,14 @@ final class SettingsPaneController: NSViewController {
                     }
                     let row = grid.addRow(with: [c.label, c.view])
                     row.yPlacement = .center
+                    if let e = c.locations {
+                        // the label lines up with the first location, not the middle of the list
+                        row.yPlacement = .top
+                        let pad = NSStackView(views: [c.label])
+                        pad.edgeInsets = NSEdgeInsets(top: 3, left: 0, bottom: 0, right: 0)
+                        row.cell(at: 0).contentView = pad
+                        e.onSizeChange = { [weak self] in self?.refit() }
+                    }
                     if firstInGroup && gi > 0 { row.topPadding = 14 }
                     firstInGroup = false
                     if let h = c.help { grid.addRow(with: [NSGridCell.emptyContentView, h]).topPadding = -3 }
@@ -516,9 +508,23 @@ final class SettingsPaneController: NSViewController {
             restoreButton.bottomAnchor.constraint(lessThanOrEqualTo: container.bottomAnchor, constant: -20),
         ])
         view = container
+        self.grid = grid
+        refit()
+    }
+
+    private weak var grid: NSGridView?
+
+    /// Size the pane to its grid; again after a control (the locations list) changes height.
+    func refit() {
+        guard let grid, isViewLoaded else { return }
         let fit = NSSize(width: grid.fittingSize.width + 60, height: 22 + grid.fittingSize.height + 20 + restoreButton.fittingSize.height + 20)
-        preferredContentSize = NSSize(width: max(520, ceil(fit.width)), height: ceil(fit.height))
-        container.frame = NSRect(origin: .zero, size: preferredContentSize)
+        let size = NSSize(width: max(520, ceil(fit.width)), height: ceil(fit.height))
+        guard size != preferredContentSize else { return }
+        preferredContentSize = size
+        view.frame = NSRect(origin: .zero, size: size)
+        if let wc = view.window?.windowController as? SettingsWindowController, wc.selectedPane === self {
+            wc.resizeToPane(animate: false)
+        }
     }
 
     /// Theme pane: one row per primary, Light and Dark side by side.
@@ -543,7 +549,7 @@ final class SettingsPaneController: NSViewController {
     var keys: [String] { pane.groups.flatMap { $0.1 } }
 
     @objc func restoreDefaults() {
-        backend.reset(keys)
+        backend.reset(keys + keys.flatMap { SettingsPanes.companionKeys[$0] ?? [] })
         syncAll()
     }
 

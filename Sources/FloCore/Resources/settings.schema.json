@@ -24,14 +24,6 @@
       "cssVar": "--writer-editor-line-height"
     },
     {
-      "key": "editor.tab-size",
-      "label": "Tab Size",
-      "description": "Number of spaces per tab",
-      "category": "Editor",
-      "type": "number",
-      "default": 2
-    },
-    {
       "key": "editor.auto-insert-daily-heading",
       "label": "Insert today's date heading",
       "description": "When opening a dated notebook, append a heading for today if it isn't there yet",
@@ -43,14 +35,6 @@
       "key": "editor.show-outline",
       "label": "Show outline rail",
       "description": "The tick marks at the right edge of the editor that expand into a document outline on hover",
-      "category": "Editor",
-      "type": "boolean",
-      "default": true
-    },
-    {
-      "key": "editor.show-heading-chevrons",
-      "label": "Show heading fold arrows",
-      "description": "The arrow beside each heading for collapsing its section. Headings can still be folded from the View menu when hidden",
       "category": "Editor",
       "type": "boolean",
       "default": true
@@ -90,15 +74,6 @@
       "default": 8,
       "cssFormat": "px",
       "cssVar": "--writer-heading-space-after"
-    },
-    {
-      "key": "editor.subheading-color",
-      "label": "Subheading colour",
-      "description": "Colour for level 2 and 3 headings",
-      "category": "Editor",
-      "type": "color",
-      "default": "#3a3a3a",
-      "cssVar": "--writer-subheading-color"
     },
     {
       "key": "editor.paragraph-spacing",
@@ -193,15 +168,6 @@
       "category": "Appearance",
       "type": "boolean",
       "default": true
-    },
-    {
-      "key": "appearance.editor-width",
-      "label": "Editor Width",
-      "description": "Editor content width mode",
-      "category": "Appearance",
-      "type": "enum",
-      "options": ["full", "narrow"],
-      "default": "full"
     },
     {
       "key": "fonts.ui",
@@ -373,20 +339,20 @@
       "default": ""
     },
     {
+      "key": "files.note-locations",
+      "label": "Writing locations",
+      "description": "Folders you write in. Give each a nickname and pick one as the default for new notes.",
+      "category": "Files",
+      "type": "list",
+      "default": []
+    },
+    {
       "key": "files.associations",
       "label": "File Associations",
       "description": "File patterns to include in the workspace",
       "category": "Files",
       "type": "list",
       "default": ["*.md", "*.mdx", "*.markdown", "*.csv"]
-    },
-    {
-      "key": "files.default-encoding",
-      "label": "Default Encoding",
-      "description": "Default text encoding for files",
-      "category": "Files",
-      "type": "string",
-      "default": "utf-8"
     },
     {
       "key": "files.insert-final-newline",
@@ -413,36 +379,12 @@
       "default": true
     },
     {
-      "key": "workspace.max-recent-workspaces",
-      "label": "Max Recent Workspaces",
-      "description": "Maximum number of recent workspaces to remember",
-      "category": "Workspace",
-      "type": "number",
-      "default": 10
-    },
-    {
       "key": "window.restore-workspace",
       "label": "Restore Workspace",
       "description": "Automatically reopen the last workspace when the app starts",
       "category": "Window",
       "type": "boolean",
       "default": true
-    },
-    {
-      "key": "search.debounce-ms",
-      "label": "Search Debounce",
-      "description": "Delay in milliseconds before performing search",
-      "category": "Search",
-      "type": "number",
-      "default": 150
-    },
-    {
-      "key": "search.max-results",
-      "label": "Max Search Results",
-      "description": "Maximum number of search results to return",
-      "category": "Search",
-      "type": "number",
-      "default": 50
     }
   ]
 }

@@ -232,17 +232,11 @@
 /* SettingsWindow.swift */
 "File name" = "Nombre de archivo";
 
-/* SettingsWindow.swift; Editor width option (vs Narrow). */
-"Wide" = "Ancho";
-
 /* SettingsWindow.swift; Unit: pixels. */
 "px" = "px";
 
 /* SettingsWindow.swift; Unit: minutes (short). */
 "min" = "min";
-
-/* SettingsWindow.swift; Unit: milliseconds. */
-"ms" = "ms";
 
 /* SettingsWindow.swift; SettingsWindow.swift (Settings pane / toolbar tab); SettingsWindow.swift (Settings group label, shown with a colon) */
 "Appearance" = "Apariencia";
@@ -252,9 +246,6 @@
 
 /* SettingsWindow.swift */
 "File labels" = "Etiquetas de archivo";
-
-/* SettingsWindow.swift */
-"Editor width" = "Ancho del editor";
 
 /* SettingsWindow.swift; ShellWindow.swift */
 "Show sidebar" = "Mostrar barra lateral";
@@ -290,9 +281,6 @@
 "Files" = "Archivos";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"On launch" = "Al abrir";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Daily notes" = "Notas diarias";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
@@ -302,16 +290,7 @@
 "Spacing" = "Espaciado";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Headings" = "Encabezados";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Outline" = "Esquema";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Sidebar" = "Barra lateral";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Fonts" = "Tipos de letra";
 
 /* ShellMenus.swift; ShellWindow.swift; Context menu item (open a file) and the open-panel confirm button. */
 "Open" = "Abrir";
@@ -716,12 +695,6 @@
 /* Settings description / tooltip (editor.line-height) */
 "Line height multiplier for the editor" = "Multiplicador de interlineado del editor";
 
-/* Settings label (editor.tab-size) */
-"Tab size" = "Tamaño de tabulación";
-
-/* Settings description / tooltip (editor.tab-size) */
-"Number of spaces per tab" = "Número de espacios por tabulación";
-
 /* Settings label (editor.auto-insert-daily-heading) */
 "Insert today's date heading" = "Insertar encabezado con la fecha de hoy";
 
@@ -733,12 +706,6 @@
 
 /* Settings description / tooltip (editor.show-outline) */
 "The tick marks at the right edge of the editor that expand into a document outline on hover" = "Las marcas del borde derecho del editor que se despliegan en un esquema del documento al pasar el puntero";
-
-/* Settings label (editor.show-heading-chevrons) */
-"Show heading fold arrows" = "Mostrar flechas para contraer encabezados";
-
-/* Settings description / tooltip (editor.show-heading-chevrons) */
-"The arrow beside each heading for collapsing its section. Headings can still be folded from the View menu when hidden" = "La flecha junto a cada encabezado para contraer su sección. Si está oculta, los encabezados se pueden contraer desde el menú Visualización";
 
 /* Settings label (editor.jump-to-bottom-after-minutes) */
 "Jump to bottom after (minutes)" = "Ir al final tras (minutos)";
@@ -757,12 +724,6 @@
 
 /* Settings description / tooltip (editor.heading-space-after) */
 "Extra vertical space below a heading" = "Espacio vertical adicional bajo un encabezado";
-
-/* Settings label (editor.subheading-color) */
-"Subheading colour" = "Color de subencabezados";
-
-/* Settings description / tooltip (editor.subheading-color) */
-"Colour for level 2 and 3 headings" = "Color de los encabezados de nivel 2 y 3";
 
 /* Settings label (editor.paragraph-spacing) */
 "Paragraph spacing" = "Espaciado de párrafos";
@@ -787,12 +748,6 @@
 
 /* Settings description / tooltip (appearance.sidebar-show-recents) */
 "Show the Recents section in the sidebar" = "Mostrar la sección Recientes en la barra lateral";
-
-/* Settings description / tooltip (appearance.editor-width) */
-"Editor content width mode" = "Modo de ancho del contenido del editor";
-
-/* Settings option (appearance.editor-width); Editor width option (vs Wide). */
-"Narrow" = "Estrecho";
 
 /* Settings label (fonts.editor) */
 "Editor font" = "Tipo de letra del editor";
@@ -878,12 +833,6 @@
 /* Settings description / tooltip (workspace.restore-open-files) */
 "Reopen previously open files when opening a workspace" = "Volver a abrir los archivos que estaban abiertos al abrir un espacio de trabajo";
 
-/* Settings label (workspace.max-recent-workspaces) */
-"Max recent workspaces" = "Máx. de espacios recientes";
-
-/* Settings description / tooltip (workspace.max-recent-workspaces) */
-"Maximum number of recent workspaces to remember" = "Número máximo de espacios de trabajo recientes que se recuerdan";
-
 /* Settings label (window.restore-workspace) */
 "Restore workspace" = "Restaurar espacio de trabajo";
 
@@ -956,3 +905,15 @@
 "Default location for new notes" = "Default location for new notes";
 "New notes" = "New notes";
 "The folder every new note is created in. Empty: next to the open note, or in the workspace folder." = "The folder every new note is created in. Empty: next to the open note, or in the workspace folder.";
+
+/* Writing locations: LocationsEditorView.swift, PaletteDestination.swift, settings schema. English until translated. */
+"Writing locations" = "Writing locations";
+"Add Location…" = "Add Location…";
+"Change…" = "Change…";
+"Remove" = "Remove";
+"Make default" = "Make default";
+"Folder missing" = "Folder missing";
+"Read-only" = "Read-only";
+"The folder \"%@\" is missing." = "The folder \"%@\" is missing.";
+"The folder \"%@\" can't be written to." = "The folder \"%@\" can't be written to.";
+"Folders you write in. Give each a nickname and pick one as the default for new notes." = "Folders you write in. Give each a nickname and pick one as the default for new notes.";

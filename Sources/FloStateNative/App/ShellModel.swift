@@ -29,6 +29,8 @@ struct PaletteState: Equatable {
     var intent: Intent
     var query: String = ""
     var selected: Int = 0
+    /// New note: the location picked in this palette session (a normalized path). Gone with the palette.
+    var destination: String?
 }
 
 /// A palette row.
@@ -213,7 +215,7 @@ final class ShellModel {
         values = settings.values
         notify(.settings)
         let editorKeys = ["editor.font-size", "editor.line-height", "editor.heading-space-before", "editor.heading-space-after",
-                          "editor.paragraph-spacing", "editor.bullet-spacing", "editor.subheading-color", "fonts.editor", "appearance.theme"]
+                          "editor.paragraph-spacing", "editor.bullet-spacing", "fonts.editor", "appearance.theme"]
         let themeChanged = SettingsSchema.all.contains { $0.key.hasPrefix("theme.") && old.raw[$0.key] != values.raw[$0.key] }
         if themeChanged || editorKeys.contains(where: { old.raw[$0] != values.raw[$0] }) { notify(.editorFont) }
         if themeChanged || old.raw["appearance.theme"] != values.raw["appearance.theme"] { notify(.theme) }
@@ -883,36 +885,33 @@ final class ShellModel {
         return out
     }
 
-    /// Where New Note puts the note: the default location when set and usable; otherwise today's
-    /// choice (the workspace root, or the folder of the open file in a compact window).
-    struct NewNoteTarget: Equatable {
-        var directory: String?
-        var usingDefault: Bool
-        /// Why the default location was skipped, quietly shown in the palette.
-        var notice: String?
-    }
-
     var hasDefaultNoteLocation: Bool {
         !values.filesDefaultNoteLocation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    func newNoteTarget() -> NewNoteTarget {
-        let fallback = root ?? editor.activeFilePath.map(LinkPaths.getParentDir)
-        let c = NewNoteLocation.choose(defaultLocation: values.filesDefaultNoteLocation, fallback: fallback)
-        let name = LinkPaths.getFileName(NewNoteLocation.normalized(values.filesDefaultNoteLocation))
-        var notice: String?
-        switch c.problem {
-        case .missing?: notice = L("The default folder \"%@\" is missing.", name)
-        case .notWritable?: notice = L("The default folder \"%@\" can't be written to.", name)
-        case nil: break
-        }
-        if let n = notice, let d = c.directory { notice = n + " " + L("Using %@.", LinkPaths.getFileName(d)) }
-        return NewNoteTarget(directory: c.directory, usingDefault: c.usedDefault, notice: notice)
+    /// Where New Note puts the note: the location picked in this palette, else the default location
+    /// when set and usable, else today's folder (the workspace root, or the open file's folder).
+    func paletteDestination() -> PaletteDestination {
+        PaletteDestination(locations: values.noteLocations, defaultPath: values.filesDefaultNoteLocation,
+                           fallback: root ?? editor.activeFilePath.map(LinkPaths.getParentDir),
+                           chosen: palette?.destination)
     }
 
-    private func createPath(in target: NewNoteTarget, dir: String, rawName: String) -> String? {
-        target.usingDefault ? NewNoteLocation.confinedCreatePath(directory: dir, rawName: rawName)
-                            : WorkspaceFS.paletteCreatePath(root: dir, rawName: rawName)
+    /// The new-note palette sends the note to another location (this session only).
+    func chooseDestination(_ path: String) {
+        guard var p = palette, p.intent == .createFile else { return }
+        p.destination = path
+        palette = p
+    }
+
+    /// Tab (1) and Shift-Tab (-1) in the new-note palette. Returns false when it did nothing.
+    @discardableResult
+    func cyclePaletteDestination(_ delta: Int) -> Bool {
+        guard palette?.intent == .createFile else { return false }
+        let d = paletteDestination()
+        guard let next = d.cycled(from: d.resolve(), by: delta) else { return false }
+        chooseDestination(next.normalizedPath)
+        return true
     }
 
     struct PaletteView: Equatable {
@@ -920,21 +919,22 @@ final class ShellModel {
         var empty: String?
         var items: [PaletteItem]
         var placeholder: String
+        /// New note: where the note goes, shown right of the name field. Nil in the other palettes.
+        var destination: PaletteDestination.Chip? = nil
     }
 
     func paletteView() -> PaletteView? {
         guard let p = palette else { return nil }
         let q = p.query.trimmingCharacters(in: .whitespacesAndNewlines)
         if p.intent == .createFile {
-            let target = newNoteTarget()
+            let dest = paletteDestination(), r = dest.resolve()
             let placeholder = L("Type a note name to create it")
-            guard let dir = target.directory, !q.isEmpty, let path = createPath(in: target, dir: dir, rawName: q) else {
-                return PaletteView(heading: nil, empty: target.notice, items: [], placeholder: placeholder)
+            guard !q.isEmpty, let path = dest.createPath(r, rawName: q) else {
+                return PaletteView(heading: nil, empty: r.notice, items: [], placeholder: placeholder, destination: r.chip)
             }
-            let heading = target.usingDefault ? L("Create note in %@", LinkPaths.getFileName(dir)) : (target.notice ?? L("Create note"))
-            return PaletteView(heading: heading, empty: nil,
+            return PaletteView(heading: dest.heading(r), empty: nil,
                                items: [PaletteItem(kind: .create(path), title: L("Create: %@", LinkPaths.getFileName(path)))],
-                               placeholder: placeholder)
+                               placeholder: placeholder, destination: r.chip)
         }
         if p.intent == .fullText {
             let items = contentResults.map {
@@ -1015,7 +1015,7 @@ final class ShellModel {
             pendingReveal = (path, offset, length)
             Task { try? await editor.openFileInTabOrFocus(path); notify(.content) }
         case let .create(path):
-            let typed = palette?.query ?? ""
+            let typed = palette?.query ?? "", picked = palette?.destination
             palette = nil
             Task {
                 do {
@@ -1028,7 +1028,7 @@ final class ShellModel {
                 } catch AppError.io(let reason) {
                     // the typed name stays in the palette
                     alert(L("Couldn't create the note: %@", reason))
-                    palette = PaletteState(intent: .createFile, query: typed)
+                    palette = PaletteState(intent: .createFile, query: typed, destination: picked)
                     return
                 } catch { /* already exists: open it */ }
                 if isCompact { await editor.openCompactFile(path) } else { try? await editor.openFileInTabOrFocus(path) }

@@ -232,17 +232,11 @@
 /* SettingsWindow.swift */
 "File name" = "文件名";
 
-/* SettingsWindow.swift; Editor width option (vs Narrow). */
-"Wide" = "宽";
-
 /* SettingsWindow.swift; Unit: pixels. */
 "px" = "px";
 
 /* SettingsWindow.swift; Unit: minutes (short). */
 "min" = "分钟";
-
-/* SettingsWindow.swift; Unit: milliseconds. */
-"ms" = "毫秒";
 
 /* SettingsWindow.swift; SettingsWindow.swift (Settings pane / toolbar tab); SettingsWindow.swift (Settings group label, shown with a colon) */
 "Appearance" = "外观";
@@ -252,9 +246,6 @@
 
 /* SettingsWindow.swift */
 "File labels" = "文件标签";
-
-/* SettingsWindow.swift */
-"Editor width" = "编辑器宽度";
 
 /* SettingsWindow.swift; ShellWindow.swift */
 "Show sidebar" = "显示边栏";
@@ -290,9 +281,6 @@
 "Files" = "文件";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"On launch" = "启动时";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Daily notes" = "每日笔记";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
@@ -302,16 +290,7 @@
 "Spacing" = "间距";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Headings" = "标题";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Outline" = "大纲";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Sidebar" = "边栏";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Fonts" = "字体";
 
 /* ShellMenus.swift; ShellWindow.swift; Context menu item (open a file) and the open-panel confirm button. */
 "Open" = "打开";
@@ -716,12 +695,6 @@
 /* Settings description / tooltip (editor.line-height) */
 "Line height multiplier for the editor" = "编辑器行高倍数";
 
-/* Settings label (editor.tab-size) */
-"Tab size" = "制表符宽度";
-
-/* Settings description / tooltip (editor.tab-size) */
-"Number of spaces per tab" = "每个制表符的空格数";
-
 /* Settings label (editor.auto-insert-daily-heading) */
 "Insert today's date heading" = "插入今日日期标题";
 
@@ -733,12 +706,6 @@
 
 /* Settings description / tooltip (editor.show-outline) */
 "The tick marks at the right edge of the editor that expand into a document outline on hover" = "编辑器右边缘的刻度标记，悬停时展开为文稿大纲";
-
-/* Settings label (editor.show-heading-chevrons) */
-"Show heading fold arrows" = "显示标题折叠箭头";
-
-/* Settings description / tooltip (editor.show-heading-chevrons) */
-"The arrow beside each heading for collapsing its section. Headings can still be folded from the View menu when hidden" = "每个标题旁用于折叠该部分的箭头。隐藏后仍可通过“显示”菜单折叠标题";
 
 /* Settings label (editor.jump-to-bottom-after-minutes) */
 "Jump to bottom after (minutes)" = "多久后跳到末尾（分钟）";
@@ -757,12 +724,6 @@
 
 /* Settings description / tooltip (editor.heading-space-after) */
 "Extra vertical space below a heading" = "标题下方的额外垂直间距";
-
-/* Settings label (editor.subheading-color) */
-"Subheading colour" = "副标题颜色";
-
-/* Settings description / tooltip (editor.subheading-color) */
-"Colour for level 2 and 3 headings" = "二级和三级标题的颜色";
 
 /* Settings label (editor.paragraph-spacing) */
 "Paragraph spacing" = "段落间距";
@@ -787,12 +748,6 @@
 
 /* Settings description / tooltip (appearance.sidebar-show-recents) */
 "Show the Recents section in the sidebar" = "在边栏中显示“最近使用”部分";
-
-/* Settings description / tooltip (appearance.editor-width) */
-"Editor content width mode" = "编辑器内容宽度模式";
-
-/* Settings option (appearance.editor-width); Editor width option (vs Wide). */
-"Narrow" = "窄";
 
 /* Settings label (fonts.editor) */
 "Editor font" = "编辑器字体";
@@ -878,12 +833,6 @@
 /* Settings description / tooltip (workspace.restore-open-files) */
 "Reopen previously open files when opening a workspace" = "打开工作区时重新打开之前打开的文件";
 
-/* Settings label (workspace.max-recent-workspaces) */
-"Max recent workspaces" = "最近工作区上限";
-
-/* Settings description / tooltip (workspace.max-recent-workspaces) */
-"Maximum number of recent workspaces to remember" = "记住的最近工作区最大数量";
-
 /* Settings label (window.restore-workspace) */
 "Restore workspace" = "恢复工作区";
 
@@ -956,3 +905,15 @@
 "Default location for new notes" = "Default location for new notes";
 "New notes" = "New notes";
 "The folder every new note is created in. Empty: next to the open note, or in the workspace folder." = "The folder every new note is created in. Empty: next to the open note, or in the workspace folder.";
+
+/* Writing locations: LocationsEditorView.swift, PaletteDestination.swift, settings schema. English until translated. */
+"Writing locations" = "Writing locations";
+"Add Location…" = "Add Location…";
+"Change…" = "Change…";
+"Remove" = "Remove";
+"Make default" = "Make default";
+"Folder missing" = "Folder missing";
+"Read-only" = "Read-only";
+"The folder \"%@\" is missing." = "The folder \"%@\" is missing.";
+"The folder \"%@\" can't be written to." = "The folder \"%@\" can't be written to.";
+"Folders you write in. Give each a nickname and pick one as the default for new notes." = "Folders you write in. Give each a nickname and pick one as the default for new notes.";

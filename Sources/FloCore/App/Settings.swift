@@ -216,15 +216,12 @@ public struct SettingsValues {
     // Editor
     public var editorFontSize: Double { num("editor.font-size") }
     public var editorLineHeight: Double { num("editor.line-height") }
-    public var editorTabSize: Double { num("editor.tab-size") }
     public var editorAutoInsertDailyHeading: Bool { bool("editor.auto-insert-daily-heading") }
     public var editorShowOutline: Bool { bool("editor.show-outline") }
-    public var editorShowHeadingChevrons: Bool { bool("editor.show-heading-chevrons") }
     public var editorOutlineIndentPerLevel: Double { num("editor.outline-indent-per-level") }
     public var editorJumpToBottomAfterMinutes: Double { num("editor.jump-to-bottom-after-minutes") }
     public var editorHeadingSpaceBefore: Double { num("editor.heading-space-before") }
     public var editorHeadingSpaceAfter: Double { num("editor.heading-space-after") }
-    public var editorSubheadingColor: String { str("editor.subheading-color") }
     public var editorParagraphSpacing: Double { num("editor.paragraph-spacing") }
     public var editorBulletSpacing: Double { num("editor.bullet-spacing") }
     // Status bar
@@ -234,14 +231,12 @@ public struct SettingsValues {
     // Appearance
     public enum ThemePreference: String { case system, light, dark }
     public enum SidebarFileLabel: String { case title, filename }
-    public enum EditorWidth: String { case full, narrow }
     public var appearanceTheme: ThemePreference { option("appearance.theme", .system) }
     public var appearanceSidebarWidth: Double { num("appearance.sidebar-width") }
     public var appearanceSidebarVisible: Bool { bool("appearance.sidebar-visible") }
     public var appearanceSidebarFileLabel: SidebarFileLabel { option("appearance.sidebar-file-label", .title) }
     public var appearanceSidebarShowSearch: Bool { bool("appearance.sidebar-show-search") }
     public var appearanceSidebarShowRecents: Bool { bool("appearance.sidebar-show-recents") }
-    public var appearanceEditorWidth: EditorWidth { option("appearance.editor-width", .full) }
     // Fonts
     public var fontsUI: String { str("fonts.ui") }
     public var fontsEditor: String { str("fonts.editor") }
@@ -257,16 +252,21 @@ public struct SettingsValues {
     // Files
     public var filesAssociations: [String] { list("files.associations") }
     public var filesDefaultNoteLocation: String { str("files.default-note-location") }
-    public var filesDefaultEncoding: String { str("files.default-encoding") }
+    /// The raw "Nickname|path" lines of `files.note-locations`.
+    public var filesNoteLocationLines: [String] { list("files.note-locations") }
+    /// Every writing location: the list, plus the default folder when the list does not hold it.
+    public var noteLocations: [NoteLocation] {
+        NoteLocations.all(lines: filesNoteLocationLines, defaultPath: filesDefaultNoteLocation)
+    }
+    /// The default writing location, nil when none is set.
+    public var defaultNoteLocation: NoteLocation? {
+        NoteLocations.defaultLocation(in: noteLocations, defaultPath: filesDefaultNoteLocation)
+    }
     public var filesInsertFinalNewline: Bool { bool("files.insert-final-newline") }
     public var filesTrimTrailingWhitespace: Bool { bool("files.trim-trailing-whitespace") }
     // Workspace / window
     public var workspaceRestoreOpenFiles: Bool { bool("workspace.restore-open-files") }
-    public var workspaceMaxRecentWorkspaces: Double { num("workspace.max-recent-workspaces") }
     public var windowRestoreWorkspace: Bool { bool("window.restore-workspace") }
-    // Search
-    public var searchDebounceMs: Double { num("search.debounce-ms") }
-    public var searchMaxResults: Double { num("search.max-results") }
 
     /// `toggleTheme`: system → light → dark → system.
     public static func nextTheme(after current: ThemePreference) -> ThemePreference {

@@ -197,11 +197,27 @@ final class AppSettingsLayerTests: XCTestCase {
 
     func testReloadAndMerged() throws {
         let s = AppSettings(globalConfigDir: dirURL)
-        AppTestFS.write(dir + "/config", "search.max-results = 7\n")
+        AppTestFS.write(dir + "/config", "editor.bullet-spacing = 7\n")
         s.reloadGlobal()
-        XCTAssertEqual(s.merged()["search.max-results"], .number(7))
-        XCTAssertEqual(s.merged()["search.debounce-ms"], .number(150))
-        XCTAssertEqual(s.values.searchMaxResults, 7)
+        XCTAssertEqual(s.merged()["editor.bullet-spacing"], .number(7))
+        XCTAssertEqual(s.merged()["editor.heading-space-after"], .number(8))
+        XCTAssertEqual(s.values.editorBulletSpacing, 7)
+    }
+
+    /// A config written before a setting was removed still loads: the old line is ignored, kept
+    /// in the file, and the other settings read as usual.
+    func testConfigLineForARemovedKeyDoesNotBreakOtherSettings() throws {
+        AppTestFS.write(dir + "/config", "editor.tab-size = 8\neditor.font-size = 18\nsearch.max-results = 7\n")
+        let s = AppSettings(globalConfigDir: dirURL)
+        XCTAssertEqual(s.values.editorFontSize, 18)
+        XCTAssertEqual(s.values.editorLineHeight, 1.5, "unset keys keep their default")
+        XCTAssertNil(SettingsSchema.def("editor.tab-size"))
+        try s.setGlobal("editor.line-height", .number(2))
+        let raw = AppTestFS.read(dir + "/config")!
+        XCTAssertTrue(raw.contains("editor.tab-size = 8"), "the unknown line is kept")
+        XCTAssertTrue(raw.contains("search.max-results = 7"))
+        XCTAssertTrue(raw.contains("editor.font-size = 18"))
+        XCTAssertEqual(AppSettings(globalConfigDir: dirURL).values.editorFontSize, 18)
     }
 
     func testSingleAssociationLineFallsBackToDefaults() {
@@ -223,10 +239,9 @@ final class AppSettingsLayerTests: XCTestCase {
 final class AppSettingsSchemaTests: XCTestCase {
     func testSchemaLoadsAllKeysWithDefaults() {
         let d = SettingsSchema.defaults
-        XCTAssertEqual(SettingsSchema.all.count, 50)
+        XCTAssertEqual(SettingsSchema.all.count, 43)
         XCTAssertEqual(d["editor.font-size"], .number(16))
         XCTAssertEqual(d["editor.line-height"], .number(1.5))
-        XCTAssertEqual(d["editor.subheading-color"], .string("#3a3a3a"))
         XCTAssertEqual(d["appearance.theme"], .string("system"))
         XCTAssertEqual(d["files.associations"], .list(["*.md", "*.mdx", "*.markdown", "*.csv"]))
         XCTAssertEqual(d["files.insert-final-newline"], .bool(false))  // fork: off, posts keep their bytes
@@ -265,15 +280,11 @@ final class AppSettingsSchemaTests: XCTestCase {
         XCTAssertEqual(v.appearanceTheme, .system)
         XCTAssertEqual(v.appearanceSidebarWidth, 240)
         XCTAssertEqual(v.appearanceSidebarFileLabel, .title)
-        XCTAssertEqual(v.appearanceEditorWidth, .full)
         XCTAssertEqual(v.themeAccent(.light), "#FF6A00")
         XCTAssertEqual(v.themeBackground(.dark), "#111111")
         XCTAssertEqual(v.themeTranslucent(.dark), 20)
-        XCTAssertEqual(v.filesDefaultEncoding, "utf-8")
         XCTAssertTrue(v.workspaceRestoreOpenFiles)
-        XCTAssertEqual(v.workspaceMaxRecentWorkspaces, 10)
         XCTAssertTrue(v.windowRestoreWorkspace)
-        XCTAssertEqual(v.searchDebounceMs, 150)
         // Wrong types fall back to the schema default.
         let bad = SettingsValues(["editor.font-size": .string("big"), "appearance.theme": .string("sepia")])
         XCTAssertEqual(bad.editorFontSize, 16)

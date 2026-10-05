@@ -232,17 +232,11 @@
 /* SettingsWindow.swift */
 "File name" = "ফাইলের নাম";
 
-/* SettingsWindow.swift; Editor width option (vs Narrow). */
-"Wide" = "চওড়া";
-
 /* SettingsWindow.swift; Unit: pixels. */
 "px" = "px";
 
 /* SettingsWindow.swift; Unit: minutes (short). */
 "min" = "মিনিট";
-
-/* SettingsWindow.swift; Unit: milliseconds. */
-"ms" = "ms";
 
 /* SettingsWindow.swift; SettingsWindow.swift (Settings pane / toolbar tab); SettingsWindow.swift (Settings group label, shown with a colon) */
 "Appearance" = "চেহারা";
@@ -252,9 +246,6 @@
 
 /* SettingsWindow.swift */
 "File labels" = "ফাইল লেবেল";
-
-/* SettingsWindow.swift */
-"Editor width" = "এডিটরের প্রস্থ";
 
 /* SettingsWindow.swift; ShellWindow.swift */
 "Show sidebar" = "সাইডবার দেখান";
@@ -290,9 +281,6 @@
 "Files" = "ফাইল";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"On launch" = "চালু হলে";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Daily notes" = "দৈনিক নোট";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
@@ -302,16 +290,7 @@
 "Spacing" = "ব্যবধান";
 
 /* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Headings" = "শিরোনাম";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
 "Outline" = "রূপরেখা";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Sidebar" = "সাইডবার";
-
-/* SettingsWindow.swift (Settings group label, shown with a colon) */
-"Fonts" = "ফন্ট";
 
 /* ShellMenus.swift; ShellWindow.swift; Context menu item (open a file) and the open-panel confirm button. */
 "Open" = "খুলুন";
@@ -716,12 +695,6 @@
 /* Settings description / tooltip (editor.line-height) */
 "Line height multiplier for the editor" = "এডিটরের লাইনের উচ্চতার গুণক";
 
-/* Settings label (editor.tab-size) */
-"Tab size" = "ট্যাবের আকার";
-
-/* Settings description / tooltip (editor.tab-size) */
-"Number of spaces per tab" = "প্রতি ট্যাবে স্পেসের সংখ্যা";
-
 /* Settings label (editor.auto-insert-daily-heading) */
 "Insert today's date heading" = "আজকের তারিখের শিরোনাম যোগ করুন";
 
@@ -733,12 +706,6 @@
 
 /* Settings description / tooltip (editor.show-outline) */
 "The tick marks at the right edge of the editor that expand into a document outline on hover" = "এডিটরের ডান প্রান্তের দাগগুলো, যেগুলোর ওপর পয়েন্টার রাখলে ডকুমেন্টের রূপরেখা খুলে যায়";
-
-/* Settings label (editor.show-heading-chevrons) */
-"Show heading fold arrows" = "শিরোনাম গোটানোর তীর দেখান";
-
-/* Settings description / tooltip (editor.show-heading-chevrons) */
-"The arrow beside each heading for collapsing its section. Headings can still be folded from the View menu when hidden" = "প্রতিটি শিরোনামের পাশের তীর, যা দিয়ে তার অংশ গুটিয়ে নেওয়া যায়। লুকানো থাকলেও “দেখুন” মেনু থেকে শিরোনাম গোটানো যায়";
 
 /* Settings label (editor.jump-to-bottom-after-minutes) */
 "Jump to bottom after (minutes)" = "নিচে যাওয়ার সময় (মিনিট)";
@@ -757,12 +724,6 @@
 
 /* Settings description / tooltip (editor.heading-space-after) */
 "Extra vertical space below a heading" = "শিরোনামের নিচে বাড়তি উল্লম্ব ফাঁকা";
-
-/* Settings label (editor.subheading-color) */
-"Subheading colour" = "উপশিরোনামের রং";
-
-/* Settings description / tooltip (editor.subheading-color) */
-"Colour for level 2 and 3 headings" = "লেভেল ২ ও ৩ শিরোনামের রং";
 
 /* Settings label (editor.paragraph-spacing) */
 "Paragraph spacing" = "অনুচ্ছেদের ব্যবধান";
@@ -787,12 +748,6 @@
 
 /* Settings description / tooltip (appearance.sidebar-show-recents) */
 "Show the Recents section in the sidebar" = "সাইডবারে সাম্প্রতিক অংশ দেখান";
-
-/* Settings description / tooltip (appearance.editor-width) */
-"Editor content width mode" = "এডিটরের কনটেন্টের প্রস্থ";
-
-/* Settings option (appearance.editor-width); Editor width option (vs Wide). */
-"Narrow" = "সরু";
 
 /* Settings label (fonts.editor) */
 "Editor font" = "এডিটরের ফন্ট";
@@ -878,12 +833,6 @@
 /* Settings description / tooltip (workspace.restore-open-files) */
 "Reopen previously open files when opening a workspace" = "ওয়ার্কস্পেস খুললে আগে খোলা ফাইলগুলো আবার খুলুন";
 
-/* Settings label (workspace.max-recent-workspaces) */
-"Max recent workspaces" = "সর্বোচ্চ সাম্প্রতিক ওয়ার্কস্পেস";
-
-/* Settings description / tooltip (workspace.max-recent-workspaces) */
-"Maximum number of recent workspaces to remember" = "মনে রাখার জন্য সাম্প্রতিক ওয়ার্কস্পেসের সর্বোচ্চ সংখ্যা";
-
 /* Settings label (window.restore-workspace) */
 "Restore workspace" = "ওয়ার্কস্পেস পুনরুদ্ধার";
 
@@ -956,3 +905,15 @@
 "Default location for new notes" = "Default location for new notes";
 "New notes" = "New notes";
 "The folder every new note is created in. Empty: next to the open note, or in the workspace folder." = "The folder every new note is created in. Empty: next to the open note, or in the workspace folder.";
+
+/* Writing locations: LocationsEditorView.swift, PaletteDestination.swift, settings schema. English until translated. */
+"Writing locations" = "Writing locations";
+"Add Location…" = "Add Location…";
+"Change…" = "Change…";
+"Remove" = "Remove";
+"Make default" = "Make default";
+"Folder missing" = "Folder missing";
+"Read-only" = "Read-only";
+"The folder \"%@\" is missing." = "The folder \"%@\" is missing.";
+"The folder \"%@\" can't be written to." = "The folder \"%@\" can't be written to.";
+"Folders you write in. Give each a nickname and pick one as the default for new notes." = "Folders you write in. Give each a nickname and pick one as the default for new notes.";
