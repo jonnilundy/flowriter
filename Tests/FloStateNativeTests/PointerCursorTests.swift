@@ -89,6 +89,7 @@ final class PointerCursorTests: XCTestCase {
     func testViewsInAWindowInvalidateTheirRectsWhenTheyMoveOrHide() {
         // not hover: only that the hooks run without a window and with one
         let w = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 200, height: 100), styleMask: [.titled], backing: .buffered, defer: true)
+        w.isReleasedWhenClosed = false   // ARC owns the window: the default release on close frees it twice
         let host = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 100))
         w.contentView = host
         let b = OverflowToggleButton()
