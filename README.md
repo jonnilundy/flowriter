@@ -59,6 +59,33 @@ started, and the bundle has no feed URL.
 `FLO_SPACE=0 swift run FloStateNative` runs the upstream Flo State shell
 (sidebar, tabs, properties table) instead of the writing space.
 
+## Plain editor
+
+`Sources/FlowriterKit` and `Sources/Flowriter` are a second, much smaller app in the same
+package: a plain Markdown editor in the spirit of a terminal or a code editor.
+
+- One `NSTextView` per document. Its text storage is the only copy of the text, and undo,
+  input methods, spell check and find are the system's.
+- Markdown shows as colour and weight on the literal text. Every line has the same height and
+  every style has the same character width, so typing a heading, a list marker or a code fence
+  never moves the text around it.
+- Lists: Return continues a list, Return on an empty item leaves it, Tab and Shift-Tab nest,
+  Backspace after a marker removes the marker.
+- Notes: a drawer beside the page (Option-O), with a drag edge to set its width. The notes are a
+  plain file next to the document, `.<name>.notes.md`.
+- Focus Mode (Shift-Command-F) keeps the caret line on the vertical centre of the window.
+- Files: `NSDocument` saves in place soon after typing stops. A change another program makes to
+  the file is loaded when there are no edits here, and is never overwritten when there are.
+
+```sh
+swift run Flowriter [file.md]               # run it (unbundled)
+scripts/bundle-plain.sh                     # release build -> build/plain/Flowriter.app
+SRC=build/plain/Flowriter.app scripts/install.sh   # install it as /Applications/Flowriter.app
+swift test --filter FlowriterKitTests       # its tests; scripts/check.sh runs them too
+```
+
+It uses the same bundle id as the app above, so installing one replaces the other.
+
 ## Layout
 
 | Path | What |
@@ -66,6 +93,7 @@ started, and the bundle has no feed URL.
 | `Sources/FloCore` | Platform-independent core: a Swift port of `@lezer/markdown` (plus GFM), editor state, transactions and history, editing commands and keymaps, the render planner, the app model, and the writing sidecar (`Writing/`). |
 | `Sources/FloKit` | AppKit/TextKit 2 editor: text view, layout, widgets, find, paste, and the writing layers (`Editor/Writing/`). |
 | `Sources/FloStateNative` | The app: window, writing space, panels, menus, shortcuts, and the scripted window tests (`*SelfTest.swift`). |
+| `Sources/FlowriterKit`, `Sources/Flowriter` | The plain editor (see above): Markdown styling, list editing rules, the text view, the document, the window with its notes drawer. |
 | `Tests/` | Unit and parity tests (XCTest) and the fixture posts the window tests open. |
 | `fixtures/`, `oracle/` | Behaviour recorded from the original web app and the harness that records it (from upstream). |
 | `tools/` | Scripts that rebuild the bundled JavaScript. |

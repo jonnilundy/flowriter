@@ -6,8 +6,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 SRC="${SRC:-build/Flowriter.app}"
 DST="/Applications/Flowriter.app"
-WAS_RUNNING=0; pgrep -f "Flowriter.app/Contents/MacOS/FloStateNative" >/dev/null && WAS_RUNNING=1
-pkill -f "Flowriter.app/Contents/MacOS/FloStateNative" 2>/dev/null || true
+WAS_RUNNING=0; pgrep -f "/Applications/Flowriter.app/Contents/MacOS/" >/dev/null && WAS_RUNNING=1
+pkill -f "/Applications/Flowriter.app/Contents/MacOS/" 2>/dev/null || true
 rm -rf "$DST"
 cp -R "$SRC" "$DST"
 scripts/sign.sh "$DST"

@@ -8,6 +8,7 @@ let package = Package(
         .executable(name: "FloStateNative", targets: ["FloStateNative"]),
         .library(name: "FloCore", targets: ["FloCore"]),
         .library(name: "FloKit", targets: ["FloKit"]),
+        .executable(name: "Flowriter", targets: ["Flowriter"]),
     ],
     dependencies: [
         // In-app updates (pinned; bump deliberately — scripts/release.sh uses its bin/ tools).
@@ -24,5 +25,10 @@ let package = Package(
         .testTarget(name: "FloCoreTests", dependencies: ["FloCore", "FloTestSupport"], swiftSettings: [.swiftLanguageMode(.v5)]),
         .testTarget(name: "FloKitTests", dependencies: ["FloKit", "FloTestSupport"], swiftSettings: [.swiftLanguageMode(.v5)]),
         .testTarget(name: "FloStateNativeTests", dependencies: ["FloStateNative", "FloTestSupport"], swiftSettings: [.swiftLanguageMode(.v5)]),
+        // The plain editor: one NSTextView per document, the text storage is the only copy of the
+        // text. It shares no code with the targets above.
+        .target(name: "FlowriterKit", swiftSettings: [.swiftLanguageMode(.v5)]),
+        .executableTarget(name: "Flowriter", dependencies: ["FlowriterKit"], swiftSettings: [.swiftLanguageMode(.v5)]),
+        .testTarget(name: "FlowriterKitTests", dependencies: ["FlowriterKit"], swiftSettings: [.swiftLanguageMode(.v5)]),
     ]
 )

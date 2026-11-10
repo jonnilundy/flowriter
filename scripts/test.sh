@@ -75,7 +75,7 @@ else
   # one bundle per test target (Swift Build, Xcode 27+), else SwiftPM's combined package bundle
   COMBINED="$ROOT/$BP/debug/FloStateNativePackageTests.xctest"
   classes=$(swift test --disable-keychain --skip-build --build-path $BP list 2>/dev/null | cut -d/ -f1 | sort -u)
-  for mod in FloStateNativeTests FloCoreTests FloKitTests; do
+  for mod in FloStateNativeTests FloCoreTests FloKitTests FlowriterKitTests; do
     sel=$(print -r -- "$classes" | grep "^$mod\." | paste -sd, -)
     [[ -n $sel ]] || continue
     BUNDLE="$ROOT/$BP/debug/$mod.xctest"; [[ -d $BUNDLE ]] || BUNDLE=$COMBINED
