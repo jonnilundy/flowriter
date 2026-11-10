@@ -1,7 +1,7 @@
 import AppKit
 
-/// The folders new notes go in, and which one is the default. With a default set, Command-N asks
-/// for a name only: the note is created there and opened.
+/// The folders notes are saved in, and which one is the default: the folder the save sheet offers
+/// first, so saving a new note is one Return.
 public struct Locations: Equatable {
     public static let listKey = "FlowriterLocations"
     public static let defaultKey = "FlowriterDefaultLocation"
@@ -80,35 +80,22 @@ public struct Locations: Equatable {
         if !(lower.hasSuffix(".md") || lower.hasSuffix(".markdown") || lower.hasSuffix(".txt")) { file += ".md" }
         return normalized(folder) + "/" + file
     }
-
-    /// What a new note holds: the start of a title, the caret after it.
-    public static let newNoteText = "# "
-
-    /// Create the note's file if there is none yet (an existing file is opened as it is).
-    @discardableResult
-    public static func createNote(in folder: String, name: String) throws -> URL {
-        guard let path = notePath(in: folder, name: name) else { throw CocoaError(.fileWriteInvalidFileName) }
-        let url = URL(fileURLWithPath: path)
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if !FileManager.default.fileExists(atPath: path) { try Data(newNoteText.utf8).write(to: url, options: .withoutOverwriting) }
-        return url
-    }
 }
 
-/// The New Note sheet: a name, and the folder it goes in. Return creates the note in the default
-/// location; the pop-up picks another saved location or any other folder.
+/// The sheet behind the note's name in the top bar: the name, and the folder it is in. It saves
+/// a note that has no file yet, and renames or moves one that has. The pop-up lists the saved
+/// locations (the default first chosen) and always ends with "Other Folder…".
 @MainActor
-final class NewNotePanel: NSPanel, NSTextFieldDelegate {
-    let nameField = NSTextField()
-    let folderPopUp = NSPopUpButton(frame: .zero, pullsDown: false)
-    private let createButton = NSButton(title: "Create", target: nil, action: nil)
-    private let cancelButton = NSButton(title: "Cancel", target: nil, action: nil)
+public final class NamePanel: NSPanel {
+    public let nameField = NSTextField()
+    public let folderPopUp = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let message = NSTextField(labelWithString: "")
     private var locations: Locations
-    /// A folder picked with "Other Folder…" for this note only.
+    /// A folder outside the saved locations: where the note is now, or one picked with "Other Folder…".
     private var otherFolder: String?
     private var lastSelection = 0
     /// Picks a folder for "Other Folder…"; nil when the writer cancels. Tests replace it.
-    var chooseFolder: () -> String? = {
+    public var chooseFolder: () -> String? = {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
@@ -116,42 +103,46 @@ final class NewNotePanel: NSPanel, NSTextFieldDelegate {
         panel.prompt = "Choose"
         return panel.runModal() == .OK ? panel.url?.path : nil
     }
-    var onDone: ((name: String, folder: String)?) -> Void = { _ in }
+    /// Why this name cannot be used in this folder, nil when it can.
+    public var validate: (_ name: String, _ folder: String) -> String? = { _, _ in nil }
+    public var onDone: ((name: String, folder: String)?) -> Void = { _ in }
 
-    init(locations: Locations) {
+    public init(heading: String, action: String, name: String, folder: String?, locations: Locations) {
         self.locations = locations
-        super.init(contentRect: NSRect(x: 0, y: 0, width: 440, height: 138), styleMask: [.titled], backing: .buffered, defer: true)
-        let content = NSView(frame: NSRect(x: 0, y: 0, width: 440, height: 138))
-        let title = NSTextField(labelWithString: "New note")
+        super.init(contentRect: NSRect(x: 0, y: 0, width: 440, height: 150), styleMask: [.titled], backing: .buffered, defer: true)
+        let content = NSView(frame: NSRect(x: 0, y: 0, width: 440, height: 150))
+        let title = NSTextField(labelWithString: heading)
         title.font = .systemFont(ofSize: 13, weight: .semibold)
-        title.frame = NSRect(x: 20, y: 102, width: 400, height: 18)
+        title.frame = NSRect(x: 20, y: 114, width: 400, height: 18)
+        nameField.stringValue = name
         nameField.placeholderString = "Name"
         nameField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-        nameField.frame = NSRect(x: 20, y: 66, width: 400, height: 24)
-        nameField.delegate = self
+        nameField.frame = NSRect(x: 20, y: 80, width: 400, height: 24)
         nameField.target = self
-        nameField.action = #selector(create)   // Return in the field creates the note
+        nameField.action = #selector(commit)   // Return in the field
         nameField.setAccessibilityLabel("Name")
-        folderPopUp.frame = NSRect(x: 18, y: 16, width: 200, height: 26)
+        message.font = .systemFont(ofSize: 11)
+        message.textColor = .systemRed
+        message.frame = NSRect(x: 20, y: 56, width: 400, height: 16)
+        folderPopUp.frame = NSRect(x: 18, y: 16, width: 210, height: 26)
         folderPopUp.target = self
         folderPopUp.action = #selector(folderPicked)
         folderPopUp.setAccessibilityLabel("Location")
-        createButton.frame = NSRect(x: 336, y: 14, width: 88, height: 30)
-        createButton.keyEquivalent = "\r"
-        createButton.target = self
-        createButton.action = #selector(create)
-        cancelButton.frame = NSRect(x: 248, y: 14, width: 88, height: 30)
-        cancelButton.keyEquivalent = "\u{1B}"
-        cancelButton.target = self
-        cancelButton.action = #selector(cancel)
-        for v in [title, nameField, folderPopUp, cancelButton, createButton] { content.addSubview(v) }
+        let done = NSButton(title: action, target: self, action: #selector(commit))
+        done.frame = NSRect(x: 336, y: 14, width: 88, height: 30)
+        done.keyEquivalent = "\r"
+        let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancelPanel))
+        cancel.frame = NSRect(x: 248, y: 14, width: 88, height: 30)
+        cancel.keyEquivalent = "\u{1B}"
+        for v in [title, nameField, message, folderPopUp, cancel, done] { content.addSubview(v) }
         contentView = content
         initialFirstResponder = nameField
-        rebuildPopUp(select: locations.defaultFolder)
+        if let folder = folder.map(Locations.normalized), !locations.folders.contains(folder) { otherFolder = folder }
+        rebuildPopUp(select: folder.map(Locations.normalized) ?? locations.defaultFolder)
     }
 
-    /// The folder the note will go in, nil when none is chosen yet.
-    var selectedFolder: String? { folderPopUp.selectedItem?.representedObject as? String }
+    /// The folder the note will be in, nil when none is chosen yet.
+    public var selectedFolder: String? { folderPopUp.selectedItem?.representedObject as? String }
 
     private func rebuildPopUp(select: String?) {
         folderPopUp.removeAllItems()
@@ -173,6 +164,7 @@ final class NewNotePanel: NSPanel, NSTextFieldDelegate {
     }
 
     @objc private func folderPicked() {
+        message.stringValue = ""
         guard selectedFolder == nil else { lastSelection = folderPopUp.indexOfSelectedItem; return }
         // "Other Folder…"
         if let path = chooseFolder().map(Locations.normalized) {
@@ -183,53 +175,19 @@ final class NewNotePanel: NSPanel, NSTextFieldDelegate {
         }
     }
 
-    @objc private func create() {
+    @objc private func commit() {
         if selectedFolder == nil { folderPicked() }
         guard let folder = selectedFolder else { return }
-        guard Locations.notePath(in: folder, name: nameField.stringValue) != nil else { NSSound.beep(); return }
-        onDone((nameField.stringValue, folder))
+        let name = nameField.stringValue
+        if Locations.notePath(in: folder, name: name) == nil { message.stringValue = "A name cannot hold \"..\"."; return }
+        if let problem = validate(name, folder) { message.stringValue = problem; return }
+        onDone((name, folder))
     }
 
-    @objc private func cancel() { onDone(nil) }
+    @objc private func cancelPanel() { onDone(nil) }
 }
 
 extension DocumentController {
-    /// File > New Note: ask for a name, create the note in the chosen location, open it.
-    @objc public func newNote(_ sender: Any?) {
-        let panel = NewNotePanel(locations: .load())
-        let host = NSApp.mainWindow ?? NSApp.keyWindow ?? documents.compactMap { $0.windowControllers.first?.window }.last
-        panel.onDone = { [weak self, weak panel] result in
-            guard let self, let panel else { return }
-            if let host, panel.sheetParent === host { host.endSheet(panel) } else { NSApp.stopModal(); panel.orderOut(nil) }
-            guard let (name, folder) = result else { return }
-            // a folder picked while there are no saved locations becomes the first one, and the default
-            var locations = Locations.load()
-            if locations.folders.isEmpty { locations.add(folder); locations.save() }
-            self.openNewNote(name: name, in: folder)
-        }
-        if let host { host.beginSheet(panel) } else { NSApp.runModal(for: panel) }
-    }
-
-    /// Create the note's file and open it with the caret at the end. An empty untitled window the
-    /// note was started from goes away.
-    public func openNewNote(name: String, in folder: String) {
-        let pristine = documents.compactMap { $0 as? Document }.filter { $0.fileURL == nil && !$0.isDocumentEdited && $0.currentText.isEmpty && $0.notes.isEmpty }
-        do {
-            let url = try Locations.createNote(in: folder, name: name)
-            openDocument(withContentsOf: url, display: true) { document, _, error in
-                if let error { NSApp.presentError(error); return }
-                if let controller = document?.windowControllers.first as? DocumentWindowController {
-                    let end = (controller.editor.string as NSString).length
-                    controller.editor.setSelectedRange(NSRange(location: end, length: 0))
-                    controller.window?.makeFirstResponder(controller.editor)
-                }
-                for old in pristine where old !== document { old.close() }
-            }
-        } catch {
-            NSApp.presentError(error)
-        }
-    }
-
     @objc func addLocation(_ sender: Any?) {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true

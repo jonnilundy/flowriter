@@ -12,15 +12,57 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     public func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
 
-    /// Launch with no file: the last document comes back. Without one, a new empty page.
-    public func applicationOpenUntitledFile(_ sender: NSApplication) -> Bool {
-        if let last = documents.lastDocumentURL {
-            documents.openDocument(withContentsOf: last, display: true) { [documents] document, _, _ in
-                if document == nil { documents.newDocument(nil) }
-            }
-            return true
+    public static let openDocumentsKey = "FlowriterOpenDocuments"
+    /// The note in front at the last quit: a file's path, or "draft:" and a draft's id.
+    public static let frontDocumentKey = "FlowriterFrontDocument"
+    private var restored = false
+    /// The Finder (or `open`) asked for files at launch.
+    private var openedFiles = false
+
+    public func application(_ application: NSApplication, open urls: [URL]) {
+        openedFiles = true
+        for url in urls { documents.openDocument(withContentsOf: url, display: true) { _, _, _ in } }
+    }
+
+    /// Bring back what was open at the last quit: every note that has no file yet (the drafts),
+    /// and, when `files` is set, the files that were open. The note that was in front is in front
+    /// again. Returns how many windows that made.
+    @discardableResult
+    func restoreSession(files: Bool) -> Int {
+        guard !restored else { return 0 }
+        restored = true
+        var count = 0
+        let front = UserDefaults.standard.string(forKey: Self.frontDocumentKey)
+        let bringFront: (NSDocument?) -> Void = { $0?.windowControllers.first?.window?.makeKeyAndOrderFront(nil) }
+        for draft in Drafts.all() {
+            let document = Document(draft: draft)
+            documents.addDocument(document)
+            document.makeWindowControllers()
+            document.showWindows()
+            count += 1
         }
-        documents.newDocument(nil)
+        let frontDraft = { [documents] in documents.documents.first { ($0 as? Document)?.draftID.map { "draft:" + $0 } == front } }
+        if files {
+            let saved = UserDefaults.standard.stringArray(forKey: Self.openDocumentsKey)
+            let paths = (saved ?? documents.lastDocumentURL.map { [$0.path] } ?? []).filter { FileManager.default.fileExists(atPath: $0) }
+            var left = paths.count
+            for path in paths {
+                documents.openDocument(withContentsOf: URL(fileURLWithPath: path), display: true) { document, _, _ in
+                    left -= 1
+                    if path == front { bringFront(document) }
+                    // files open after the drafts and would cover a draft that was in front
+                    if left == 0, let draft = frontDraft() { bringFront(draft) }
+                }
+                count += 1
+            }
+        }
+        bringFront(frontDraft())
+        return count
+    }
+
+    /// Launch with no file asked for: the last session comes back. With nothing to bring back, a new note.
+    public func applicationOpenUntitledFile(_ sender: NSApplication) -> Bool {
+        if restoreSession(files: true) == 0, documents.documents.isEmpty { documents.newDocument(nil) }
         return true
     }
 
@@ -34,6 +76,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         for url in launchFiles { documents.openDocument(withContentsOf: url, display: true) { _, _, _ in } }
+        // Launched to open a file: only the drafts come back beside it. Launched bare: the files
+        // that were open come back too. (This runs before applicationOpenUntitledFile.)
+        restoreSession(files: launchFiles.isEmpty && !openedFiles)
         if Self.offScreen, !Self.smoke { return }
         guard Self.smoke else { NSApp.activate(ignoringOtherApps: true); return }
         // --smoke: a real launch that takes no focus, reports what came up, and quits
@@ -44,6 +89,19 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                   "chars=\(controllers.first?.editor.string.utf16.count ?? -1) notesOpen=\(controllers.first?.notesOpen ?? false) menus=\(menus)")
             exit(controllers.isEmpty ? 1 : 0)
         }
+    }
+
+    /// Quitting never asks (DocumentController.prepareToQuit). AppKit reviews unsaved documents
+    /// before it comes here, so this is the second, already answered, call.
+    public func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if documents.preparedThisQuit { documents.preparedThisQuit = false; return .terminateNow }
+        var replied = false, later = false
+        documents.prepareToQuit {
+            replied = true
+            if later { NSApp.reply(toApplicationShouldTerminate: true) }
+        }
+        later = !replied
+        return replied ? .terminateNow : .terminateLater
     }
 
     public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
@@ -81,8 +139,7 @@ enum MainMenu {
         app.addItem(withTitle: "Quit \(name)", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
         let file = submenu(main, "File")
-        file.addItem(withTitle: "New Note…", action: #selector(DocumentController.newNote(_:)), keyEquivalent: "n")
-        item(file, "New Empty Page", #selector(NSDocumentController.newDocument(_:)), "n", [.command, .option])
+        file.addItem(withTitle: "New Note", action: #selector(NSDocumentController.newDocument(_:)), keyEquivalent: "n")
         let places = NSMenu(title: "Locations")
         places.delegate = LocationsMenu.shared
         file.addItem(withTitle: "Locations", action: nil, keyEquivalent: "").submenu = places
@@ -95,8 +152,7 @@ enum MainMenu {
         file.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         file.addItem(withTitle: "Save…", action: #selector(NSDocument.save(_:)), keyEquivalent: "s")
         item(file, "Duplicate", #selector(NSDocument.duplicate(_:)), "s", [.command, .shift])
-        file.addItem(withTitle: "Rename…", action: #selector(NSDocument.rename(_:)), keyEquivalent: "")
-        file.addItem(withTitle: "Move To…", action: #selector(NSDocument.move(_:)), keyEquivalent: "")
+        file.addItem(withTitle: "Rename or Move…", action: #selector(DocumentWindowController.editName(_:)), keyEquivalent: "")
         file.addItem(withTitle: "Revert To Saved", action: #selector(NSDocument.revertToSaved(_:)), keyEquivalent: "")
 
         let edit = submenu(main, "Edit")

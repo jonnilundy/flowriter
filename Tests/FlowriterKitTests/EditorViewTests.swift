@@ -10,6 +10,7 @@ final class EditorViewTests: XCTestCase {
 
     override func setUp() async throws {
         _ = NSApplication.shared
+        Drafts.directory = FileManager.default.temporaryDirectory.appendingPathComponent("flowriter-test-drafts-\(ProcessInfo.processInfo.processIdentifier)")
         UserDefaults.standard.removeObject(forKey: Theme.notesDeltaKey)
         UserDefaults.standard.removeObject(forKey: DocumentWindowController.focusKey)
     }

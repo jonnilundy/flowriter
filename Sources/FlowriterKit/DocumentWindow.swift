@@ -282,6 +282,7 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         // drawn here instead, on one line, with a dot while there are changes not on disk yet.
         window.titleVisibility = .hidden
         titleLabel.lineBreakMode = .byTruncatingMiddle
+        titleLabel.addGestureRecognizer(NSClickGestureRecognizer(target: self, action: #selector(editName(_:))))
         // a stack fills the bar's height and centres the name on the window buttons' line
         let titleStack = NSStackView()
         titleStack.orientation = .horizontal
@@ -297,10 +298,11 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
 
     private let titleLabel = NSTextField(labelWithString: "")
 
-    /// The document's name in the top bar, and a dot while the file does not hold the text yet.
+    /// The note's name in the top bar, and a dot while it is not in its file. A note with no file
+    /// yet shows the name it will get, made from its first line.
     func updateTitle() {
         let name = doc?.displayName ?? window?.title ?? ""
-        let unsaved = doc.map { $0.fileURL == nil ? !editor.string.isEmpty : $0.hasUnautosavedChanges } ?? false
+        let unsaved = doc.map { $0.fileURL == nil ? !(editor.string.isEmpty && $0.notes.isEmpty) : $0.hasUnautosavedChanges } ?? false
         let title = NSMutableAttributedString(string: name, attributes: [
             .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium), .foregroundColor: Theme.secondary])
         if unsaved {
@@ -308,8 +310,14 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
                 .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium), .foregroundColor: Theme.accent]))
         }
         titleLabel.attributedStringValue = title
-        titleLabel.toolTip = doc?.fileURL.map { Locations.abbreviated($0.path) }
+        titleLabel.toolTip = doc?.fileURL.map { Locations.abbreviated($0.path) + "\nClick to rename or move." } ?? "Not in a file yet. Click to save."
     }
+
+    /// The name as the top bar shows it (without the dot).
+    public var titleText: String { doc?.displayName ?? "" }
+
+    /// A click on the name, and File > Rename or Move: the sheet that saves, renames or moves the note.
+    @objc public func editName(_ sender: Any?) { doc?.presentNamePanel() }
 
     public override func synchronizeWindowTitleWithDocumentName() {
         super.synchronizeWindowTitleWithDocumentName()

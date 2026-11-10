@@ -54,14 +54,4 @@ final class LocationsTests: XCTestCase {
         XCTAssertEqual(Locations.notePath(in: "/n", name: ""), "/n/Untitled.md")
         XCTAssertNil(Locations.notePath(in: "/n", name: "../outside"), "a note never leaves its folder")
     }
-
-    func testCreateNeverOverwrites() throws {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("flowriter-loc-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: dir) }
-        let url = try Locations.createNote(in: dir.path, name: "sub/idea")
-        XCTAssertEqual(try String(contentsOf: url, encoding: .utf8), "# ")
-        try Data("my words".utf8).write(to: url)
-        XCTAssertEqual(try Locations.createNote(in: dir.path, name: "sub/idea"), url)
-        XCTAssertEqual(try String(contentsOf: url, encoding: .utf8), "my words", "an existing note is opened, not replaced")
-    }
 }

@@ -2,7 +2,9 @@
 # Drive the plain editor through a scripted session without showing a window or taking focus,
 # and save a picture of the window after the steps that ask for one.
 #
-#   scripts/drive.sh [script] [out-dir]     default: Tests/FlowriterDrive/session.txt -> build/drive
+#   scripts/drive.sh [script] [out-dir] [--keep-state]
+#       default: Tests/FlowriterDrive/session.txt -> build/drive
+#       --keep-state: start from what the last run left (its preferences and unsaved notes)
 #
 # The app's window is parked off every screen and the process may not become active, so this is
 # safe to run on a desktop in use. The last line is "DRIVE PASS ..." or "DRIVE FAIL ...".
@@ -14,6 +16,6 @@ export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=credential.help
 swift build --disable-keychain --build-path .build-test -j ${JOBS:-8} --product FlowriterDrive > build/drive-build.log 2>&1 \
   || { echo "DRIVE FAIL (build): $(grep -m1 'error' build/drive-build.log | cut -c1-200)"; exit 1; }
 BIN=$(swift build --disable-keychain --build-path .build-test --product FlowriterDrive --show-bin-path)/FlowriterDrive
-rm -rf "$OUT"; mkdir -p "$OUT"
-"$BIN" --script="$SCRIPT" --out="$OUT" 2>/dev/null | grep '^DRIVE'
+[[ "${3:-}" == --keep-state ]] || rm -rf "$OUT"; mkdir -p "$OUT"
+"$BIN" --script="$SCRIPT" --out="$OUT" ${3:-} 2>/dev/null | grep '^DRIVE'
 exit ${pipestatus[1]}

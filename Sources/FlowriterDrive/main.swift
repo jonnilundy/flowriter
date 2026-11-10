@@ -21,7 +21,13 @@ import FlowriterKit
 //   shot <name>                 save <out-dir>/<name>.png (the whole window, title bar included)
 //   expect page|notes <text>    fail unless that side's text is exactly this (\n for a line break)
 //   default <key> <value>       set a preference
-//   location <folder>           add a saved location for new notes ($TMP is a folder made for the run)
+//   location <folder>           add a saved location for new notes ($TMP is a folder made for the run;
+//                               $STATE is one that outlives the run, for a script and its --keep-state sequel)
+//   remove <path>               delete a file or folder under $TMP or $STATE
+//   expect-title <name>         fail unless the top bar shows this name
+//   expect-drafts <n>           fail unless this many unsaved notes are kept on disk
+//   expect-windows <n>          fail unless this many note windows are open
+//   quit                        quit the app the way Command-Q does (the last step of a script)
 //   expect-path <file>          fail unless the newest document is this file
 //   expect-file <file> <text>   fail unless the file on disk holds exactly this
 //   log                         print the caret, the scroll place and the first responder
@@ -103,11 +109,10 @@ final class Driver {
         return false
     }
 
-    /// The window of the document opened last.
+    /// The note window in front.
     var controller: DocumentWindowController? {
-        let all = NSApp.windows.compactMap { $0.windowController as? DocumentWindowController }
-        let newest = NSDocumentController.shared.documents.last
-        return all.first { $0.document === newest } ?? all.first
+        NSApp.orderedWindows.compactMap { $0.windowController as? DocumentWindowController }.first
+            ?? NSApp.windows.compactMap { $0.windowController as? DocumentWindowController }.first
     }
 
     /// A folder for the files a script makes: "$TMP" in a step stands for it.
@@ -134,7 +139,7 @@ final class Driver {
             print(failures == 0 ? "DRIVE PASS \(steps.count) steps" : "DRIVE FAIL \(failures) failed")
             exit(failures == 0 ? 0 : 1)
         }
-        let line = steps[index].replacingOccurrences(of: "$TMP", with: temp.path)
+        let line = steps[index].replacingOccurrences(of: "$TMP", with: temp.path).replacingOccurrences(of: "$STATE", with: Drafts.directory.deletingLastPathComponent().path)
         index += 1
         let delay = run(line)
         // AppKit closes the undo group of an event when its event loop takes the next event. The
@@ -166,6 +171,24 @@ final class Driver {
             var locations = Locations.load()
             locations.add(rest)
             locations.save()
+        case "remove":
+            // only inside the run's own folders
+            let state = Drafts.directory.deletingLastPathComponent().path
+            if rest.hasPrefix(temp.path + "/") || rest.hasPrefix(state + "/") { try? FileManager.default.removeItem(atPath: rest) }
+            else { fail("remove is for $TMP and $STATE only: \(rest)") }
+        case "expect-title":
+            if c.titleText != rest { fail("the title is \(c.titleText.debugDescription), expected \(rest.debugDescription)") }
+        case "expect-drafts":
+            let n = Drafts.all().count
+            if n != Int(rest) { fail("\(n) drafts on disk, expected \(rest)") }
+        case "expect-windows":
+            let n = NSApp.windows.compactMap { $0.windowController as? DocumentWindowController }.count
+            if n != Int(rest) { fail("\(n) note windows, expected \(rest)") }
+        case "quit":
+            // the real Quit: the app's own code decides what happens to unsaved notes
+            print(failures == 0 ? "DRIVE PASS \(index) steps, then quit" : "DRIVE FAIL \(failures) failed")
+            if failures > 0 { exit(1) }
+            NSApp.terminate(nil)
         case "expect-path":
             let path = (c.document as? Document)?.fileURL?.resolvingSymlinksInPath().path ?? "none"
             if path != rest { fail("the document is \(path), expected \(rest)") }
@@ -318,8 +341,12 @@ final class Driver {
 MainActor.assumeIsolated {
     AppDelegate.offScreen = true
     AppDelegate.launchFiles = argument("file").map { [URL(fileURLWithPath: $0)] } ?? []
-    // a clean slate each run, in this tool's own defaults (never the app's)
-    if let domain = Bundle.main.bundleIdentifier ?? ProcessInfo.processInfo.processName as String? { UserDefaults.standard.removePersistentDomain(forName: domain) }
+    // A clean slate each run, in this tool's own preferences and drafts folder (never the app's).
+    // --keep-state leaves both, to see what a second launch brings back.
+    if !CommandLine.arguments.contains("--keep-state") {
+        UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier ?? ProcessInfo.processInfo.processName)
+        Drafts.removeAll()
+    }
     let driver = Driver()
     NotificationCenter.default.addObserver(forName: NSApplication.didFinishLaunchingNotification, object: nil, queue: .main) { _ in
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { MainActor.assumeIsolated { driver.start() } }

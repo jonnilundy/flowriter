@@ -1,19 +1,36 @@
-# Command-N with a default location: type a name, Return, and write. No folder to pick.
+# A new note has no file. Its name comes from its first line. A click on the name saves it to
+# the default location, and another click renames it.
 size 1000 640
 location $TMP/notes
 location $TMP/journal
-menu File > New Note
-wait 0.5
-type happy-days
-shot 01-new-note
-key Return
-wait 1.0
-expect-path $TMP/notes/happy-days.md
-expect page # 
-type Happy days
+expect-title untitled
+type # Happy days
+expect-title happy-days
 key Return
 key Return
 type It starts right away.
-wait 2.2
+wait 1.6
+expect-drafts 1
+shot 01-unsaved
+menu File > Rename or Move
+wait 0.5
+shot 02-save
+key Return
+wait 1.2
+expect-path $TMP/notes/happy-days.md
+expect-title happy-days.md
 expect-file $TMP/notes/happy-days.md # Happy days\n\nIt starts right away.\n
-shot 02-writing
+expect-drafts 0
+type  More.
+wait 2.2
+expect-file $TMP/notes/happy-days.md # Happy days\n\nIt starts right away. More.\n
+menu File > Rename or Move
+wait 0.5
+type glad-days
+shot 03-rename
+key Return
+wait 1.2
+expect-path $TMP/notes/glad-days.md
+expect-title glad-days.md
+expect-file $TMP/notes/glad-days.md # Happy days\n\nIt starts right away. More.\n
+shot 04-renamed

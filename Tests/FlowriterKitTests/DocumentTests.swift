@@ -8,6 +8,7 @@ final class DocumentTests: XCTestCase {
 
     override func setUp() async throws {
         _ = NSApplication.shared
+        Drafts.directory = FileManager.default.temporaryDirectory.appendingPathComponent("flowriter-test-drafts-\(ProcessInfo.processInfo.processIdentifier)")
         dir = FileManager.default.temporaryDirectory.appendingPathComponent("flowriter-tests-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     }
