@@ -229,14 +229,38 @@ final class EditorViewTests: XCTestCase {
         controller = Snapshot.window(markdown: "text", options: options)
         controller.setNotesOpen(true)
         let right = editor.textContainerOrigin.x + editor.textContainer!.size.width
-        XCTAssertLessThanOrEqual(right, controller.drawer.frame.minX - ColumnLayout.drawerGap + 0.5)
-        XCTAssertGreaterThanOrEqual(editor.textContainerOrigin.x, ColumnLayout.minMargin)
+        XCTAssertLessThanOrEqual(right, controller.drawer.frame.minX - editor.theme.margin + 0.5)
+        XCTAssertGreaterThanOrEqual(editor.textContainerOrigin.x, editor.theme.margin)
+    }
+
+    /// Bigger text must keep its margins: the column narrows, the room on each side stays.
+    func testBigTextKeepsTheSameRoomOnBothSides() {
+        var options = Snapshot.Options()
+        options.width = 820
+        controller = Snapshot.window(markdown: "Some text that is long enough to wrap in a narrow column of big letters.", options: options)
+        defer { DocumentWindowController.setFontSize(Theme.defaultFontSize) }
+        for size in [CGFloat(15), 22, 30] {
+            DocumentWindowController.setFontSize(size)
+            for open in [false, true] {
+                controller.setNotesOpen(open)
+                controller.window?.contentView?.layoutSubtreeIfNeeded()
+                let margin = editor.theme.margin
+                let left = editor.textContainerOrigin.x
+                let right = (open ? controller.drawer.frame.minX : controller.root.bounds.width) - (left + editor.textContainer!.size.width)
+                XCTAssertGreaterThanOrEqual(left, margin, "size \(size) notes \(open)")
+                XCTAssertGreaterThanOrEqual(right, margin - 0.5, "size \(size) notes \(open)")
+                XCTAssertGreaterThanOrEqual(margin, 3 * editor.theme.charWidth - 1)
+                if editor.textContainer!.size.width < editor.theme.columnWidth {
+                    XCTAssertEqual(left, right, accuracy: 1.5, "a narrowed column has the same room on both sides (size \(size), notes \(open))")
+                }
+            }
+        }
     }
 
     func testColumnLayoutIsContinuous() {
-        var last = ColumnLayout.place(viewWidth: 1400, column: 600, reservedRight: 0).left
+        var last = ColumnLayout.place(viewWidth: 1400, column: 600, reservedRight: 0, margin: 32).left
         for reserved in stride(from: CGFloat(0), through: 900, by: 1) {
-            let p = ColumnLayout.place(viewWidth: 1400, column: 600, reservedRight: reserved)
+            let p = ColumnLayout.place(viewWidth: 1400, column: 600, reservedRight: reserved, margin: 32)
             XCTAssertLessThanOrEqual(abs(p.left - last), reserved == 0 ? 400 : 1.01, "the column jumped at \(reserved)")
             XCTAssertGreaterThanOrEqual(p.width, 120)
             last = p.left

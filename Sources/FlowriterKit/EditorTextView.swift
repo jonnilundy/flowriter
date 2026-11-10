@@ -69,8 +69,8 @@ public final class EditorTextView: NSTextView {
     public enum Column: Equatable {
         /// A column of `Theme.columns` characters, centred in the view when that clears `reservedRight`.
         case centred
-        /// The whole width, with this padding on each side.
-        case fill(CGFloat)
+        /// The whole width of the view, inside the theme's margin (the notes drawer).
+        case fill
     }
 
     public let highlighter: MarkdownHighlighter
@@ -253,8 +253,9 @@ public final class EditorTextView: NSTextView {
         let place: (left: CGFloat, width: CGFloat)
         switch column {
         case .centred:
-            place = ColumnLayout.place(viewWidth: layoutWidth ?? viewWidth, column: theme.columnWidth, reservedRight: reservedRight)
-        case let .fill(padding):
+            place = ColumnLayout.place(viewWidth: layoutWidth ?? viewWidth, column: theme.columnWidth, reservedRight: reservedRight, margin: theme.margin)
+        case .fill:
+            let padding = max(18, (2 * theme.charWidth).rounded())
             place = (padding, max(80, viewWidth - 2 * padding))
         }
         var bottom: CGFloat
@@ -263,10 +264,9 @@ public final class EditorTextView: NSTextView {
             top = max(24, ((viewHeight - theme.lineHeight) / 2).rounded())
             bottom = top
         } else {
-            top = 48
+            top = theme.topMargin
             bottom = column == .centred ? max(96, (viewHeight * 0.4).rounded()) : 48
         }
-        if case .fill = column { bottom = max(bottom, 48) }
         left = place.left
         if container.size.width != place.width { container.size = NSSize(width: place.width, height: .greatestFiniteMagnitude) }
         // the inset is the same above and below: the origin override puts the real top in place
@@ -330,17 +330,14 @@ public final class EditorTextView: NSTextView {
 
 /// Where the text column sits in a view.
 public enum ColumnLayout {
-    public static let minMargin: CGFloat = 24
-    /// Air between the column and a drawer.
-    public static let drawerGap: CGFloat = 40
-
-    /// The column stays centred in the view while that clears `reservedRight`. Past that it moves
-    /// left, and it narrows only when there is no room left to move.
-    public static func place(viewWidth: CGFloat, column: CGFloat, reservedRight: CGFloat) -> (left: CGFloat, width: CGFloat) {
-        let rightMargin = reservedRight > 0 ? reservedRight + drawerGap : minMargin
-        let width = max(120, min(column, viewWidth - minMargin - rightMargin))
+    /// The column stays centred in the view while that clears `reservedRight` (a drawer) by
+    /// `margin`. Past that it moves left, keeping `margin` to the drawer. When it reaches `margin`
+    /// from the left edge it narrows, so the text keeps the same room on both sides.
+    public static func place(viewWidth: CGFloat, column: CGFloat, reservedRight: CGFloat, margin: CGFloat) -> (left: CGFloat, width: CGFloat) {
+        let free = viewWidth - reservedRight
+        let width = max(120, min(column, free - 2 * margin))
         let centred = (viewWidth - width) / 2
-        let left = max(minMargin, min(centred, viewWidth - rightMargin - width))
+        let left = max(margin, min(centred, free - margin - width))
         return (left.rounded(.down), width)
     }
 }

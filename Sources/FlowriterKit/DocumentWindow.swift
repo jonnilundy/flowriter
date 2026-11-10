@@ -18,7 +18,7 @@ final class NotesDrawerView: NSView {
 
     init() {
         super.init(frame: .zero)
-        textView.column = .fill(18)
+        textView.column = .fill
         textView.placeholder = "Notes"
         textView.isContinuousSpellCheckingEnabled = false
         textView.setAccessibilityLabel("Notes")

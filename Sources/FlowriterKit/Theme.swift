@@ -43,6 +43,11 @@ public struct Theme {
     }
 
     public var columnWidth: CGFloat { (CGFloat(columns) * charWidth).rounded(.up) }
+    /// The least room between the text and an edge of its area (the window, the drawer). It grows
+    /// with the text size, so bigger text never runs up against an edge.
+    public var margin: CGFloat { max(32, (3 * charWidth).rounded()) }
+    /// Room above the first line.
+    public var topMargin: CGFloat { max(48, (1.8 * lineHeight).rounded()) }
 
     public func font(for flags: StyleFlags) -> NSFont {
         switch (flags.contains(.bold), flags.contains(.italic)) {
