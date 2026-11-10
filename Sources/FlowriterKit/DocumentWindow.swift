@@ -85,6 +85,14 @@ final class RootView: NSView {
     override func draw(_ dirtyRect: NSRect) { Theme.background.setFill(); bounds.fill() }
 }
 
+/// A document window. Off screen (the test driver) it stays where it is put: AppKit would move
+/// a window that is on no screen back onto one.
+final class DocumentWindow: NSWindow {
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        AppDelegate.offScreen ? frameRect : super.constrainFrameRect(frameRect, to: screen)
+    }
+}
+
 /// One window per document: the page, and the notes drawer beside it.
 @MainActor
 public final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSTextViewDelegate {
@@ -103,11 +111,14 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
     private var loading = false
 
     var doc: Document? { document as? Document }
+    /// The notes drawer's editor, and the drawer's frame in window coordinates.
+    public var notesView: EditorTextView { drawer.textView }
+    public var notesFrame: NSRect { drawer.convert(drawer.bounds, to: nil) }
     /// A document made outside NSDocumentController (snapshots, tests) has no other owner. `close()` ends the cycle.
     var keptDocument: Document?
 
     public init(document: Document) {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 760),
+        let window = DocumentWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 760),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: true)
         window.isReleasedWhenClosed = false
         window.titlebarAppearsTransparent = true
@@ -116,8 +127,13 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         window.tabbingMode = .disallowed
         super.init(window: window)
         window.delegate = self
-        window.setFrameAutosaveName("FlowriterDocument")
-        if !window.setFrameUsingName("FlowriterDocument") { window.center() }
+        if AppDelegate.offScreen {
+            window.setFrame(NSRect(x: -30000, y: -30000, width: 980, height: 760), display: false)
+            window.collectionBehavior = [.transient, .ignoresCycle]
+        } else {
+            window.setFrameAutosaveName("FlowriterDocument")
+            if !window.setFrameUsingName("FlowriterDocument") { window.center() }
+        }
 
         editorScroll.documentView = editor
         editorScroll.drawsBackground = false
@@ -188,11 +204,14 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
 
     private func layoutContent() {
         let b = root.bounds
-        let maxWidth = max(NotesDrawerView.minWidth, b.width - 260)
+        // the drawer gives way in a narrow window: never more than half of it
+        let maxWidth = max(NotesDrawerView.minWidth, min(b.width - 320, (b.width * 0.5).rounded()))
         let w = notesOpen ? min(max(NotesDrawerView.minWidth, notesWidth), maxWidth) : 0
-        editorScroll.frame = b
-        editorScroll.scrollerInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: w)
+        // The page's scroll view ends at the drawer (its scroller and find bar stay clear of it),
+        // but the column is still placed in the whole window, so it only moves when it must.
+        editorScroll.frame = NSRect(x: 0, y: 0, width: b.width - w, height: b.height)
         drawer.frame = NSRect(x: b.width - w, y: 0, width: w, height: b.height)
+        editor.layoutWidth = b.width
         editor.reservedRight = w
         editor.layoutColumn()
     }

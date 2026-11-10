@@ -26,13 +26,15 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Files named on the command line (a build run without a bundle gets no open-file events).
     private var launchFiles: [URL] {
-        CommandLine.arguments.dropFirst().filter { !$0.hasPrefix("-") && FileManager.default.fileExists(atPath: $0) }.map { URL(fileURLWithPath: $0) }
+        if let files = Self.launchFiles { return files }
+        return CommandLine.arguments.dropFirst().filter { !$0.hasPrefix("-") && FileManager.default.fileExists(atPath: $0) }.map { URL(fileURLWithPath: $0) }
     }
 
     public func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { launchFiles.isEmpty || !documents.documents.isEmpty }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         for url in launchFiles { documents.openDocument(withContentsOf: url, display: true) { _, _, _ in } }
+        if Self.offScreen, !Self.smoke { return }
         guard Self.smoke else { NSApp.activate(ignoringOtherApps: true); return }
         // --smoke: a real launch that takes no focus, reports what came up, and quits
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [documents] in
@@ -47,13 +49,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     static var smoke = false
+    /// Windows open far off every screen and the app never takes focus (the test driver).
+    public static var offScreen = false
+    /// The files to open at launch, in place of the ones named on the command line (the test driver).
+    public static var launchFiles: [URL]?
 
     public static func run(smoke: Bool = false) {
         Self.smoke = smoke
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate
-        app.setActivationPolicy(smoke ? .accessory : .regular)
+        // off screen: the app may never become active, so it cannot take the keys from the app in use
+        app.setActivationPolicy(offScreen || smoke ? .prohibited : .regular)
         withExtendedLifetime(delegate) { app.run() }
     }
 }

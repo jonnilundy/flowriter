@@ -82,7 +82,13 @@ swift run Flowriter [file.md]               # run it (unbundled)
 scripts/bundle-plain.sh                     # release build -> build/plain/Flowriter.app
 SRC=build/plain/Flowriter.app scripts/install.sh   # install it as /Applications/Flowriter.app
 swift test --filter FlowriterKitTests       # its tests; scripts/check.sh runs them too
+scripts/drive.sh                            # a scripted writing session, off screen -> build/drive/*.png
 ```
+
+`scripts/drive.sh` runs the real app with its window parked off every screen and never
+activates it, so it is safe on a desktop in use. It sends the key and mouse steps of
+`Tests/FlowriterDrive/session.txt`, checks the text after them, and saves a picture of the
+window at each `shot` step.
 
 It uses the same bundle id as the app above, so installing one replaces the other.
 

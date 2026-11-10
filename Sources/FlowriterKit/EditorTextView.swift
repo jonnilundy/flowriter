@@ -80,6 +80,9 @@ public final class EditorTextView: NSTextView {
     public var column: Column = .centred
     /// Points at the right edge of the view the column keeps clear (a drawer over the page).
     public var reservedRight: CGFloat = 0
+    /// The width the column is centred in when it is wider than the view itself (the window's
+    /// width, while a drawer covers part of it). Nil: the view's own width.
+    public var layoutWidth: CGFloat?
     /// The caret line stays on the vertical centre of the view.
     public var focusMode = false { didSet { if focusMode != oldValue { layoutColumn(); if focusMode { centerCaret() } } } }
     public var placeholder: String?
@@ -189,7 +192,20 @@ public final class EditorTextView: NSTextView {
 
     private var plainSelection: NSRange? { hasMarkedText() ? nil : selectedRange() }
 
+    /// NSTextView joins all typing since the last click or arrow key into one undo step, so one
+    /// Undo could take back pages. A new step starts at every line break and after every pause.
+    public static var undoPause: TimeInterval = 0.8
+    private var lastTyped: TimeInterval = 0
+
+    public override func insertText(_ string: Any, replacementRange: NSRange) {
+        let now = ProcessInfo.processInfo.systemUptime
+        if now - lastTyped > Self.undoPause, !hasMarkedText() { breakUndoCoalescing() }
+        lastTyped = now
+        super.insertText(string, replacementRange: replacementRange)
+    }
+
     public override func insertNewline(_ sender: Any?) {
+        breakUndoCoalescing()
         if let s = plainSelection, let edit = ListEditing.newline(in: storage.string as NSString, selection: s), apply(edit) { return }
         super.insertNewline(sender)
     }
@@ -237,7 +253,7 @@ public final class EditorTextView: NSTextView {
         let place: (left: CGFloat, width: CGFloat)
         switch column {
         case .centred:
-            place = ColumnLayout.place(viewWidth: viewWidth, column: theme.columnWidth, reservedRight: reservedRight)
+            place = ColumnLayout.place(viewWidth: layoutWidth ?? viewWidth, column: theme.columnWidth, reservedRight: reservedRight)
         case let .fill(padding):
             place = (padding, max(80, viewWidth - 2 * padding))
         }

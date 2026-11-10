@@ -29,6 +29,8 @@ let package = Package(
         // text. It shares no code with the targets above.
         .target(name: "FlowriterKit", swiftSettings: [.swiftLanguageMode(.v5)]),
         .executableTarget(name: "Flowriter", dependencies: ["FlowriterKit"], swiftSettings: [.swiftLanguageMode(.v5)]),
+        // Drives the real app off screen with key and mouse events and saves pictures (README, Plain editor).
+        .executableTarget(name: "FlowriterDrive", dependencies: ["FlowriterKit"], swiftSettings: [.swiftLanguageMode(.v5)]),
         .testTarget(name: "FlowriterKitTests", dependencies: ["FlowriterKit"], swiftSettings: [.swiftLanguageMode(.v5)]),
     ]
 )
