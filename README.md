@@ -73,6 +73,9 @@ package: a plain Markdown editor in the spirit of a terminal or a code editor.
   Backspace after a marker removes the marker.
 - Notes: a drawer beside the page (Option-O), with a drag edge to set its width. The notes are a
   plain file next to the document, `.<name>.notes.md`.
+- New notes: File > Locations holds the folders new notes go in, one of them the default.
+  Command-N asks for a name only and creates the note there; its pop-up picks another saved
+  location or any other folder. Option-Command-N opens an empty page with no file yet.
 - Focus Mode (Shift-Command-F) keeps the caret line on the vertical centre of the window.
 - Files: `NSDocument` saves in place soon after typing stops. A change another program makes to
   the file is loaded when there are no edits here, and is never overwritten when there are.

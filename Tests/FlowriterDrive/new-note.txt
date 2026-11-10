@@ -1,0 +1,19 @@
+# Command-N with a default location: type a name, Return, and write. No folder to pick.
+size 1000 640
+location $TMP/notes
+location $TMP/journal
+menu File > New Note
+wait 0.5
+type happy-days
+shot 01-new-note
+key Return
+wait 1.0
+expect-path $TMP/notes/happy-days.md
+expect page # 
+type Happy days
+key Return
+key Return
+type It starts right away.
+wait 2.2
+expect-file $TMP/notes/happy-days.md # Happy days\n\nIt starts right away.\n
+shot 02-writing

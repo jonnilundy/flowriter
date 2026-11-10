@@ -81,7 +81,12 @@ enum MainMenu {
         app.addItem(withTitle: "Quit \(name)", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
         let file = submenu(main, "File")
-        file.addItem(withTitle: "New", action: #selector(NSDocumentController.newDocument(_:)), keyEquivalent: "n")
+        file.addItem(withTitle: "New Note…", action: #selector(DocumentController.newNote(_:)), keyEquivalent: "n")
+        item(file, "New Empty Page", #selector(NSDocumentController.newDocument(_:)), "n", [.command, .option])
+        let places = NSMenu(title: "Locations")
+        places.delegate = LocationsMenu.shared
+        file.addItem(withTitle: "Locations", action: nil, keyEquivalent: "").submenu = places
+        file.addItem(.separator())
         file.addItem(withTitle: "Open…", action: #selector(NSDocumentController.openDocument(_:)), keyEquivalent: "o")
         let recent = NSMenu(title: "Open Recent")
         recent.delegate = RecentMenu.shared

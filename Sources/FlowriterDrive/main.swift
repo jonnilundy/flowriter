@@ -20,6 +20,9 @@ import FlowriterKit
 //   wait <seconds>
 //   shot <name>                 save <out-dir>/<name>.png (the whole window, title bar included)
 //   expect page|notes <text>    fail unless that side's text is exactly this (\n for a line break)
+//   location <folder>           add a saved location for new notes ($TMP is a folder made for the run)
+//   expect-path <file>          fail unless the newest document is this file
+//   expect-file <file> <text>   fail unless the file on disk holds exactly this
 //   log                         print the caret, the scroll place and the first responder
 
 func argument(_ name: String) -> String? {
@@ -99,9 +102,19 @@ final class Driver {
         return false
     }
 
+    /// The window of the document opened last.
     var controller: DocumentWindowController? {
-        NSApp.windows.compactMap { $0.windowController as? DocumentWindowController }.first
+        let all = NSApp.windows.compactMap { $0.windowController as? DocumentWindowController }
+        let newest = NSDocumentController.shared.documents.last
+        return all.first { $0.document === newest } ?? all.first
     }
+
+    /// A folder for the files a script makes: "$TMP" in a step stands for it.
+    let temp: URL = {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("flowriter-drive-\(ProcessInfo.processInfo.processIdentifier)")
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url.resolvingSymlinksInPath()
+    }()
 
     func start() {
         guard let c = controller, let window = c.window else { print("DRIVE no document window"); exit(1) }
@@ -116,10 +129,11 @@ final class Driver {
 
     func next() {
         guard index < steps.count else {
+            try? FileManager.default.removeItem(at: temp)
             print(failures == 0 ? "DRIVE PASS \(steps.count) steps" : "DRIVE FAIL \(failures) failed")
             exit(failures == 0 ? 0 : 1)
         }
-        let line = steps[index]
+        let line = steps[index].replacingOccurrences(of: "$TMP", with: temp.path)
         index += 1
         let delay = run(line)
         // AppKit closes the undo group of an event when its event loop takes the next event. The
@@ -141,9 +155,21 @@ final class Driver {
         let words = rest.split(separator: " ")
         switch command {
         case "type":
-            for ch in rest { key(String(ch), keyCode: 0, flags: [], window) }
+            // a sheet on the window takes the keys, as on screen
+            for ch in rest { key(String(ch), keyCode: 0, flags: [], window.attachedSheet ?? window) }
         case "key":
-            chord(rest, window)
+            chord(rest, window.attachedSheet ?? window)
+        case "location":
+            var locations = Locations.load()
+            locations.add(rest)
+            locations.save()
+        case "expect-path":
+            let path = (c.document as? Document)?.fileURL?.resolvingSymlinksInPath().path ?? "none"
+            if path != rest { fail("the document is \(path), expected \(rest)") }
+        case "expect-file":
+            let want = String(rest.dropFirst(words[0].count + 1)).replacingOccurrences(of: "\\n", with: "\n")
+            let got = (try? String(contentsOfFile: String(words[0]), encoding: .utf8)) ?? "<no file>"
+            if got != want { fail("\(words[0]) holds \(got.debugDescription), expected \(want.debugDescription)") }
         case "click":
             if let v = view(words[0]), let i = Int(words[1]) { click(v, at: i, window) }
         case "select":
@@ -270,6 +296,12 @@ final class Driver {
     }
 
     func shot(_ name: String, _ window: NSWindow) {
+        // a sheet is its own window: it gets its own picture
+        if let sheet = window.attachedSheet { capture(name + "-sheet", sheet) }
+        capture(name, window)
+    }
+
+    func capture(_ name: String, _ window: NSWindow) {
         guard let view = window.contentView?.superview ?? window.contentView else { return }
         window.displayIfNeeded()
         guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }

@@ -236,15 +236,29 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         notesButton.target = self
         notesButton.action = #selector(toggleNotes(_:))
         notesButton.setAccessibilityLabel("Toggle Notes")
-        let stack = NSStackView(views: [countLabel, notesButton])
+        // pinned to the trailing end: the notes button sits as far from the right edge as the
+        // window buttons sit from the left one
+        let stack = NSStackView()
         stack.orientation = .horizontal
+        stack.alignment = .centerY
         stack.spacing = 12
-        stack.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 12)
-        stack.frame = NSRect(x: 0, y: 0, width: 260, height: 28)
+        stack.setViews([countLabel, notesButton], in: .trailing)
+        stack.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 20)
+        stack.frame = NSRect(x: 0, y: 0, width: 270, height: 28)
         let accessory = NSTitlebarAccessoryViewController()
         accessory.view = stack
         accessory.layoutAttribute = .trailing
         window.addTitlebarAccessoryViewController(accessory)
+        // An empty toolbar, for its height alone: with the unified style the window buttons, the
+        // title and the status sit lower and further in from the window's round corners than in a
+        // bare title bar. It has no items, so the system draws no item plates in it.
+        let toolbar = NSToolbar(identifier: "FlowriterDocument")
+        toolbar.displayMode = .iconOnly
+        toolbar.allowsUserCustomization = false
+        toolbar.showsBaselineSeparator = false
+        window.toolbar = toolbar
+        window.toolbarStyle = .unified
+        window.titlebarSeparatorStyle = .none
     }
 
     // MARK: text view delegate
