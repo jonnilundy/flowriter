@@ -175,6 +175,7 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         loading = false
         document.liveText = { [weak self] in self?.editor.string ?? "" }
         document.onReload = { [weak self] text in self?.reload(text) }
+        document.onSaveStateChange = { [weak self] in self?.updateTitle() }
         document.onReplaceText = { [weak self] text in
             guard let editor = self?.editor, text != editor.string else { return }
             let caret = min(editor.selectedRange().location, (text as NSString).length)
@@ -184,6 +185,7 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         if let path = document.fileURL?.path { notesOpen = UserDefaults.standard.bool(forKey: Self.notesOpenKey(path)) }
         drawer.isHidden = !notesOpen
         updateCount()
+        updateTitle()
         window?.makeFirstResponder(editor)
     }
 
@@ -259,6 +261,42 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         window.toolbar = toolbar
         window.toolbarStyle = .unified
         window.titlebarSeparatorStyle = .none
+        // The system's title stacks "Edited" under the name in a bar of this height. The name is
+        // drawn here instead, on one line, with a dot while there are changes not on disk yet.
+        window.titleVisibility = .hidden
+        titleLabel.lineBreakMode = .byTruncatingMiddle
+        // a stack fills the bar's height and centres the name on the window buttons' line
+        let titleStack = NSStackView()
+        titleStack.orientation = .horizontal
+        titleStack.alignment = .centerY
+        titleStack.setViews([titleLabel], in: .leading)
+        titleStack.edgeInsets = NSEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
+        titleStack.frame = NSRect(x: 0, y: 0, width: 320, height: 28)
+        let leading = NSTitlebarAccessoryViewController()
+        leading.view = titleStack
+        leading.layoutAttribute = .leading
+        window.addTitlebarAccessoryViewController(leading)
+    }
+
+    private let titleLabel = NSTextField(labelWithString: "")
+
+    /// The document's name in the top bar, and a dot while the file does not hold the text yet.
+    func updateTitle() {
+        let name = doc?.displayName ?? window?.title ?? ""
+        let unsaved = doc.map { $0.fileURL == nil ? !editor.string.isEmpty : $0.hasUnautosavedChanges } ?? false
+        let title = NSMutableAttributedString(string: name, attributes: [
+            .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium), .foregroundColor: Theme.secondary])
+        if unsaved {
+            title.append(NSAttributedString(string: "  \u{2022}", attributes: [
+                .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium), .foregroundColor: Theme.accent]))
+        }
+        titleLabel.attributedStringValue = title
+        titleLabel.toolTip = doc?.fileURL.map { Locations.abbreviated($0.path) }
+    }
+
+    public override func synchronizeWindowTitleWithDocumentName() {
+        super.synchronizeWindowTitleWithDocumentName()
+        updateTitle()
     }
 
     // MARK: text view delegate
@@ -273,6 +311,7 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         guard !loading, let view = notification.object as? EditorTextView else { return }
         if view === editor {
             doc?.textDidChange()
+            updateTitle()
             countTimer?.invalidate()
             countTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
                 MainActor.assumeIsolated { self?.updateCount() }

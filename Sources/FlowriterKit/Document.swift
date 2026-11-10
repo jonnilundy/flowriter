@@ -18,6 +18,8 @@ public final class Document: NSDocument {
     public var onReload: ((String) -> Void)?
     /// Replace the whole text as one undoable edit: the window does it through the editor.
     public var onReplaceText: ((String) -> Void)?
+    /// A save finished or a reload replaced the text: what the window shows as unsaved may have changed.
+    public var onSaveStateChange: (() -> Void)?
     /// The file changed on disk while there are edits here. The default asks in a sheet.
     public var onConflict: ((Document, @escaping (ConflictChoice) -> Void) -> Void)?
 
@@ -59,6 +61,7 @@ public final class Document: NSDocument {
         diskText = text
         inConflict = false
         onReload?(text)
+        onSaveStateChange?()
     }
 
     /// What goes to disk: the editor's text, ending in a newline.
@@ -72,6 +75,14 @@ public final class Document: NSDocument {
         guard let data = text.data(using: encoding) ?? text.data(using: .utf8) else { throw CocoaError(.fileWriteInapplicableStringEncoding) }
         diskText = text
         return data
+    }
+
+    public override func save(to url: URL, ofType typeName: String, for saveOperation: NSDocument.SaveOperationType,
+                              completionHandler: @escaping (Error?) -> Void) {
+        super.save(to: url, ofType: typeName, for: saveOperation) { [weak self] error in
+            completionHandler(error)
+            self?.onSaveStateChange?()
+        }
     }
 
     public override func writableTypes(for saveOperation: NSDocument.SaveOperationType) -> [String] { [Document.markdownType] }

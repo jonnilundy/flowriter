@@ -58,7 +58,11 @@ public struct Theme {
         }
     }
 
-    // MARK: colours (warm neutrals, one accent; each follows the window's light or dark appearance)
+    // MARK: colours
+
+    // A candlelit palette on a near-black page: bone text, dust for what is quiet, and a few
+    // colours with a job each. Every text colour is at least 7:1 on the dark page (marks, which
+    // are meant to recede, are 3.6:1). Each colour follows the window's light or dark appearance.
 
     private static func dynamic(_ light: NSColor, _ dark: NSColor) -> NSColor {
         NSColor(name: nil) { $0.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light }
@@ -66,29 +70,38 @@ public struct Theme {
     private static func hex(_ v: UInt32, _ alpha: CGFloat = 1) -> NSColor {
         NSColor(srgbRed: CGFloat((v >> 16) & 0xFF) / 255, green: CGFloat((v >> 8) & 0xFF) / 255, blue: CGFloat(v & 0xFF) / 255, alpha: alpha)
     }
-    private static func ink(_ alpha: CGFloat) -> NSColor { dynamic(hex(0x1F1C18, alpha), hex(0xECE6DA, alpha)) }
 
-    public static let background = dynamic(hex(0xF4F1EA), hex(0x1B1A18))
-    public static let drawerBackground = dynamic(hex(0xEDE9E0), hex(0x211F1D))
-    public static let hairline = ink(0.10)
-    public static let text = ink(0.86)
-    public static let heading = ink(1)
-    public static let secondary = ink(0.58)
-    public static let mark = ink(0.34)
-    public static let accent = dynamic(hex(0xB4532A), hex(0xE08A5C))
-    public static let codeText = ink(0.78)
-    public static let codeBackground = ink(0.055)
-    public static let selection = dynamic(hex(0xB4532A, 0.22), hex(0xE08A5C, 0.32))
+    public static let background = dynamic(hex(0xF4F1EA), hex(0x181A1C))
+    public static let drawerBackground = dynamic(hex(0xEDE9E0), hex(0x1D1F22))
+    public static let hairline = dynamic(hex(0x302A24, 0.10), hex(0xD8D0C2, 0.09))
+    /// Bone: running text.
+    public static let text = dynamic(hex(0x302A24), hex(0xD8D0C2))
+    /// Headings and bold: the same bone, brighter.
+    public static let heading = dynamic(hex(0x1D1915), hex(0xEEEAE0))
+    /// Dust: quotes, finished tasks, struck text, the status in the top bar.
+    public static let secondary = dynamic(hex(0x6D6359), hex(0xABA398))
+    /// Markdown's own characters, frontmatter, link addresses.
+    public static let mark = dynamic(hex(0x978D7F), hex(0x787166))
+    /// Candle flame: heading hashes, list markers, the caret, the selection.
+    public static let accent = dynamic(hex(0xA35026), hex(0xED954D))
+    /// Lantern: italic text.
+    public static let emphasis = dynamic(hex(0x7F5816), hex(0xEDCA70))
+    /// Moss: code.
+    public static let codeText = dynamic(hex(0x4B632A), hex(0xBECFA2))
+    /// Moonlight: links.
+    public static let link = dynamic(hex(0x2A677D), hex(0x7FABBA))
+    public static let codeBackground = dynamic(hex(0x302A24, 0.055), hex(0xD8D0C2, 0.05))
+    public static let selection = dynamic(hex(0xA35026, 0.22), hex(0xED954D, 0.28))
 
     public func color(for flags: StyleFlags) -> NSColor {
-        // a heading's hashes carry the accent: the one place where structure is loud
-        if flags.contains(.headingMark) { return Theme.accent }
-        if flags.contains(.meta) || flags.contains(.mark) { return Theme.mark }
-        if flags.contains(.url) { return Theme.mark }
-        if flags.contains(.listMarker) || flags.contains(.link) { return Theme.accent }
+        if flags.contains(.headingMark) || flags.contains(.listMarker) { return Theme.accent }
+        if flags.contains(.meta) || flags.contains(.mark) || flags.contains(.url) { return Theme.mark }
+        if flags.contains(.link) { return Theme.link }
         if flags.contains(.code) { return Theme.codeText }
         if flags.contains(.done) || flags.contains(.strike) || flags.contains(.quote) { return Theme.secondary }
         if flags.contains(.heading) { return Theme.heading }
+        if flags.contains(.italic) { return Theme.emphasis }
+        if flags.contains(.bold) { return Theme.heading }
         return Theme.text
     }
 }
