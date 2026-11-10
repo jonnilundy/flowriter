@@ -82,14 +82,22 @@ public struct Locations: Equatable {
     }
 }
 
-/// The sheet behind the note's name in the top bar: the name, and the folder it is in. It saves
-/// a note that has no file yet, and renames or moves one that has. The pop-up lists the saved
-/// locations (the default first chosen) and always ends with "Other Folder…".
+/// The one sheet for a note's name and place. It saves a note that has no file yet, renames or
+/// moves one that has, and is also the question asked when a note with no file is closed (then
+/// it has a Delete button). The pop-up lists the saved locations (the default first chosen) and
+/// always ends with "Other Folder…". It is drawn in the page's own colours and typeface.
 @MainActor
 public final class NamePanel: NSPanel {
-    public let nameField = NSTextField()
+    public enum Mode { case save, rename, close }
+    public enum Outcome: Equatable { case name(String, folder: String), delete, cancel }
+
+    public let mode: Mode
+    public let nameField: NSTextField = SheetField()
     public let folderPopUp = NSPopUpButton(frame: .zero, pullsDown: false)
+    /// Only in `.close` mode.
+    public private(set) var deleteButton: NSButton?
     private let message = NSTextField(labelWithString: "")
+    private let hint: String
     private var locations: Locations
     /// A folder outside the saved locations: where the note is now, or one picked with "Other Folder…".
     private var otherFolder: String?
@@ -105,47 +113,85 @@ public final class NamePanel: NSPanel {
     }
     /// Why this name cannot be used in this folder, nil when it can.
     public var validate: (_ name: String, _ folder: String) -> String? = { _, _ in nil }
-    public var onDone: ((name: String, folder: String)?) -> Void = { _ in }
+    public var onDone: (Outcome) -> Void = { _ in }
 
-    public init(heading: String, action: String, name: String, folder: String?, locations: Locations) {
+    public init(mode: Mode, name: String, folder: String?, locations: Locations) {
+        self.mode = mode
         self.locations = locations
-        super.init(contentRect: NSRect(x: 0, y: 0, width: 440, height: 150), styleMask: [.titled], backing: .buffered, defer: true)
-        let content = NSView(frame: NSRect(x: 0, y: 0, width: 440, height: 150))
-        let title = NSTextField(labelWithString: heading)
-        title.font = .systemFont(ofSize: 13, weight: .semibold)
-        title.frame = NSRect(x: 20, y: 114, width: 400, height: 18)
+        hint = mode == .close ? "This note is not in a file yet." : ""
+        let width: CGFloat = 420, height: CGFloat = 204, inset: CGFloat = 24
+        super.init(contentRect: NSRect(x: 0, y: 0, width: width, height: height), styleMask: [.titled], backing: .buffered, defer: true)
+        backgroundColor = Theme.background
+        let content = SheetBackground(frame: NSRect(x: 0, y: 0, width: width, height: height))
+        let mono = { (size: CGFloat, weight: NSFont.Weight) in NSFont.monospacedSystemFont(ofSize: size, weight: weight) }
+
+        let title = NSTextField(labelWithString: mode == .rename ? "Rename note" : "Save note")
+        title.font = mono(13, .semibold)
+        title.textColor = Theme.heading
+        title.frame = NSRect(x: inset, y: height - 42, width: width - 2 * inset, height: 18)
+
+        let box = SheetBox(frame: NSRect(x: inset, y: height - 86, width: width - 2 * inset, height: 32))
         nameField.stringValue = name
-        nameField.placeholderString = "Name"
-        nameField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-        nameField.frame = NSRect(x: 20, y: 80, width: 400, height: 24)
+        nameField.placeholderString = "name"
+        nameField.font = mono(13, .regular)
+        nameField.textColor = Theme.text
+        nameField.isBordered = false
+        nameField.drawsBackground = false
+        nameField.focusRingType = .none
+        nameField.usesSingleLineMode = true
+        nameField.lineBreakMode = .byTruncatingHead
+        nameField.frame = NSRect(x: 10, y: 7, width: box.frame.width - 20, height: 18)
         nameField.target = self
         nameField.action = #selector(commit)   // Return in the field
         nameField.setAccessibilityLabel("Name")
-        message.font = .systemFont(ofSize: 11)
-        message.textColor = .systemRed
-        message.frame = NSRect(x: 20, y: 56, width: 400, height: 16)
-        folderPopUp.frame = NSRect(x: 18, y: 16, width: 210, height: 26)
+        box.addSubview(nameField)
+
+        folderPopUp.isBordered = false
+        folderPopUp.font = mono(12, .regular)
+        folderPopUp.contentTintColor = Theme.secondary
         folderPopUp.target = self
         folderPopUp.action = #selector(folderPicked)
         folderPopUp.setAccessibilityLabel("Location")
-        let done = NSButton(title: action, target: self, action: #selector(commit))
-        done.frame = NSRect(x: 336, y: 14, width: 88, height: 30)
+        folderPopUp.frame = NSRect(x: inset + 2, y: height - 122, width: 200, height: 22)
+
+        message.font = mono(11, .regular)
+        message.lineBreakMode = .byTruncatingMiddle
+        message.frame = NSRect(x: inset, y: 60, width: width - 2 * inset, height: 15)
+
+        let done = SheetButton(mode == .rename ? "Rename" : "Save", primary: true, target: self, action: #selector(commit))
         done.keyEquivalent = "\r"
-        let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancelPanel))
-        cancel.frame = NSRect(x: 248, y: 14, width: 88, height: 30)
+        let cancel = SheetButton("Cancel", primary: false, target: self, action: #selector(cancelPanel))
         cancel.keyEquivalent = "\u{1B}"
-        for v in [title, nameField, message, folderPopUp, cancel, done] { content.addSubview(v) }
+        done.frame.origin = NSPoint(x: width - inset - done.frame.width, y: 18)
+        cancel.frame.origin = NSPoint(x: done.frame.minX - 6 - cancel.frame.width, y: 18)
+        var views: [NSView] = [title, box, folderPopUp, message, cancel, done]
+        if mode == .close {
+            let delete = SheetButton("Delete", primary: false, target: self, action: #selector(deleteNote))
+            delete.frame.origin = NSPoint(x: inset - SheetButton.pad, y: 18)
+            deleteButton = delete
+            views.append(delete)
+        }
+        views.forEach(content.addSubview)
         contentView = content
         initialFirstResponder = nameField
         if let folder = folder.map(Locations.normalized), !locations.folders.contains(folder) { otherFolder = folder }
         rebuildPopUp(select: folder.map(Locations.normalized) ?? locations.defaultFolder)
+        show(problem: nil)
     }
 
     /// The folder the note will be in, nil when none is chosen yet.
     public var selectedFolder: String? { folderPopUp.selectedItem?.representedObject as? String }
+    /// The line under the location: why the name cannot be used, or what Delete is about.
+    public var messageText: String { message.stringValue }
+
+    private func show(problem: String?) {
+        message.stringValue = problem ?? hint
+        message.textColor = problem == nil ? Theme.secondary : Theme.accent
+    }
 
     private func rebuildPopUp(select: String?) {
         folderPopUp.removeAllItems()
+        folderPopUp.menu?.font = folderPopUp.font
         var folders = locations.folders
         if let other = otherFolder, !folders.contains(other) { folders.append(other) }
         for folder in folders {
@@ -161,10 +207,15 @@ public final class NamePanel: NSPanel {
             folderPopUp.selectItem(at: folders.isEmpty ? folderPopUp.numberOfItems - 1 : 0)
         }
         lastSelection = folderPopUp.indexOfSelectedItem
+        // the arrows sit next to the folder's name
+        let origin = folderPopUp.frame.origin
+        let title = (folderPopUp.titleOfSelectedItem ?? "") as NSString
+        let width = title.size(withAttributes: [.font: folderPopUp.font as Any]).width + 36
+        folderPopUp.frame = NSRect(x: origin.x, y: origin.y, width: min(width.rounded(.up), 368), height: 22)
     }
 
     @objc private func folderPicked() {
-        message.stringValue = ""
+        show(problem: nil)
         guard selectedFolder == nil else { lastSelection = folderPopUp.indexOfSelectedItem; return }
         // "Other Folder…"
         if let path = chooseFolder().map(Locations.normalized) {
@@ -179,12 +230,101 @@ public final class NamePanel: NSPanel {
         if selectedFolder == nil { folderPicked() }
         guard let folder = selectedFolder else { return }
         let name = nameField.stringValue
-        if Locations.notePath(in: folder, name: name) == nil { message.stringValue = "A name cannot hold \"..\"."; return }
-        if let problem = validate(name, folder) { message.stringValue = problem; return }
-        onDone((name, folder))
+        if Locations.notePath(in: folder, name: name) == nil { show(problem: "A name cannot hold \"..\"."); return }
+        if let problem = validate(name, folder) { show(problem: problem); return }
+        onDone(.name(name, folder: folder))
     }
 
-    @objc private func cancelPanel() { onDone(nil) }
+    // Off screen (the test driver) the sheet stays off screen too.
+    public override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        AppDelegate.offScreen ? frameRect : super.constrainFrameRect(frameRect, to: screen)
+    }
+    public override func setFrame(_ frameRect: NSRect, display flag: Bool) {
+        super.setFrame(AppDelegate.parked(frameRect), display: flag)
+    }
+    public override func setFrame(_ frameRect: NSRect, display displayFlag: Bool, animate animateFlag: Bool) {
+        super.setFrame(AppDelegate.parked(frameRect), display: displayFlag, animate: animateFlag && !AppDelegate.offScreen)
+    }
+    public override func setFrameOrigin(_ point: NSPoint) {
+        super.setFrameOrigin(AppDelegate.parked(NSRect(origin: point, size: frame.size)).origin)
+    }
+
+    /// Command-Delete is Delete, as in the system's own save question.
+    public override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let key = event.charactersIgnoringModifiers
+        if deleteButton != nil, event.modifierFlags.intersection([.command, .option, .control]) == .command, key == "\u{7F}" || key == "\u{8}" {
+            deleteNote()
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
+    @objc private func cancelPanel() { onDone(.cancel) }
+    @objc private func deleteNote() { onDone(.delete) }
+}
+
+/// The name field: the caret and the selection have the page's colours.
+private final class SheetField: NSTextField {
+    override func becomeFirstResponder() -> Bool {
+        let ok = super.becomeFirstResponder()
+        if ok, let editor = currentEditor() as? NSTextView {
+            editor.insertionPointColor = Theme.accent
+            editor.selectedTextAttributes = [.backgroundColor: Theme.selection]
+        }
+        return ok
+    }
+}
+
+/// The sheet's surface: the page's own colour (a titled panel puts a lighter one behind its content).
+private final class SheetBackground: NSView {
+    override func draw(_ dirtyRect: NSRect) { Theme.background.setFill(); bounds.fill() }
+}
+
+/// The quiet box around the name field.
+private final class SheetBox: NSView {
+    override func draw(_ dirtyRect: NSRect) {
+        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 6, yRadius: 6)
+        Theme.codeBackground.setFill()
+        path.fill()
+        Theme.hairline.setStroke()
+        path.stroke()
+    }
+}
+
+/// A flat text button. The primary one is filled with the accent.
+final class SheetButton: NSButton {
+    static let pad: CGFloat = 14
+    private var primary = false
+    private var pressed = false
+
+    convenience init(_ title: String, primary: Bool, target: AnyObject, action: Selector) {
+        self.init(frame: .zero)
+        self.title = title
+        self.primary = primary
+        self.target = target
+        self.action = action
+        isBordered = false
+        font = NSFont.monospacedSystemFont(ofSize: 12, weight: primary ? .semibold : .regular)
+        let text = (title as NSString).size(withAttributes: [.font: font!])
+        frame.size = NSSize(width: (text.width + 2 * Self.pad).rounded(.up), height: 28)
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        if primary {
+            Theme.accent.withAlphaComponent(pressed ? 0.7 : 1).setFill()
+            NSBezierPath(roundedRect: bounds, xRadius: 6, yRadius: 6).fill()
+        }
+        let color = primary ? Theme.background : Theme.secondary.withAlphaComponent(pressed ? 0.55 : 1)
+        let attributes: [NSAttributedString.Key: Any] = [.font: font!, .foregroundColor: color]
+        let size = (title as NSString).size(withAttributes: attributes)
+        (title as NSString).draw(at: NSPoint(x: ((bounds.width - size.width) / 2).rounded(), y: ((bounds.height - size.height) / 2).rounded()), withAttributes: attributes)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        pressed = true; needsDisplay = true
+        super.mouseDown(with: event)   // returns when the button is let go
+        pressed = false; needsDisplay = true
+    }
 }
 
 extension DocumentController {

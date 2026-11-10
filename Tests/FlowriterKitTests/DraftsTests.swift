@@ -143,7 +143,12 @@ final class DraftsTests: XCTestCase {
         let (doc, _) = newNote("# Keep or not\n")
         doc.saveDraft()
         var asked = 0
-        doc.onCloseUnsaved = { _, decide in asked += 1; decide(asked == 1 ? .cancel : .delete) }
+        doc.onNamePanel = { panel in
+            asked += 1
+            XCTAssertEqual(panel.mode, .close)
+            XCTAssertNotNil(panel.deleteButton, "the closing sheet can delete the note")
+            panel.onDone(asked == 1 ? .cancel : .delete)
+        }
         let spy = CloseSpy()
         doc.canClose(withDelegate: spy, shouldClose: #selector(CloseSpy.document(_:shouldClose:contextInfo:)), contextInfo: nil)
         XCTAssertEqual(spy.answer, false, "Cancel keeps the window")
@@ -156,7 +161,7 @@ final class DraftsTests: XCTestCase {
 
     func testClosingAnEmptyNewNoteDoesNotAsk() {
         let (doc, _) = newNote()
-        doc.onCloseUnsaved = { _, _ in XCTFail("an empty note is not worth a question") }
+        doc.onNamePanel = { _ in XCTFail("an empty note is not worth a question") }
         let spy = CloseSpy()
         doc.canClose(withDelegate: spy, shouldClose: #selector(CloseSpy.document(_:shouldClose:contextInfo:)), contextInfo: nil)
         XCTAssertEqual(spy.answer, true)
@@ -166,10 +171,9 @@ final class DraftsTests: XCTestCase {
     func testClosingWithSaveGoesThroughTheNameSheet() {
         let (doc, _) = newNote("# From the sheet\n")
         let folder = dir.appendingPathComponent("picked").path
-        doc.onCloseUnsaved = { _, decide in decide(.save) }
         doc.onNamePanel = { panel in
             XCTAssertEqual(panel.nameField.stringValue, "from-the-sheet", "the sheet offers the derived name")
-            panel.onDone((name: panel.nameField.stringValue, folder: folder))
+            panel.onDone(.name(panel.nameField.stringValue, folder: folder))
         }
         let spy = CloseSpy()
         doc.canClose(withDelegate: spy, shouldClose: #selector(CloseSpy.document(_:shouldClose:contextInfo:)), contextInfo: nil)

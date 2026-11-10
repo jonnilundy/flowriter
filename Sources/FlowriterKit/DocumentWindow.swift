@@ -97,6 +97,16 @@ final class DocumentWindow: NSWindow {
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
         AppDelegate.offScreen ? frameRect : super.constrainFrameRect(frameRect, to: screen)
     }
+    // AppKit also moves a window onto a screen to show a sheet on it.
+    override func setFrame(_ frameRect: NSRect, display flag: Bool) {
+        super.setFrame(AppDelegate.parked(frameRect), display: flag)
+    }
+    override func setFrame(_ frameRect: NSRect, display displayFlag: Bool, animate animateFlag: Bool) {
+        super.setFrame(AppDelegate.parked(frameRect), display: displayFlag, animate: animateFlag && !AppDelegate.offScreen)
+    }
+    override func setFrameOrigin(_ point: NSPoint) {
+        super.setFrameOrigin(AppDelegate.parked(NSRect(origin: point, size: frame.size)).origin)
+    }
 }
 
 /// One window per document: the page, and the notes drawer beside it.

@@ -10,7 +10,6 @@ public final class Document: NSDocument {
     public static let lastDocumentKey = "FlowriterLastDocument"
 
     public enum ConflictChoice { case keepMine, useDisk }
-    public enum CloseChoice { case save, delete, cancel }
 
     /// The file's text as last read or written by this document.
     public private(set) var diskText = ""
@@ -24,8 +23,6 @@ public final class Document: NSDocument {
     public var onSaveStateChange: (() -> Void)?
     /// The file changed on disk while there are edits here. The default asks in a sheet.
     public var onConflict: ((Document, @escaping (ConflictChoice) -> Void) -> Void)?
-    /// A note with no file is about to close. The default asks in a sheet.
-    public var onCloseUnsaved: ((Document, @escaping (CloseChoice) -> Void) -> Void)?
     /// The name sheet is about to show (tests answer it here).
     public var onNamePanel: ((NamePanel) -> Void)?
 
@@ -166,18 +163,24 @@ public final class Document: NSDocument {
     }
 
     /// The sheet behind the name in the top bar: save a note that has no file, rename or move one
-    /// that has. `completion` gets true when the note ends up in the file asked for.
-    public func presentNamePanel(completion: @escaping (Bool) -> Void = { _ in }) {
+    /// that has. With `closing`, it is the question asked before a note with no file closes, and
+    /// it can also delete the note. `completion` gets true when the note is in the file asked for
+    /// (or, when closing, was deleted): the window may close.
+    public func presentNamePanel(closing: Bool = false, completion: @escaping (Bool) -> Void = { _ in }) {
         let current = fileURL
         let name = current?.deletingPathExtension().lastPathComponent ?? NoteName.derive(from: currentText)
-        let panel = NamePanel(heading: current == nil ? "Save note" : "Rename note", action: current == nil ? "Save" : "Rename",
+        let panel = NamePanel(mode: current != nil ? .rename : closing ? .close : .save,
                               name: name, folder: current?.deletingLastPathComponent().path, locations: .load())
         panel.validate = { [weak self] name, folder in self?.problem(name: name, folder: folder) }
         let host = windowControllers.first?.window
-        panel.onDone = { [weak self, weak panel] result in
+        panel.onDone = { [weak self, weak panel] outcome in
             if let panel { if let host, panel.sheetParent === host { host.endSheet(panel) } else { NSApp.stopModal(); panel.orderOut(nil) } }
-            guard let self, let (name, folder) = result else { completion(false); return }
-            self.setName(name, folder: folder, completion: completion)
+            guard let self else { completion(false); return }
+            switch outcome {
+            case .cancel: completion(false)
+            case .delete: self.discardDraft(); self.updateChangeCount(.changeCleared); completion(true)
+            case .name(let name, let folder): self.setName(name, folder: folder, completion: completion)
+            }
         }
         if let onNamePanel { onNamePanel(panel); return }
         if let host { host.beginSheet(panel) } else { NSApp.runModal(for: panel) }
@@ -229,25 +232,7 @@ public final class Document: NSDocument {
             unsafeBitCast(method, to: ShouldClose.self)(target, selector, self, close, contextInfo)
         }
         if currentText.isEmpty && notes.isEmpty { discardDraft(); updateChangeCount(.changeCleared); reply(true); return }
-        let decide: (CloseChoice) -> Void = { [weak self] choice in
-            guard let self else { return }
-            switch choice {
-            case .cancel: reply(false)
-            case .delete: self.discardDraft(); self.updateChangeCount(.changeCleared); reply(true)
-            case .save: self.presentNamePanel { saved in reply(saved) }
-            }
-        }
-        if let onCloseUnsaved { onCloseUnsaved(self, decide); return }
-        let alert = NSAlert()
-        alert.messageText = "Save “\(displayName ?? NoteName.fallback)”?"
-        alert.informativeText = "This note is not in a file yet."
-        alert.addButton(withTitle: "Save…")
-        alert.addButton(withTitle: "Delete")
-        alert.addButton(withTitle: "Cancel")
-        let done: (NSApplication.ModalResponse) -> Void = { response in
-            decide(response == .alertFirstButtonReturn ? .save : response == .alertSecondButtonReturn ? .delete : .cancel)
-        }
-        if let window = windowControllers.first?.window { alert.beginSheetModal(for: window, completionHandler: done) } else { done(alert.runModal()) }
+        presentNamePanel(closing: true, completion: reply)
     }
 
     // MARK: changes made by other programs

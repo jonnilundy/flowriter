@@ -74,6 +74,7 @@ final class Driver {
         }
         if e.type == .keyDown, e.modifierFlags.contains(.command) {
             if let item = menuItem(for: e, in: NSApp.mainMenu) { perform(item, window); return }
+            if window.performKeyEquivalent(with: e) { return }   // a button's shortcut
         }
         window.sendEvent(e)
     }
@@ -142,6 +143,10 @@ final class Driver {
         let line = steps[index].replacingOccurrences(of: "$TMP", with: temp.path).replacingOccurrences(of: "$STATE", with: Drafts.directory.deletingLastPathComponent().path)
         index += 1
         let delay = run(line)
+        // Nothing of a run may show on a real screen: a window that does is a failure.
+        for w in NSApp.windows where w.isVisible && NSScreen.screens.contains(where: { $0.frame.intersects(w.frame) }) {
+            fail("a window is on screen after \"\(line)\": \(type(of: w)) \(w.frame)")
+        }
         // AppKit closes the undo group of an event when its event loop takes the next event. The
         // steps here come from a timer, so give the loop an event to take.
         if let tick = NSEvent.otherEvent(with: .applicationDefined, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
@@ -155,7 +160,7 @@ final class Driver {
     func view(_ name: Substring) -> EditorTextView? { name == "notes" ? controller?.notesView : controller?.editor }
 
     func run(_ line: String) -> TimeInterval {
-        guard let c = controller, let window = c.window else { return 0 }
+        guard let c = controller, let window = c.window else { return runWithoutWindow(line) }
         let parts = line.split(separator: " ", maxSplits: 1)
         let command = parts[0], rest = parts.count > 1 ? String(parts[1]) : ""
         let words = rest.split(separator: " ")
@@ -228,6 +233,32 @@ final class Driver {
             print("DRIVE log notesWidth=\(Int(c.notesFrame.width)) caret=\(c.editor.selectedRange()) scrollY=\(c.editor.enclosingScrollView?.contentView.bounds.minY ?? -1) first=\(who) notesOpen=\(c.notesOpen) column=\(c.editor.textContainerOrigin.x)")
         default:
             fail("unknown step: \(line)")
+        }
+        return 0.03
+    }
+
+    /// The steps that make sense when every note window is closed. Any other step fails: it
+    /// would have nothing to act on.
+    func runWithoutWindow(_ line: String) -> TimeInterval {
+        let parts = line.split(separator: " ", maxSplits: 1)
+        let rest = parts.count > 1 ? String(parts[1]) : ""
+        switch parts[0] {
+        case "wait":
+            return Double(rest) ?? 0.2
+        case "expect-drafts":
+            let n = Drafts.all().count
+            if n != Int(rest) { fail("\(n) drafts on disk, expected \(rest)") }
+        case "expect-windows":
+            if rest != "0" { fail("0 note windows, expected \(rest)") }
+        case "expect-file":
+            let file = String(rest.split(separator: " ")[0])
+            let want = String(rest.dropFirst(file.count + 1)).replacingOccurrences(of: "\\n", with: "\n")
+            let got = (try? String(contentsOfFile: file, encoding: .utf8)) ?? "<no file>"
+            if got != want { fail("\(file) holds \(got.debugDescription), expected \(want.debugDescription)") }
+        case "menu" where rest == "File > New Note":
+            NSDocumentController.shared.newDocument(nil)
+        default:
+            fail("no note window for: \(line)")
         }
         return 0.03
     }

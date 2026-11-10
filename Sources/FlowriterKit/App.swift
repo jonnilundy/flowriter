@@ -109,6 +109,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     static var smoke = false
     /// Windows open far off every screen and the app never takes focus (the test driver).
     public static var offScreen = false
+    /// Where a window's frame may be: off screen, a frame that would show is sent far away.
+    static func parked(_ frame: NSRect) -> NSRect {
+        guard offScreen, frame.minX > -20000 else { return frame }
+        return NSRect(x: -30000, y: -30000, width: frame.width, height: frame.height)
+    }
     /// The files to open at launch, in place of the ones named on the command line (the test driver).
     public static var launchFiles: [URL]?
 
