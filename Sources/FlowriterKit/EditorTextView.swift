@@ -90,6 +90,20 @@ public final class EditorTextView: NSTextView {
     public var onToggleNotes: (() -> Void)?
     /// Option-Shift-O: the window moves the keys between the page and the notes.
     public var onSwitchNotes: (() -> Void)?
+    /// This view took or gave up the keys.
+    public var onFocusChange: (() -> Void)?
+
+    public override func becomeFirstResponder() -> Bool {
+        let ok = super.becomeFirstResponder()
+        if ok { onFocusChange?() }
+        return ok
+    }
+
+    public override func resignFirstResponder() -> Bool {
+        let ok = super.resignFirstResponder()
+        if ok { onFocusChange?() }
+        return ok
+    }
 
     private var top: CGFloat = 48
     private var left: CGFloat = 0

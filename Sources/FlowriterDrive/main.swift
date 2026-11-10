@@ -20,6 +20,7 @@ import FlowriterKit
 //   wait <seconds>
 //   shot <name>                 save <out-dir>/<name>.png (the whole window, title bar included)
 //   expect page|notes <text>    fail unless that side's text is exactly this (\n for a line break)
+//   default <key> <value>       set a preference
 //   location <folder>           add a saved location for new notes ($TMP is a folder made for the run)
 //   expect-path <file>          fail unless the newest document is this file
 //   expect-file <file> <text>   fail unless the file on disk holds exactly this
@@ -159,6 +160,8 @@ final class Driver {
             for ch in rest { key(String(ch), keyCode: 0, flags: [], window.attachedSheet ?? window) }
         case "key":
             chord(rest, window.attachedSheet ?? window)
+        case "default":
+            UserDefaults.standard.set(String(rest.dropFirst(words[0].count + 1)), forKey: String(words[0]))
         case "location":
             var locations = Locations.load()
             locations.add(rest)

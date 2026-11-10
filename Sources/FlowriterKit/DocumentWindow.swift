@@ -40,15 +40,47 @@ final class NotesDrawerView: NSView {
     override func layout() {
         super.layout()
         // the scroll view starts right of the drag edge, so the edge keeps its own pointer
-        scroll.frame = NSRect(x: edge.width, y: 0, width: max(0, bounds.width - edge.width), height: bounds.height)
+        scroll.frame = NSRect(x: edge.width, y: topInset, width: max(0, bounds.width - edge.width), height: max(0, bounds.height - topInset))
         textView.layoutColumn()
     }
 
+    /// The drawer's look. Three are kept while the choice is open (View > Notes Style):
+    /// - quiet: the page's own surface, one hairline down the whole window, notes dimmed while
+    ///   the page has the keys;
+    /// - margin: the same, with a short hairline that stops short of the top and bottom;
+    /// - panel: a tinted panel down the whole window, never dimmed.
+    enum Style: String, CaseIterable {
+        case quiet, margin, panel
+        static let key = "FlowriterDrawerStyle"
+        static var current: Style {
+            get { UserDefaults.standard.string(forKey: key).flatMap(Style.init) ?? .quiet }
+            set { UserDefaults.standard.set(newValue.rawValue, forKey: key) }
+        }
+        var title: String { rawValue.capitalized }
+        /// The drawer runs under the top bar, to the top of the window.
+        var fullHeight: Bool { self != .margin }
+        var dims: Bool { self != .panel }
+    }
+
+    /// Height of the window's top bar when the drawer runs under it.
+    var topInset: CGFloat = 0 { didSet { if topInset != oldValue { needsLayout = true; needsDisplay = true } } }
+    /// The notes step back while the page has the keys.
+    var dimmed = false { didSet { if dimmed != oldValue { scroll.animator().alphaValue = dimmed ? 0.5 : 1 } } }
+
     override func draw(_ dirtyRect: NSRect) {
-        Theme.drawerBackground.setFill()
-        bounds.fill()
-        Theme.hairline.setFill()
-        NSRect(x: 0, y: 0, width: 1, height: bounds.height).fill()
+        switch Style.current {
+        case .quiet:
+            Theme.hairline.setFill()
+            NSRect(x: 0, y: 0, width: 1, height: bounds.height).fill()
+        case .margin:
+            Theme.hairline.setFill()
+            NSRect(x: 0, y: 40, width: 1, height: max(0, bounds.height - 80)).fill()
+        case .panel:
+            Theme.drawerBackground.setFill()
+            bounds.fill()
+            Theme.hairline.setFill()
+            NSRect(x: 0, y: 0, width: 1, height: bounds.height).fill()
+        }
     }
 
     // MARK: the drag edge
@@ -119,7 +151,7 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
 
     public init(document: Document) {
         let window = DocumentWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 760),
-                              styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: true)
+                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: true)
         window.isReleasedWhenClosed = false
         window.titlebarAppearsTransparent = true
         window.backgroundColor = Theme.background
@@ -144,6 +176,9 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         editor.delegate = self
         editor.onToggleNotes = { [weak self] in self?.toggleNotes(nil) }
         editor.onSwitchNotes = { [weak self] in self?.switchPageAndNotes(nil) }
+        let focusChanged: () -> Void = { [weak self] in DispatchQueue.main.async { self?.updateDrawerDim() } }
+        editor.onFocusChange = focusChanged
+        drawer.textView.onFocusChange = focusChanged
         editor.focusMode = Self.focusModeDefault
         editor.setAccessibilityLabel("Page")
         drawer.textView.delegate = self
@@ -211,11 +246,24 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         let w = notesOpen ? min(max(NotesDrawerView.minWidth, notesWidth), maxWidth) : 0
         // The page's scroll view ends at the drawer (its scroller and find bar stay clear of it),
         // but the column is still placed in the whole window, so it only moves when it must.
-        editorScroll.frame = NSRect(x: 0, y: 0, width: b.width - w, height: b.height)
-        drawer.frame = NSRect(x: b.width - w, y: 0, width: w, height: b.height)
+        // the content view runs under the top bar: the page starts below it
+        let top = window.map { max(0, $0.frame.height - $0.contentLayoutRect.maxY) } ?? 0
+        editorScroll.frame = NSRect(x: 0, y: top, width: b.width - w, height: max(0, b.height - top))
+        if NotesDrawerView.Style.current.fullHeight {
+            drawer.frame = NSRect(x: b.width - w, y: 0, width: w, height: b.height)
+            drawer.topInset = top
+        } else {
+            drawer.frame = NSRect(x: b.width - w, y: top, width: w, height: max(0, b.height - top))
+            drawer.topInset = 0
+        }
+        updateDrawerDim()
         editor.layoutWidth = b.width
         editor.reservedRight = w
         editor.layoutColumn()
+    }
+
+    func updateDrawerDim() {
+        drawer.dimmed = NotesDrawerView.Style.current.dims && window?.firstResponder !== drawer.textView
     }
 
     private func setNotesWidth(_ w: CGFloat) {
@@ -384,6 +432,17 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         }
     }
 
+    /// View > Notes Style: try a look on every open window.
+    @objc public func setNotesStyle(_ sender: NSMenuItem) {
+        guard let style = (sender.representedObject as? String).flatMap(NotesDrawerView.Style.init) else { return }
+        NotesDrawerView.Style.current = style
+        for case let c as DocumentWindowController in NSApp.windows.compactMap(\.windowController) {
+            c.root.needsLayout = true
+            c.drawer.needsDisplay = true
+            c.root.layoutSubtreeIfNeeded()
+        }
+    }
+
     @objc public func toggleFocusMode(_ sender: Any?) {
         let on = !editor.focusMode
         UserDefaults.standard.set(on, forKey: Self.focusKey)
@@ -408,6 +467,7 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
     public func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
         case #selector(toggleFocusMode(_:)): item.state = editor.focusMode ? .on : .off
+        case #selector(setNotesStyle(_:)): item.state = item.representedObject as? String == NotesDrawerView.Style.current.rawValue ? .on : .off
         case #selector(toggleNotes(_:)): item.title = notesOpen ? "Hide Notes" : "Show Notes"
         case #selector(moveSelectionAcross(_:)):
             let fromNotes = window?.firstResponder === drawer.textView
