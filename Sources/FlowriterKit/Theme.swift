@@ -42,6 +42,9 @@ public struct Theme {
         return Theme(fontSize: size >= 9 && size <= 40 ? CGFloat(size) : defaultFontSize)
     }
 
+    /// The notes drawer's theme for a page at this size: the same face, a step smaller.
+    public var notes: Theme { Theme(fontSize: max(9, (fontSize * 0.87).rounded())) }
+
     public var columnWidth: CGFloat { (CGFloat(columns) * charWidth).rounded(.up) }
     /// The least room between the text and an edge of its area (the window, the drawer). It grows
     /// with the text size, so bigger text never runs up against an edge.
@@ -72,7 +75,6 @@ public struct Theme {
     }
 
     public static let background = dynamic(hex(0xF4F1EA), hex(0x181A1C))
-    public static let drawerBackground = dynamic(hex(0xEDE9E0), hex(0x1D1F22))
     public static let hairline = dynamic(hex(0x302A24, 0.10), hex(0xD8D0C2, 0.09))
     /// Bone: running text.
     public static let text = dynamic(hex(0x302A24), hex(0xD8D0C2))

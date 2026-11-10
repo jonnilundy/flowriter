@@ -1,0 +1,30 @@
+# The notes drawer: the page's own surface, smaller text, dimmed while the page has the keys.
+size 1100 700
+type # A quiet draft
+key Return
+key Return
+type The first paragraph is plain text that runs long enough to wrap onto a second line of the column, so wrapping shows.
+key Return
+key Return
+type - one
+key Return
+type two
+key Return
+key Return
+type After the list, with **bold** and *italic*.
+key Opt-o
+key Opt-Shift-o
+type ## Parking lot
+key Return
+key Return
+type - an idea for later
+key Return
+type another
+key Return
+key Return
+type A spare paragraph that might go back into the draft one day.
+wait 0.5
+shot notes-focused
+key Opt-Shift-o
+wait 0.5
+shot page-focused

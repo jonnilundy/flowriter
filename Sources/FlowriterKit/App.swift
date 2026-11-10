@@ -129,11 +129,6 @@ enum MainMenu {
         let view = submenu(main, "View")
         item(view, "Show Notes", #selector(DocumentWindowController.toggleNotes(_:)), "o", [.option])
         item(view, "Switch Between Page and Notes", #selector(DocumentWindowController.switchPageAndNotes(_:)), "o", [.option, .shift])
-        let styles = NSMenu(title: "Notes Style")
-        for style in NotesDrawerView.Style.allCases {
-            styles.addItem(withTitle: style.title, action: #selector(DocumentWindowController.setNotesStyle(_:)), keyEquivalent: "").representedObject = style.rawValue
-        }
-        view.addItem(withTitle: "Notes Style", action: nil, keyEquivalent: "").submenu = styles
         view.addItem(.separator())
         item(view, "Focus Mode", #selector(DocumentWindowController.toggleFocusMode(_:)), "f", [.command, .shift])
         view.addItem(.separator())

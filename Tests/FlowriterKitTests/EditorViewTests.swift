@@ -289,6 +289,27 @@ final class EditorViewTests: XCTestCase {
 
     // MARK: notes
 
+    func testTheNotesStepBackWhileThePageHasTheKeys() {
+        open("page text", notes: "a note")
+        let notes = controller.drawer.textView
+        func settle() { RunLoop.main.run(until: Date().addingTimeInterval(0.4)) }
+        controller.window?.makeFirstResponder(editor)
+        settle()
+        XCTAssertTrue(controller.drawer.dimmed)
+        XCTAssertEqual(controller.drawer.scroll.alphaValue, 0.5, accuracy: 0.01)
+        XCTAssertEqual(editorAlpha, 1, "the page is never dimmed")
+        XCTAssertLessThan(notes.theme.fontSize, editor.theme.fontSize, "notes are set a step smaller than the page")
+        DocumentWindowController.setFontSize(22)
+        XCTAssertEqual(notes.theme.fontSize, Theme(fontSize: 22).notes.fontSize, "and follow the page when the text size changes")
+        DocumentWindowController.setFontSize(Theme.defaultFontSize)
+        controller.window?.makeFirstResponder(notes)
+        settle()
+        XCTAssertFalse(controller.drawer.dimmed)
+        XCTAssertEqual(controller.drawer.scroll.alphaValue, 1, accuracy: 0.01)
+    }
+
+    private var editorAlpha: CGFloat { controller.editorScroll.alphaValue }
+
     func testMoveSelectionToNotesAndBack() {
         open("keep\ncut this\nkeep too", notes: "first note")
         let range = (editor.string as NSString).range(of: "cut this\n")
