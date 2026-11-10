@@ -76,6 +76,8 @@ public struct Theme {
     public static let selection = dynamic(hex(0xB4532A, 0.22), hex(0xE08A5C, 0.32))
 
     public func color(for flags: StyleFlags) -> NSColor {
+        // a heading's hashes carry the accent: the one place where structure is loud
+        if flags.contains(.headingMark) { return Theme.accent }
         if flags.contains(.meta) || flags.contains(.mark) { return Theme.mark }
         if flags.contains(.url) { return Theme.mark }
         if flags.contains(.listMarker) || flags.contains(.link) { return Theme.accent }

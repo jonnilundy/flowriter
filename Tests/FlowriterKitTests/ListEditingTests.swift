@@ -57,14 +57,34 @@ final class ListEditingTests: XCTestCase {
         XCTAssertEqual(enter("    indented|"), "    indented\n    |")
     }
 
-    func testBackspaceAfterTheMarkerRemovesIt() {
+    func testBackspaceAfterATopLevelMarkerRemovesIt() {
         XCTAssertEqual(backspace("- |one"), "|one")
-        XCTAssertEqual(backspace("  1. |one"), "  |one")
+        XCTAssertEqual(backspace("1. |one"), "|one")
         XCTAssertEqual(backspace("- [ ] |one"), "|one")
         XCTAssertEqual(backspace("> |one"), "|one")
         XCTAssertNil(backspace("- o|ne"))
         XCTAssertNil(backspace("-| one"))
         XCTAssertNil(backspace("plain|"))
+    }
+
+    func testBackspaceAfterANestedMarkerGoesOneLevelOut() {
+        XCTAssertEqual(backspace("- one\n  - |two"), "- one\n- |two")
+        XCTAssertEqual(backspace("- one\n  - two\n    - |"), "- one\n  - two\n  - |")
+        XCTAssertEqual(backspace("1. one\n   - |two"), "1. one\n- |two")
+        XCTAssertEqual(backspace("    - |old four-space nesting"), "- |old four-space nesting")
+        // two keys from a nested item to plain text at the left edge
+        XCTAssertEqual(backspace("- one\n- |two"), "- one\n|two")
+    }
+
+    func testBackspaceInTheIndentGoesBackOneStop() {
+        XCTAssertEqual(backspace("    |text"), "|text")
+        XCTAssertEqual(backspace("  |text"), "|text")
+        XCTAssertEqual(backspace("      |text"), "    |text")
+        XCTAssertEqual(backspace("   |"), "|")
+        XCTAssertEqual(backspace("  |- item"), "|- item")
+        XCTAssertNil(backspace("\t|text"), "a tab is one character: plain Backspace")
+        XCTAssertNil(backspace("a  |b"), "spaces inside text: plain Backspace")
+        XCTAssertNil(backspace("|text"))
     }
 
     func testTabNestsUnderTheItemAbove() {

@@ -93,13 +93,25 @@ public enum ListEditing {
 
     // MARK: Backspace
 
-    /// Backspace right after a marker removes the whole marker, so one key leaves the list.
+    /// Backspace steps out of a list one level per key, never one space per key:
+    /// - right after the marker of a nested item: the item moves one level out (as Shift-Tab);
+    /// - right after the marker of a top-level item or a quote: the marker goes;
+    /// - in the spaces that indent a line: back to the previous indent stop.
     public static func backspace(in text: NSString, selection: NSRange) -> TextEdit? {
         guard selection.length == 0 else { return nil }
         let l = line(text, at: selection.location)
-        guard let p = l.prefix, selection.location - l.range.location == p.contentStart else { return nil }
-        let range = NSRange(location: l.range.location + p.indent, length: p.contentStart - p.indent)
-        return TextEdit(range: range, text: "", selection: NSRange(location: range.location, length: 0))
+        let caret = selection.location - l.range.location
+        if let p = l.prefix, caret == p.contentStart {
+            if l.item != nil, p.indent > 0 { return shift([l], by: -outdentStep(text, l), selection: selection) }
+            let range = NSRange(location: l.range.location + p.indent, length: p.contentStart - p.indent)
+            return TextEdit(range: range, text: "", selection: NSRange(location: range.location, length: 0))
+        }
+        if caret > 0, caret <= l.indent, l.units[0..<caret].allSatisfy({ $0 == Chars.space }) {
+            let remove = caret % indentWidth == 0 ? indentWidth : caret % indentWidth
+            let range = NSRange(location: selection.location - remove, length: remove)
+            return TextEdit(range: range, text: "", selection: NSRange(location: range.location, length: 0))
+        }
+        return nil
     }
 
     // MARK: Tab and Shift-Tab

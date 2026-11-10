@@ -1,0 +1,34 @@
+# Headings next to text, and stepping out of a nested list with Backspace: one level per key.
+size 900 620
+type ## Funny things
+key Return
+type But what is here?
+key Return
+type # fun again
+key Return
+type - one
+key Return
+key Tab
+type nested
+key Return
+key Tab
+type deeper
+key Return
+expect page ## Funny things\nBut what is here?\n# fun again\n- one\n  - nested\n    - deeper\n    - 
+shot 01-headings-and-nesting
+key Backspace
+expect page ## Funny things\nBut what is here?\n# fun again\n- one\n  - nested\n    - deeper\n  - 
+key Backspace
+expect page ## Funny things\nBut what is here?\n# fun again\n- one\n  - nested\n    - deeper\n- 
+key Backspace
+expect page ## Funny things\nBut what is here?\n# fun again\n- one\n  - nested\n    - deeper\n
+type at the left edge
+key Return
+type     four spaces of indent
+key Return
+key Backspace
+type back in one key
+expect page ## Funny things\nBut what is here?\n# fun again\n- one\n  - nested\n    - deeper\nat the left edge\n    four spaces of indent\nback in one key
+light
+wait 0.3
+shot 02-backspaced-out

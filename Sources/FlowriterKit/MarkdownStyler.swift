@@ -24,6 +24,8 @@ public struct StyleFlags: OptionSet, Hashable, Sendable {
     public static let meta = StyleFlags(rawValue: 1 << 11)
     /// Every character of a fenced code block line, fences included.
     public static let codeBlock = StyleFlags(rawValue: 1 << 12)
+    /// The `#` characters that open a heading.
+    public static let headingMark = StyleFlags(rawValue: 1 << 13)
 }
 
 /// The state a line starts in. It is all a line needs from the lines above it.
@@ -192,7 +194,7 @@ public enum MarkdownStyler {
             var j = i
             while j < n, u[j] == Chars.hash { j += 1 }
             if j - i <= 6, j == n || Chars.isSpace(u[j]) {
-                for k in i..<j { f[k] = [.mark, .bold] }
+                for k in i..<j { f[k] = [.mark, .bold, .headingMark] }
                 var content = j
                 while content < n, Chars.isSpace(u[content]) { content += 1 }
                 inline(u, content, n, &f)

@@ -19,7 +19,8 @@ final class StylerTests: XCTestCase {
     }
 
     func testHeadings() {
-        XCTAssertEqual(flags("## Title", "##"), [.mark, .bold])
+        XCTAssertEqual(flags("## Title", "##"), [.mark, .bold, .headingMark])
+        XCTAssertEqual(flags("# A **b**", "**"), [.mark, .heading, .bold], "marks inside a heading stay quiet")
         XCTAssertEqual(flags("## Title", "Title"), [.heading, .bold])
         XCTAssertEqual(flags("#hashtag", "#hashtag"), [])
         XCTAssertEqual(flags("####### seven", "seven"), [])
