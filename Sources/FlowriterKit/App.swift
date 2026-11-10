@@ -135,6 +135,8 @@ enum MainMenu {
         view.addItem(withTitle: "Bigger Text", action: #selector(DocumentWindowController.biggerText(_:)), keyEquivalent: "+")
         view.addItem(withTitle: "Smaller Text", action: #selector(DocumentWindowController.smallerText(_:)), keyEquivalent: "-")
         view.addItem(withTitle: "Actual Size", action: #selector(DocumentWindowController.actualSize(_:)), keyEquivalent: "0")
+        item(view, "Bigger Notes Text", #selector(DocumentWindowController.biggerNotesText(_:)), "+", [.command, .option])
+        item(view, "Smaller Notes Text", #selector(DocumentWindowController.smallerNotesText(_:)), "-", [.command, .option])
         view.addItem(.separator())
         item(view, "Enter Full Screen", #selector(NSWindow.toggleFullScreen(_:)), "f", [.command, .control])
 

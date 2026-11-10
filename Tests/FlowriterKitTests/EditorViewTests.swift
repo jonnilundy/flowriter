@@ -10,6 +10,7 @@ final class EditorViewTests: XCTestCase {
 
     override func setUp() async throws {
         _ = NSApplication.shared
+        UserDefaults.standard.removeObject(forKey: Theme.notesDeltaKey)
         UserDefaults.standard.removeObject(forKey: DocumentWindowController.focusKey)
     }
 
@@ -302,6 +303,13 @@ final class EditorViewTests: XCTestCase {
         DocumentWindowController.setFontSize(22)
         XCTAssertEqual(notes.theme.fontSize, Theme(fontSize: 22).notes.fontSize, "and follow the page when the text size changes")
         DocumentWindowController.setFontSize(Theme.defaultFontSize)
+        // View > Smaller Notes Text and Bigger Notes Text change the notes alone
+        let before = notes.theme.fontSize, page = editor.theme.fontSize
+        controller.smallerNotesText(nil)
+        XCTAssertEqual(notes.theme.fontSize, before - 1)
+        XCTAssertEqual(editor.theme.fontSize, page)
+        controller.biggerNotesText(nil)
+        XCTAssertEqual(notes.theme.fontSize, before)
         controller.window?.makeFirstResponder(notes)
         settle()
         XCTAssertFalse(controller.drawer.dimmed)

@@ -42,8 +42,15 @@ public struct Theme {
         return Theme(fontSize: size >= 9 && size <= 40 ? CGFloat(size) : defaultFontSize)
     }
 
-    /// The notes drawer's theme for a page at this size: the same face, a step smaller.
-    public var notes: Theme { Theme(fontSize: max(9, (fontSize * 0.87).rounded())) }
+    public static let notesDeltaKey = "FlowriterNotesSizeDelta"
+    /// How many points the notes' text differs from the page's (View > Smaller Notes Text).
+    public static var notesDelta: Int {
+        get { UserDefaults.standard.object(forKey: notesDeltaKey) == nil ? -4 : min(4, max(-10, UserDefaults.standard.integer(forKey: notesDeltaKey))) }
+        set { UserDefaults.standard.set(min(4, max(-10, newValue)), forKey: notesDeltaKey) }
+    }
+
+    /// The notes drawer's theme for a page at this size: the same face, smaller by `notesDelta`.
+    public var notes: Theme { Theme(fontSize: max(9, fontSize + CGFloat(Theme.notesDelta))) }
 
     public var columnWidth: CGFloat { (CGFloat(columns) * charWidth).rounded(.up) }
     /// The least room between the text and an edge of its area (the window, the drawer). It grows

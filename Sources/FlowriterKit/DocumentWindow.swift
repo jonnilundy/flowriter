@@ -40,18 +40,21 @@ final class NotesDrawerView: NSView {
     override func layout() {
         super.layout()
         // the scroll view starts right of the drag edge, so the edge keeps its own pointer
-        scroll.frame = NSRect(x: edge.width, y: 0, width: max(0, bounds.width - edge.width), height: bounds.height)
+        scroll.frame = NSRect(x: edge.width, y: topInset, width: max(0, bounds.width - edge.width), height: max(0, bounds.height - topInset))
         textView.layoutColumn()
     }
 
     /// The notes step back to half strength while the page has the keys.
     var dimmed = false { didSet { if dimmed != oldValue { scroll.animator().alphaValue = dimmed ? 0.5 : 1 } } }
 
-    /// No panel: the drawer is the page's own surface. A short hairline, clear of the top and
-    /// the bottom, is all that marks it.
+    /// Height of the window's top bar: the drawer runs under it, its text starts below it.
+    var topInset: CGFloat = 0 { didSet { if topInset != oldValue { needsLayout = true } } }
+
+    /// No panel: the drawer is the page's own surface. One hairline, from the top of the window
+    /// to the bottom, is all that marks it.
     override func draw(_ dirtyRect: NSRect) {
         Theme.hairline.setFill()
-        NSRect(x: 0, y: 40, width: 1, height: max(0, bounds.height - 80)).fill()
+        NSRect(x: 0, y: 0, width: 1, height: bounds.height).fill()
     }
 
     // MARK: the drag edge
@@ -220,7 +223,8 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         // the content view runs under the top bar: the page starts below it
         let top = window.map { max(0, $0.frame.height - $0.contentLayoutRect.maxY) } ?? 0
         editorScroll.frame = NSRect(x: 0, y: top, width: b.width - w, height: max(0, b.height - top))
-        drawer.frame = NSRect(x: b.width - w, y: top, width: w, height: max(0, b.height - top))
+        drawer.frame = NSRect(x: b.width - w, y: 0, width: w, height: b.height)
+        drawer.topInset = top
         updateDrawerDim()
         editor.layoutWidth = b.width
         editor.reservedRight = w
@@ -406,6 +410,18 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
     @objc public func biggerText(_ sender: Any?) { Self.setFontSize(editor.theme.fontSize + 1) }
     @objc public func smallerText(_ sender: Any?) { Self.setFontSize(editor.theme.fontSize - 1) }
     @objc public func actualSize(_ sender: Any?) { Self.setFontSize(Theme.defaultFontSize) }
+
+    /// The notes' text size, as a step up or down from the page's.
+    @objc public func biggerNotesText(_ sender: Any?) { Self.setNotesDelta(Theme.notesDelta + 1) }
+    @objc public func smallerNotesText(_ sender: Any?) { Self.setNotesDelta(Theme.notesDelta - 1) }
+
+    static func setNotesDelta(_ delta: Int) {
+        Theme.notesDelta = delta
+        for case let c as DocumentWindowController in NSApp.windows.compactMap(\.windowController) {
+            c.drawer.textView.setTheme(c.editor.theme.notes)
+            c.root.needsLayout = true
+        }
+    }
 
     static func setFontSize(_ size: CGFloat) {
         let size = min(40, max(9, size))
