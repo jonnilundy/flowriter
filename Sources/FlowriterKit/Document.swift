@@ -168,7 +168,9 @@ public final class Document: NSDocument {
     /// (or, when closing, was deleted): the window may close.
     public func presentNamePanel(closing: Bool = false, completion: @escaping (Bool) -> Void = { _ in }) {
         let current = fileURL
-        let name = current?.deletingPathExtension().lastPathComponent ?? NoteName.derive(from: currentText)
+        // a file that is not ".md" shows its extension in the field, so a rename keeps it
+        let name = current.map { $0.pathExtension.lowercased() == "md" ? $0.deletingPathExtension().lastPathComponent : $0.lastPathComponent }
+            ?? NoteName.derive(from: currentText)
         let panel = NamePanel(mode: current != nil ? .rename : closing ? .close : .save,
                               name: name, folder: current?.deletingLastPathComponent().path, locations: .load())
         panel.validate = { [weak self] name, folder in self?.problem(name: name, folder: folder) }

@@ -87,7 +87,7 @@ public struct Locations: Equatable {
 /// it has a Delete button). The pop-up lists the saved locations (the default first chosen) and
 /// always ends with "Other Folder…". It is drawn in the page's own colours and typeface.
 @MainActor
-public final class NamePanel: NSPanel {
+public final class NamePanel: NSPanel, NSTextFieldDelegate {
     public enum Mode { case save, rename, close }
     public enum Outcome: Equatable { case name(String, folder: String), delete, cancel }
 
@@ -97,7 +97,8 @@ public final class NamePanel: NSPanel {
     /// Only in `.close` mode.
     public private(set) var deleteButton: NSButton?
     private let message = NSTextField(labelWithString: "")
-    private let hint: String
+    /// ".md" after the typed name, dimmed: the extension the file gets without typing it.
+    public let suffix = NSTextField(labelWithString: ".md")
     private var locations: Locations
     /// A folder outside the saved locations: where the note is now, or one picked with "Other Folder…".
     private var otherFolder: String?
@@ -118,7 +119,6 @@ public final class NamePanel: NSPanel {
     public init(mode: Mode, name: String, folder: String?, locations: Locations) {
         self.mode = mode
         self.locations = locations
-        hint = mode == .close ? "This note is not in a file yet." : ""
         let width: CGFloat = 420, height: CGFloat = 204, inset: CGFloat = 24
         super.init(contentRect: NSRect(x: 0, y: 0, width: width, height: height), styleMask: [.titled], backing: .buffered, defer: true)
         backgroundColor = Theme.background
@@ -140,11 +140,16 @@ public final class NamePanel: NSPanel {
         nameField.focusRingType = .none
         nameField.usesSingleLineMode = true
         nameField.lineBreakMode = .byTruncatingHead
-        nameField.frame = NSRect(x: 10, y: 7, width: box.frame.width - 20, height: 18)
+        suffix.font = mono(13, .regular)
+        suffix.textColor = Theme.mark
+        suffix.sizeToFit()
+        nameField.frame = NSRect(x: 10, y: 7, width: box.frame.width - 20 - suffix.frame.width, height: 18)
+        nameField.delegate = self
         nameField.target = self
         nameField.action = #selector(commit)   // Return in the field
         nameField.setAccessibilityLabel("Name")
         box.addSubview(nameField)
+        box.addSubview(suffix)
 
         folderPopUp.isBordered = false
         folderPopUp.font = mono(12, .regular)
@@ -177,16 +182,29 @@ public final class NamePanel: NSPanel {
         if let folder = folder.map(Locations.normalized), !locations.folders.contains(folder) { otherFolder = folder }
         rebuildPopUp(select: folder.map(Locations.normalized) ?? locations.defaultFolder)
         show(problem: nil)
+        placeSuffix()
+    }
+
+    public func controlTextDidChange(_ obj: Notification) { placeSuffix() }
+
+    /// Put ".md" right after the name. A name typed with its own extension keeps it: no ".md" then.
+    private func placeSuffix() {
+        let name = nameField.stringValue
+        let lower = name.lowercased()
+        suffix.isHidden = lower.hasSuffix(".md") || lower.hasSuffix(".markdown") || lower.hasSuffix(".txt")
+        let shown = name.isEmpty ? (nameField.placeholderString ?? "") : name
+        let width = (shown as NSString).size(withAttributes: [.font: nameField.font as Any]).width
+        suffix.frame.origin = NSPoint(x: min(nameField.frame.minX + 2 + width.rounded(.up), nameField.frame.maxX), y: nameField.frame.minY)
     }
 
     /// The folder the note will be in, nil when none is chosen yet.
     public var selectedFolder: String? { folderPopUp.selectedItem?.representedObject as? String }
-    /// The line under the location: why the name cannot be used, or what Delete is about.
+    /// The line under the location: why the name cannot be used.
     public var messageText: String { message.stringValue }
 
     private func show(problem: String?) {
-        message.stringValue = problem ?? hint
-        message.textColor = problem == nil ? Theme.secondary : Theme.accent
+        message.stringValue = problem ?? ""
+        message.textColor = Theme.accent
     }
 
     private func rebuildPopUp(select: String?) {
