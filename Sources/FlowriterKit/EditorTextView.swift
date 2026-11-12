@@ -95,15 +95,104 @@ public final class EditorTextView: NSTextView {
 
     public override func becomeFirstResponder() -> Bool {
         let ok = super.becomeFirstResponder()
-        if ok { onFocusChange?() }
+        if ok { hasKeys = true; setNeedsCaretUpdate(); onFocusChange?() }
         return ok
     }
 
     public override func resignFirstResponder() -> Bool {
         let ok = super.resignFirstResponder()
-        if ok { onFocusChange?() }
+        if ok { hasKeys = false; setNeedsCaretUpdate(); onFocusChange?() }
         return ok
     }
+
+    // MARK: caret
+
+    // The caret is a layer of its own. AppKit redraws the text view for each step of its caret's
+    // fade, which shows as a few coarse steps; a layer's opacity animates at the display's rate.
+    public let caret = CaretView()
+    private var hasKeys = false
+    private var caretUpdatePending = false
+
+    /// The caret moves at the end of this turn of the run loop: a selection can change while the
+    /// text storage is mid-edit, when the layout may not be asked anything.
+    private func setNeedsCaretUpdate() {
+        guard !caretUpdatePending else { return }
+        caretUpdatePending = true
+        DispatchQueue.main.async { [weak self] in self?.updateCaret() }
+    }
+
+    /// Where the caret is drawn, in view coordinates: nil with a selection.
+    public func caretRect() -> NSRect? {
+        guard selectedRange().length == 0, let lm = layoutManager, let container = textContainer, let line = caretLineRect() else { return nil }
+        let location = min(selectedRange().location, storage.length)
+        var x = line.minX
+        if storage.length > 0, !(location == storage.length && lm.extraLineFragmentTextContainer != nil) {
+            if location < storage.length {
+                x += lm.location(forGlyphAt: lm.glyphIndexForCharacter(at: location)).x
+            } else {
+                let last = lm.glyphIndexForCharacter(at: storage.length - 1)
+                x = textContainerOrigin.x + lm.boundingRect(forGlyphRange: NSRange(location: last, length: 1), in: container).maxX
+            }
+        }
+        let height = (theme.regular.ascender - theme.regular.descender).rounded() + 2
+        let y = line.minY + theme.baseline - theme.regular.ascender.rounded() - 1
+        return backingAlignedRect(NSRect(x: x - 1, y: y, width: 2, height: height), options: .alignAllEdgesNearest)
+    }
+
+    public func updateCaret() {
+        caretUpdatePending = false
+        let active = hasKeys && (window?.isKeyWindow == true || AppDelegate.offScreen)
+        guard active, let rect = caretRect() else { caret.isHidden = true; return }
+        if caret.superview !== self { addSubview(caret) }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        caret.frame = rect
+        caret.isHidden = false
+        CATransaction.commit()
+        caret.blink()
+    }
+
+    public override func setSelectedRanges(_ ranges: [NSValue], affinity: NSSelectionAffinity, stillSelecting: Bool) {
+        super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
+        setNeedsCaretUpdate()
+    }
+
+    public override func didChangeText() {
+        super.didChangeText()
+        setNeedsCaretUpdate()
+    }
+
+    /// A click below the last line puts the caret at the end of the text and stays there.
+    /// AppKit's own tracking first does the same, then (as a drag) picks the nearest character
+    /// in the last line that has text, so the caret jumped up a line after the click.
+    public override func mouseDown(with event: NSEvent) {
+        if event.clickCount == 1, event.modifierFlags.intersection([.shift, .command, .option, .control]).isEmpty,
+           let lm = layoutManager, let container = textContainer {
+            lm.ensureLayout(for: container)
+            let bottom = textContainerOrigin.y + lm.usedRect(for: container).maxY
+            if convert(event.locationInWindow, from: nil).y >= bottom {
+                window?.makeFirstResponder(self)
+                setSelectedRange(NSRange(location: storage.length, length: 0))
+                return
+            }
+        }
+        super.mouseDown(with: event)
+    }
+
+    /// The system's caret is not drawn: `caret` stands in for it.
+    public override func drawInsertionPoint(in rect: NSRect, color: NSColor, turnedOn flag: Bool) {}
+
+    public override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        let center = NotificationCenter.default
+        center.removeObserver(self, name: NSWindow.didBecomeKeyNotification, object: nil)
+        center.removeObserver(self, name: NSWindow.didResignKeyNotification, object: nil)
+        guard let window else { return }
+        center.addObserver(self, selector: #selector(windowKeyChanged), name: NSWindow.didBecomeKeyNotification, object: window)
+        center.addObserver(self, selector: #selector(windowKeyChanged), name: NSWindow.didResignKeyNotification, object: window)
+    }
+
+    @objc private func windowKeyChanged() { setNeedsCaretUpdate() }
 
     private var top: CGFloat = 48
     private var left: CGFloat = 0
@@ -167,7 +256,7 @@ public final class EditorTextView: NSTextView {
     }
 
     private func applyTheme() {
-        insertionPointColor = Theme.accent
+        insertionPointColor = .clear   // `caret` is the caret
         selectedTextAttributes = [.backgroundColor: Theme.selection]
         defaultParagraphStyle = highlighter.paragraphStyle(hanging: 0)
         typingAttributes = highlighter.baseAttributes
@@ -289,6 +378,7 @@ public final class EditorTextView: NSTextView {
         if frame.width != viewWidth { setFrameSize(NSSize(width: viewWidth, height: frame.height)) }
         sizeToFit()
         needsDisplay = true
+        setNeedsCaretUpdate()
     }
 
     // MARK: focus mode
@@ -339,6 +429,35 @@ public final class EditorTextView: NSTextView {
         guard storage.length == 0, let placeholder else { return }
         let y = origin.y + theme.baseline - theme.regular.ascender
         (placeholder as NSString).draw(at: NSPoint(x: origin.x, y: y), withAttributes: [.font: theme.regular, .foregroundColor: Theme.mark])
+    }
+}
+
+/// The caret: a thin bar in the accent colour that fades out and in.
+@MainActor
+public final class CaretView: NSView {
+    public override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.cornerRadius = 1
+    }
+    required init?(coder: NSCoder) { fatalError("not used") }
+
+    public override var wantsUpdateLayer: Bool { true }
+    public override func updateLayer() { layer?.backgroundColor = Theme.accent.cgColor }
+    public override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    /// Start the blink again from full: the caret is solid while it moves or text is typed.
+    public func blink() {
+        guard let layer else { return }
+        layer.removeAnimation(forKey: "blink")
+        let fade = CAKeyframeAnimation(keyPath: "opacity")
+        fade.values = [1, 1, 0, 0, 1]
+        fade.keyTimes = [0, 0.45, 0.6, 0.85, 1]
+        let ease = CAMediaTimingFunction(name: .easeInEaseOut), hold = CAMediaTimingFunction(name: .linear)
+        fade.timingFunctions = [hold, ease, hold, ease]
+        fade.duration = 1.1
+        fade.repeatCount = .infinity
+        layer.add(fade, forKey: "blink")
     }
 }
 

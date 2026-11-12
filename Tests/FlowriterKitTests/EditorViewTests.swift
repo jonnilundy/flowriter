@@ -36,6 +36,37 @@ final class EditorViewTests: XCTestCase {
 
     private func caret(_ location: Int) { editor.setSelectedRange(NSRange(location: location, length: 0)) }
 
+    private func click(at point: NSPoint) {
+        let inWindow = editor.convert(point, to: nil)
+        let event = NSEvent.mouseEvent(with: .leftMouseDown, location: inWindow, modifierFlags: [], timestamp: 0,
+                                       windowNumber: controller.window!.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!
+        editor.mouseDown(with: event)
+    }
+
+    func testAClickBelowTheLastLinePutsTheCaretAtTheEnd() {
+        open("one\n\n## Benediction\n")
+        caret(2)
+        let end = editor.caretLineRect()!
+        click(at: NSPoint(x: editor.textContainerOrigin.x + 80, y: editor.frame.height - 10))
+        XCTAssertEqual(editor.selectedRange(), NSRange(location: 20, length: 0), "the caret is on the empty last line")
+        XCTAssertGreaterThan(editor.caretLineRect()!.minY, end.minY)
+    }
+
+    func testTheCaretIsALayerOnTheCaretLine() {
+        open("one\ntwo words\n")
+        caret(7)
+        editor.updateCaret()
+        let rect = editor.caretRect()!
+        let line = editor.caretLineRect()!
+        XCTAssertTrue(line.insetBy(dx: -2, dy: 0).contains(rect), "the caret is inside its line")
+        XCTAssertEqual(rect.midX, editor.textContainerOrigin.x + 3 * editor.theme.charWidth, accuracy: 1.5)
+        editor.setSelectedRange(NSRange(location: 4, length: 3))
+        editor.updateCaret()
+        XCTAssertTrue(editor.caret.isHidden || editor.caret.superview == nil, "a selection has no caret")
+        caret(14)
+        XCTAssertEqual(editor.caretRect()!.minX, editor.textContainerOrigin.x - 1, accuracy: 1.5, "the empty last line starts at the column")
+    }
+
     /// Top of every line fragment, by the character that starts it.
     private func lineTops() -> [Int: CGFloat] {
         let lm = editor.layoutManager!
