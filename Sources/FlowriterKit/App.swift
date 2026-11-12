@@ -8,6 +8,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     public func applicationWillFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.build()
+        Appearance.stored.apply()
     }
 
     public func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
@@ -136,6 +137,8 @@ enum MainMenu {
 
         let app = submenu(main, name)
         app.addItem(withTitle: "About \(name)", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        app.addItem(.separator())
+        app.addItem(withTitle: "Settings\u{2026}", action: #selector(SettingsWindowController.show(_:)), keyEquivalent: ",").target = SettingsWindowController.shared
         app.addItem(.separator())
         app.addItem(withTitle: "Hide \(name)", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         item(app, "Hide Others", #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option])

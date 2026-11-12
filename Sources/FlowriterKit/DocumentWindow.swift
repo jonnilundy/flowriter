@@ -420,8 +420,11 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
     }
 
     @objc public func toggleFocusMode(_ sender: Any?) {
-        let on = !editor.focusMode
-        UserDefaults.standard.set(on, forKey: Self.focusKey)
+        Self.setFocusMode(!editor.focusMode)
+    }
+
+    static func setFocusMode(_ on: Bool) {
+        UserDefaults.standard.set(on, forKey: focusKey)
         for case let c as DocumentWindowController in NSApp.windows.compactMap(\.windowController) { c.editor.focusMode = on }
     }
 

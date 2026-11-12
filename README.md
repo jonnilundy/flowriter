@@ -31,7 +31,9 @@ Flowriter is Swift and AppKit. It works offline: no account, no network calls, n
 - **Focus Mode** keeps the caret line on the vertical centre of the window.
 - **Files.** A note saves in place soon after typing stops. A change another program makes to
   the file is loaded when there are no edits here, and is never overwritten when there are.
-- **Light and dark.** The colours follow the system appearance.
+- **Light and dark.** The colours follow the system appearance, or stay light or dark.
+- **Settings** (Command-Comma). One window for the appearance, the text sizes, Focus Mode and
+  the folders new notes go to.
 
 Undo, input methods, spell check and find are the system's.
 
@@ -39,6 +41,7 @@ Undo, input methods, spell check and find are the system's.
 
 | Key | What |
 |---|---|
+| Command-Comma | Settings |
 | Command-N | New note |
 | Command-S | Save: name the note and pick its folder |
 | Option-O | Show or hide the notes drawer |

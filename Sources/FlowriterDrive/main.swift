@@ -31,6 +31,10 @@ import FlowriterKit
 //   expect-path <file>          fail unless the newest document is this file
 //   expect-file <file> <text>   fail unless the file on disk holds exactly this
 //   log                         print the caret, the scroll place and the first responder
+//   press <id>                  click the Settings window's button with this identifier
+//   expect-default <key> <v>    fail unless the preference holds this value ("none": not set)
+//   expect-appearance dark|light  fail unless the note's window has this appearance
+// A shot also saves <name>-sheet.png for an open sheet and <name>-settings.png for the Settings window.
 
 func argument(_ name: String) -> String? {
     CommandLine.arguments.first { $0.hasPrefix("--\(name)=") }.map { String($0.dropFirst(name.count + 3)) }
@@ -216,6 +220,15 @@ final class Driver {
             if let w = Double(words[0]), let h = Double(words[1]) {
                 window.setFrame(NSRect(x: window.frame.minX, y: window.frame.minY, width: w, height: h), display: true)
             }
+        case "press":
+            let buttons = (SettingsWindowController.shared.window?.contentView?.subviews ?? []).compactMap { $0 as? NSButton }
+            if let b = buttons.first(where: { $0.identifier?.rawValue == rest }) { b.performClick(nil) } else { fail("no settings button \(rest)") }
+        case "expect-default":
+            let got = UserDefaults.standard.object(forKey: String(words[0])).map { "\($0)" } ?? "none"
+            if got != String(words[1]) { fail("default \(words[0]) is \(got), expected \(words[1])") }
+        case "expect-appearance":
+            let dark = window.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            if (dark ? "dark" : "light") != rest { fail("window is \(dark ? "dark" : "light"), expected \(rest)") }
         case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
         case "light": NSApp.appearance = NSAppearance(named: .aqua)
         case "wait":
@@ -355,6 +368,7 @@ final class Driver {
     func shot(_ name: String, _ window: NSWindow) {
         // a sheet is its own window: it gets its own picture
         if let sheet = window.attachedSheet { capture(name + "-sheet", sheet) }
+        if let settings = SettingsWindowController.shared.window, settings.isVisible { capture(name + "-settings", settings) }
         capture(name, window)
     }
 
