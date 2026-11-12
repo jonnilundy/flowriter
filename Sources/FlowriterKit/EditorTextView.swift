@@ -160,6 +160,10 @@ public final class EditorTextView: NSTextView {
     public override func didChangeText() {
         super.didChangeText()
         setNeedsCaretUpdate()
+        // Every edit is followed by a styling edit that touches attributes only. After it, AppKit
+        // repaints only the styled lines: the lines that an added or removed line moved keep
+        // their old pixels. Repaint what is visible.
+        setNeedsDisplay(visibleRect)
     }
 
     /// A click below the last line puts the caret at the end of the text and stays there.
