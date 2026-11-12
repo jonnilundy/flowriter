@@ -1,6 +1,5 @@
 #!/bin/zsh
 # Install build/Flowriter.app as /Applications/Flowriter.app.
-# Fork: its own bundle id and path, so upstream Flo State is never touched or replaced.
 # Never launches the app (set RELAUNCH=1 to reopen it when it was running before).
 # KEEP_RUNNING=1 leaves a running copy alone: it keeps the old build until it is quit and reopened.
 set -euo pipefail

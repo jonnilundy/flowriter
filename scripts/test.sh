@@ -1,12 +1,12 @@
 #!/bin/zsh
 # Run the test suite unattended and end with ONE summary line.
 #
-#   scripts/test.sh                 whole suite: the 3 test modules run side by side
+#   scripts/test.sh                 whole suite, one process per test module
 #   scripts/test.sh --filter X      only matching tests (swift test --filter), one process
 #
 # (run it as a background job; you get notified when it ends)
-# - build once (slowbuild if installed: efficiency cores; $JOBS=8 jobs), then run the tests at normal speed (nice 10,
-#   3 processes: short bursts; background QoS made CPU-heavy tests 4x slower); logs in build/test*.log
+# - build once (slowbuild if installed: efficiency cores; $JOBS=8 jobs), then run the tests at normal speed (nice 10:
+#   background QoS made CPU-heavy tests 4x slower); logs in build/test*.log
 # - output is unbuffered (NSUnbufferedIO), so the log shows each test as it runs
 # - watchdog: once a module's tests are running, no output for $STALL seconds (default 15) =
 #   stalled: the run is killed and the stuck test named. Building may be silent for
@@ -57,9 +57,6 @@ watch() {
 }
 
 # 1. build ($THROTTLE wraps it, e.g. THROTTLE=nice; default slowbuild when it is on the PATH, else none)
-# SwiftPM's own Sparkle download hangs on some Macs: seed it by hand when it is missing.
-[[ -d $BP/artifacts/sparkle/Sparkle/Sparkle.xcframework ]] || scripts/seed-sparkle.sh $BP >> "$LOG" 2>&1 \
-  || { echo "TESTS CRASH: scripts/seed-sparkle.sh failed (in build) (log: $LOG)"; exit 1; }
 THROTTLE=${THROTTLE-$( (( $+commands[slowbuild] )) && print slowbuild )}
 JOBS=${JOBS:-8} ${=THROTTLE} swift build --disable-keychain --build-tests --build-path $BP -j ${JOBS:-8} >> "$LOG" 2>&1 &
 BPID=$!
@@ -73,9 +70,9 @@ if (( $# )); then
   pids+=("$!:build/test-filtered.log")
 else
   # one bundle per test target (Swift Build, Xcode 27+), else SwiftPM's combined package bundle
-  COMBINED="$ROOT/$BP/debug/FloStateNativePackageTests.xctest"
+  COMBINED="$ROOT/$BP/debug/FlowriterPackageTests.xctest"
   classes=$(swift test --disable-keychain --skip-build --build-path $BP list 2>/dev/null | cut -d/ -f1 | sort -u)
-  for mod in FloStateNativeTests FloCoreTests FloKitTests FlowriterKitTests; do
+  for mod in FlowriterKitTests; do
     sel=$(print -r -- "$classes" | grep "^$mod\." | paste -sd, -)
     [[ -n $sel ]] || continue
     BUNDLE="$ROOT/$BP/debug/$mod.xctest"; [[ -d $BUNDLE ]] || BUNDLE=$COMBINED

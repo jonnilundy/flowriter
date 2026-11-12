@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Drive the plain editor through a scripted session without showing a window or taking focus,
+# Drive the app through a scripted session without showing a window or taking focus,
 # and save a picture of the window after the steps that ask for one.
 #
 #   scripts/drive.sh [script] [out-dir] [--keep-state]

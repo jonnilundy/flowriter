@@ -2,34 +2,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "FloStateNative",
+    name: "Flowriter",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "FloStateNative", targets: ["FloStateNative"]),
-        .library(name: "FloCore", targets: ["FloCore"]),
-        .library(name: "FloKit", targets: ["FloKit"]),
         .executable(name: "Flowriter", targets: ["Flowriter"]),
     ],
-    dependencies: [
-        // In-app updates (pinned; bump deliberately — scripts/release.sh uses its bin/ tools).
-        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
-    ],
     targets: [
-        // Resources/<lang>.lproj: UI strings (Localizable.strings) + the localized Welcome note, copied
-        // verbatim (CFBundle treats the bundle's top-level Resources/ as its resource directory).
-        .target(name: "FloCore", resources: [.copy("Resources")], swiftSettings: [.swiftLanguageMode(.v5)]),
-        .target(name: "FloKit", dependencies: ["FloCore"], swiftSettings: [.swiftLanguageMode(.v5)]),
-        .executableTarget(name: "FloStateNative", dependencies: ["FloKit", .product(name: "Sparkle", package: "Sparkle")], swiftSettings: [.swiftLanguageMode(.v5)]),
-        // Shared test helpers (synthetic documents), no dependencies.
-        .target(name: "FloTestSupport", path: "Tests/FloTestSupport", swiftSettings: [.swiftLanguageMode(.v5)]),
-        .testTarget(name: "FloCoreTests", dependencies: ["FloCore", "FloTestSupport"], swiftSettings: [.swiftLanguageMode(.v5)]),
-        .testTarget(name: "FloKitTests", dependencies: ["FloKit", "FloTestSupport"], swiftSettings: [.swiftLanguageMode(.v5)]),
-        .testTarget(name: "FloStateNativeTests", dependencies: ["FloStateNative", "FloTestSupport"], swiftSettings: [.swiftLanguageMode(.v5)]),
-        // The plain editor: one NSTextView per document, the text storage is the only copy of the
-        // text. It shares no code with the targets above.
+        // One NSTextView per document. The text storage is the only copy of the text.
         .target(name: "FlowriterKit", swiftSettings: [.swiftLanguageMode(.v5)]),
         .executableTarget(name: "Flowriter", dependencies: ["FlowriterKit"], swiftSettings: [.swiftLanguageMode(.v5)]),
-        // Drives the real app off screen with key and mouse events and saves pictures (README, Plain editor).
+        // Drives the real app off screen with key and mouse events and saves pictures (README, Testing).
         .executableTarget(name: "FlowriterDrive", dependencies: ["FlowriterKit"], swiftSettings: [.swiftLanguageMode(.v5)]),
         .testTarget(name: "FlowriterKitTests", dependencies: ["FlowriterKit"], swiftSettings: [.swiftLanguageMode(.v5)]),
     ]
