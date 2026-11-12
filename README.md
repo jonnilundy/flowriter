@@ -17,20 +17,38 @@ Flowriter is Swift and AppKit. It works offline: no account, no network calls, n
   list marker or a code fence never moves the text around it.
 - **Lists.** Return continues a list, Return on an empty item leaves it, Tab and Shift-Tab
   nest, Backspace after a marker removes the marker.
-- **Notes drawer** (Option-O). A drawer beside the page, with a drag edge to set its width.
-  The notes are a plain file next to the document, `.<name>.notes.md`.
+- **Notes drawer.** A drawer beside the page, with a drag edge to set its width. Use it for
+  cut text and side thoughts: Move Selection to Notes sends the selected text there. The
+  notes are a plain file next to the document, `.<name>.notes.md`.
 - **New notes.** Command-N opens a note with no file. Its name comes from its first line
   ("# Happy days" is `happy-days`) and shows in the top bar. A click on the name saves it:
-  the sheet offers that name and the default location, so Return is enough. Its pop-up picks
-  another saved location (File > Locations) or any folder. A click on a saved note's name
-  renames or moves it.
-- **Drafts.** Unsaved notes are kept as drafts while you type. Closing one asks first.
-  Quitting never asks: at the next launch the unsaved notes and the open files come back.
-- **Focus Mode** (Shift-Command-F) keeps the caret line on the vertical centre of the window.
+  the sheet offers that name and the default location, so Return is enough. The sheet adds
+  `.md` to the name. Its pop-up picks another saved location (File > Locations) or any
+  folder. A click on a saved note's name renames or moves it.
+- **Drafts.** Unsaved notes are kept as drafts while you type. Closing one opens the same
+  sheet, with Save, Delete and Cancel. Quitting never asks: at the next launch the unsaved
+  notes and the open files come back.
+- **Focus Mode** keeps the caret line on the vertical centre of the window.
 - **Files.** A note saves in place soon after typing stops. A change another program makes to
   the file is loaded when there are no edits here, and is never overwritten when there are.
+- **Light and dark.** The colours follow the system appearance.
 
 Undo, input methods, spell check and find are the system's.
+
+## Keys
+
+| Key | What |
+|---|---|
+| Command-N | New note |
+| Command-S | Save: name the note and pick its folder |
+| Option-O | Show or hide the notes drawer |
+| Shift-Option-O | Switch between the page and the notes |
+| Shift-Command-M | Move the selection to the notes |
+| Shift-Command-F | Focus Mode |
+| Command-B, Command-I | Bold, italic: wrap the selection in the Markdown marks |
+| Command-Plus, Command-Minus, Command-0 | Bigger text, smaller text, actual size |
+| Option-Command-Plus, Option-Command-Minus | Bigger or smaller notes text |
+| Command-F, Option-Command-F | Find, find and replace |
 
 ## Build
 
