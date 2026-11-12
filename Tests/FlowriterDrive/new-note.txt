@@ -1,0 +1,36 @@
+# A new note has no file. Its name comes from its first line. A click on the name saves it to
+# the default location, and another click renames it.
+size 1000 640
+location $TMP/notes
+location $TMP/journal
+expect-title untitled
+type # Happy days
+expect-title happy-days
+key Return
+key Return
+type It starts right away.
+wait 1.6
+expect-drafts 1
+shot 01-unsaved
+menu File > Rename or Move
+wait 0.5
+shot 02-save
+key Return
+wait 1.2
+expect-path $TMP/notes/happy-days.md
+expect-title happy-days.md
+expect-file $TMP/notes/happy-days.md # Happy days\n\nIt starts right away.\n
+expect-drafts 0
+type  More.
+wait 2.2
+expect-file $TMP/notes/happy-days.md # Happy days\n\nIt starts right away. More.\n
+menu File > Rename or Move
+wait 0.5
+type glad-days
+shot 03-rename
+key Return
+wait 1.2
+expect-path $TMP/notes/glad-days.md
+expect-title glad-days.md
+expect-file $TMP/notes/glad-days.md # Happy days\n\nIt starts right away. More.\n
+shot 04-renamed

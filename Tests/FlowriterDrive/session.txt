@@ -1,0 +1,87 @@
+# A writing session from an empty page: headings, lists in and out, code, undo, the notes
+# drawer, focus mode, find, dark. Run it with scripts/drive.sh.
+size 1000 720
+type # A quiet draft
+key Return
+key Return
+type The first paragraph is plain text that runs long enough to wrap onto a second line of the column, so wrapping shows.
+key Return
+key Return
+type - one
+key Return
+type two
+key Return
+key Tab
+type nested
+key Return
+shot 01-in-nested-list
+key Return
+key Return
+type After the list.
+expect page # A quiet draft\n\nThe first paragraph is plain text that runs long enough to wrap onto a second line of the column, so wrapping shows.\n\n- one\n- two\n  - nested\nAfter the list.
+shot 02-left-the-list
+key Return
+key Return
+type 1. first
+key Return
+type second
+key Return
+key Backspace
+type Out by Backspace, with **bold**, *italic* and `code`.
+key Return
+key Return
+type ```
+key Return
+type let x = 1
+key Return
+type ```
+key Return
+wait 0.4
+shot 03-ordered-code
+key Cmd-z
+key Cmd-z
+key Cmd-z
+expect page # A quiet draft\n\nThe first paragraph is plain text that runs long enough to wrap onto a second line of the column, so wrapping shows.\n\n- one\n- two\n  - nested\nAfter the list.\n\n1. first\n2. second\nOut by Backspace, with **bold**, *italic* and `code`.\n\n```
+shot 04-after-three-undos
+key Cmd-Shift-z
+key Cmd-Shift-z
+key Cmd-Shift-z
+shot 05-after-three-redos
+expect page # A quiet draft\n\nThe first paragraph is plain text that runs long enough to wrap onto a second line of the column, so wrapping shows.\n\n- one\n- two\n  - nested\nAfter the list.\n\n1. first\n2. second\nOut by Backspace, with **bold**, *italic* and `code`.\n\n```\nlet x = 1\n```\n
+key Opt-o
+key Opt-Shift-o
+log
+type ## Parking lot
+key Return
+key Return
+type - an idea for later
+key Return
+type another
+expect notes ## Parking lot\n\n- an idea for later\n- another
+wait 0.4
+shot 06-notes-open
+log
+drag-drawer -140
+shot 07-drawer-wider
+size 780 720
+shot 08-narrow-window
+size 1000 720
+key Opt-Shift-o
+menu View > Focus Mode
+click page 172
+type  Typed in focus mode.
+shot 09-focus-mode
+menu View > Focus Mode
+key Cmd-f
+wait 0.4
+type list
+wait 0.4
+shot 10-find
+key Escape
+light
+wait 0.2
+shot 11-light
+select page 2 13
+key Cmd-b
+shot 12-bold-toggle
+log

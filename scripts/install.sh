@@ -1,13 +1,13 @@
 #!/bin/zsh
 # Install build/Flowriter.app as /Applications/Flowriter.app.
-# Fork: its own bundle id and path, so upstream Flo State is never touched or replaced.
 # Never launches the app (set RELAUNCH=1 to reopen it when it was running before).
+# KEEP_RUNNING=1 leaves a running copy alone: it keeps the old build until it is quit and reopened.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 SRC="${SRC:-build/Flowriter.app}"
 DST="/Applications/Flowriter.app"
-WAS_RUNNING=0; pgrep -f "Flowriter.app/Contents/MacOS/FloStateNative" >/dev/null && WAS_RUNNING=1
-pkill -f "Flowriter.app/Contents/MacOS/FloStateNative" 2>/dev/null || true
+WAS_RUNNING=0; pgrep -f "/Applications/Flowriter.app/Contents/MacOS/" >/dev/null && WAS_RUNNING=1
+[[ "${KEEP_RUNNING:-0}" == 1 ]] || pkill -f "/Applications/Flowriter.app/Contents/MacOS/" 2>/dev/null || true
 rm -rf "$DST"
 cp -R "$SRC" "$DST"
 scripts/sign.sh "$DST"

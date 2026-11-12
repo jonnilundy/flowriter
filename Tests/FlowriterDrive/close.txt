@@ -1,0 +1,34 @@
+# Closing a note with no file opens the same sheet as saving it, with a Delete button.
+size 1000 640
+location $TMP/notes
+type # Keep or not
+key Return
+type A few words.
+wait 1.6
+expect-drafts 1
+menu File > Close
+wait 0.5
+shot 01-close
+key Escape
+wait 0.5
+expect-windows 1
+expect-drafts 1
+menu File > Close
+wait 0.5
+type kept
+key Return
+wait 1.2
+expect-windows 0
+expect-drafts 0
+expect-file $TMP/notes/kept.md # Keep or not\nA few words.\n
+menu File > New Note
+wait 0.6
+type # Throw away
+wait 1.6
+expect-drafts 1
+menu File > Close
+wait 0.5
+key Cmd-Backspace
+wait 0.5
+expect-drafts 0
+expect-windows 0

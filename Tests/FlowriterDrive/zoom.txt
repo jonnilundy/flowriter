@@ -1,0 +1,29 @@
+# Bigger text keeps its margins, with the notes drawer closed and open.
+size 820 660
+type # Testing one to three
+key Return
+key Return
+type A paragraph that is long enough to wrap, so the edges of the column show on both sides.
+key Return
+key Return
+type * About time its time
+key Opt-o
+key Opt-Shift-o
+type notes here
+key Opt-Shift-o
+menu View > Bigger Text
+menu View > Bigger Text
+menu View > Bigger Text
+menu View > Bigger Text
+menu View > Bigger Text
+menu View > Bigger Text
+menu View > Bigger Text
+menu View > Bigger Text
+wait 0.3
+shot 01-big-text-notes-open
+key Opt-o
+wait 0.2
+shot 02-big-text-notes-closed
+menu View > Actual Size
+wait 0.2
+shot 03-actual-size

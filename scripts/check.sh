@@ -25,9 +25,8 @@ mkdir -p build
 : > "$LOG"
 
 # 1. build the app (same build folder as test.sh, so the test build is incremental)
-[[ -d $BP/artifacts/sparkle/Sparkle/Sparkle.xcframework ]] || scripts/seed-sparkle.sh $BP >> "$LOG" 2>&1
 THROTTLE=${THROTTLE-$( (( $+commands[slowbuild] )) && print slowbuild )}
-${=THROTTLE} swift build --disable-keychain --build-path $BP -j ${JOBS:-8} --product FloStateNative >> "$LOG" 2>&1
+${=THROTTLE} swift build --disable-keychain --build-path $BP -j ${JOBS:-8} --product Flowriter >> "$LOG" 2>&1
 code=$?
 if (( code )); then
   echo "CHECK FAIL (build): $( { grep -m1 -E ':[0-9]+:[0-9]+: .*error' "$LOG" || grep -m1 -E 'error:' "$LOG"; } | perl -pe 's/\e\[[0-9;]*m//g' | cut -c1-200) (log: $LOG)"

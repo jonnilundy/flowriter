@@ -1,0 +1,8 @@
+# Part 2 of 2: after quit-1.txt, a launch brings back the saved file and the unsaved note.
+wait 0.8
+expect-windows 2
+expect-drafts 1
+expect-title never-saved
+expect page # Never saved\nIt must survive a quit.
+expect notes a side note
+shot 01-back-after-quit

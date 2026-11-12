@@ -1,0 +1,32 @@
+# The Settings window: every control writes its preference and changes the open note at once.
+type # Settings
+key Return
+location $TMP/notes
+location $TMP/journal
+menu Flowriter > Settings…
+light
+shot settings-light
+press appearance-dark
+expect-default FlowriterAppearance dark
+expect-appearance dark
+shot settings-dark
+press appearance-light
+expect-appearance light
+press appearance-system
+expect-default FlowriterAppearance none
+press text-bigger
+press text-bigger
+expect-default FlowriterFontSize 17
+press text-smaller
+expect-default FlowriterFontSize 16
+press notes-smaller
+expect-default FlowriterNotesSizeDelta -5
+press focus-on
+expect-default FlowriterFocusMode 1
+press focus-off
+expect-default FlowriterFocusMode 0
+press location-1
+expect-default FlowriterDefaultLocation $TMP/journal
+press location-remove-0
+shot settings-after
+expect page # Settings\n

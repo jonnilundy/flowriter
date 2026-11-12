@@ -1,0 +1,22 @@
+# Part 1 of 2: write two notes, save one to a file, leave the other unsaved, and quit.
+# Part 2 (quit-2.txt, run with --keep-state) launches again and expects both back.
+size 1000 640
+remove $STATE/saved-notes
+location $STATE/saved-notes
+type # Saved one
+menu File > Rename or Move
+wait 0.5
+key Return
+wait 1.2
+expect-path $STATE/saved-notes/saved-one.md
+menu File > New Note
+wait 0.6
+expect-windows 2
+type # Never saved
+key Return
+type It must survive a quit.
+key Opt-o
+key Opt-Shift-o
+type a side note
+wait 0.3
+quit
