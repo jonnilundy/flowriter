@@ -3,7 +3,9 @@
 #
 #   scripts/release.sh [X.Y.Z]      # version defaults to the VERSION file; given → written to VERSION
 #
-# Flowriter does not update itself, so a release is a signed app on GitHub.
+# A release is a signed app on GitHub. The app's Check for Updates reads the latest one and
+# drops the paragraphs of its text that start with "**Not notarized" or "Download `"
+# (Updates.notes), so the lines this script appends must keep those openings.
 #
 # 1. builds "Flowriter.app" (bundle id app.flowriter.Flowriter, from bundle.sh), version from VERSION,
 #    build number = git commit count; throttled with slowbuild when it is installed
@@ -74,7 +76,7 @@ cp "$NOTES_MD" "$GH_NOTES"
 if [[ $NOTARIZED == 0 ]]; then
   printf '\n**Not notarized yet: on first launch right-click the app → Open.**\n' >> "$GH_NOTES"
 fi
-printf '\nDownload `%s`, unzip, and move **Flowriter.app** to /Applications. Flowriter does not update itself: download new versions from the releases page.\n' "${ZIP:t}" >> "$GH_NOTES"
+printf '\nDownload `%s`, unzip, and move **Flowriter.app** to /Applications. To update a copy of Flowriter 0.4.0 or later, use Flowriter > Check for Updates.\n' "${ZIP:t}" >> "$GH_NOTES"
 
 if [[ -n "${DRY_RUN:-}" ]]; then
   echo "dry run: $ZIP ($LENGTH bytes, build $BUILD)"; exit 0

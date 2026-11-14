@@ -34,7 +34,7 @@ NIGHT, BONE_BRIGHT, FLAME = "#181A1C", "#EEEAE0", "#ED954D"
 
 # Geometry, in 1024 units. The mark is drawn on a 668 baseline, then placed: moved by SHIFT
 # and scaled by FIT about the centre, so its ink sits centred with even margins.
-FIT, SHIFT = 0.93, (22.0, 14.0)
+FIT, SHIFT = 0.944, (32.3, 64.2)
 DRAWN_BASELINE = 668.0
 
 
@@ -42,9 +42,9 @@ def place(x, y):
     return (x + SHIFT[0] - W / 2) * FIT + W / 2, (y + SHIFT[1] - W / 2) * FIT + W / 2
 
 
-STROKE = 54.0 * FIT
+STROKE = 78.0 * FIT
 BASELINE = place(0, DRAWN_BASELINE)[1]
-CARET = dict(w=56.0 * FIT, h=250.0 * FIT, r=14.0 * FIT, gap=62.0 * FIT, border=5.5 * FIT)
+CARET = dict(w=78.0 * FIT, h=360.0 * FIT, r=19.5 * FIT, gap=70.0 * FIT, border=7.7 * FIT)
 
 
 def lin(h):
@@ -88,9 +88,10 @@ def shift(a, dx, dy, fill=0):
 
 
 def centreline():
-    """Three loops, each calmer than the last, then the straight line. 1024 units."""
-    x0, loops = 112.0, 3
-    v, d0, a0 = 26.5, 104.0, 384.0
+    """Two loops, the second calmer than the first, then the straight line. 1024 units.
+    The line is thick and the loops are few so the mark holds its shape on a 64 px Dock tile."""
+    x0, loops = 112.0, 2
+    v, d0, a0 = 36.0, 128.0, 500.0
     end = loops * 2 * math.pi
     pts = []
     for k in range(1921):
@@ -99,8 +100,8 @@ def centreline():
         y = DRAWN_BASELINE - a0 * fade * (1 - math.cos(t)) / 2
         ease = 64 * (t / end) ** 3  # the last hump runs out longer, so it meets the line in a soft curve
         pts.append((x0 + v * t + ease + d0 * fade * math.sin(t) + 0.22 * (DRAWN_BASELINE - y), y))
-    line_end = 762.0
     last = pts[-1][0]
+    line_end = last + 110.0
     pts += [(last + (line_end - last) * k / 24, DRAWN_BASELINE) for k in range(1, 25)]
     return np.array([place(x, y) for x, y in pts]), place(line_end, 0)[0]
 
@@ -196,7 +197,7 @@ def render():
     pool = np.exp(-(((x1 - 0.40 * W) / (0.70 * W)) ** 2 + ((y1 - 0.12 * W) / (0.62 * W)) ** 2))
     ground = lin(NIGHT)[None, None, :] * (0.66 + 0.80 * pool)[..., None]
     d = caret_distance(box, x1, y1)
-    glow = 0.046 * np.exp(-(d / 280) ** 2) + 0.15 * np.exp(-(d / 104) ** 2) + 0.20 * np.exp(-(d / 44) ** 2)
+    glow = 0.033 * np.exp(-(d / 280) ** 2) + 0.108 * np.exp(-(d / 104) ** 2) + 0.144 * np.exp(-(d / 44) ** 2)
     ground += glow[..., None] * flame[None, None, :]
     # the line's shadow: a wide soft one and a close one, both straight down
     under_line = 0.50 * blur(shift(cov1, 0, 20), 16) + 0.40 * blur(shift(cov1, 0, 6), 4.5)
@@ -233,7 +234,7 @@ def render():
     # its face stays the exact theme colour.
     out = down(img)
     light = down(flame[None, None, :] * a)
-    out += blur(light, 6) * 0.10 + blur(light, 26) * 0.20 + blur(light, 80) * 0.17
+    out += blur(light, 6) * 0.072 + blur(light, 26) * 0.144 + blur(light, 80) * 0.122
     peak = np.maximum(out.max(-1, keepdims=True), 1e-6)
     out = np.where(peak > 1, out / peak, out)
     return np.clip(out * (1 - ca1[..., None]) + down(body * a), 0, 1)
@@ -300,7 +301,7 @@ def main():
         ladder.paste(small, (x, 280 - s * 3), small)
         x += s * 3 + 28
     ladder.save(out_dir / "flow-sizes.png")
-    for name, (x, y, w) in {"loops": (130, 250, 440), "caret": (560, 380, 440)}.items():
+    for name, (x, y, w) in {"loops": (110, 190, 470), "caret": (560, 380, 440)}.items():
         icon.crop((x, y, x + w, y + w)).resize((880, 880), Image.LANCZOS).save(out_dir / f"flow-detail-{name}.png")
 
     if "--install" in sys.argv:
