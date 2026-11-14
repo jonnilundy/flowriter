@@ -92,7 +92,7 @@ final class StylerTests: XCTestCase {
         XCTAssertEqual(MarkdownStyler.style("---", state: .frontmatter, isFirstLine: false).endState, .normal)
     }
 
-    func testBoldIsRoseItalicIsLanternAndHeadingsStayBone() {
+    func testBoldIsLanternItalicIsRoseAndHeadingsStayBone() {
         let theme = Theme()
         XCTAssertEqual(theme.color(for: [.bold]), Theme.strong)
         XCTAssertEqual(theme.color(for: [.italic]), Theme.emphasis)

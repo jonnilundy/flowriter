@@ -127,10 +127,10 @@ public struct Theme {
     public static let mark = dynamic(hex(0x978D7F), hex(0x787166))
     /// Candle flame: heading hashes, list markers, the caret, the selection.
     public static let accent = dynamic(hex(0xA35026), hex(0xED954D))
-    /// Lantern: italic text.
-    public static let emphasis = dynamic(hex(0x7F5816), hex(0xEDCA70))
-    /// Rose: bold text.
-    public static let strong = dynamic(hex(0x85303F), hex(0xE9A6B0))
+    /// Rose: italic text.
+    public static let emphasis = dynamic(hex(0x85303F), hex(0xE9A6B0))
+    /// Lantern: bold text.
+    public static let strong = dynamic(hex(0x7F5816), hex(0xEDCA70))
     /// Moss: code.
     public static let codeText = dynamic(hex(0x4B632A), hex(0xBECFA2))
     /// Moonlight: links.
