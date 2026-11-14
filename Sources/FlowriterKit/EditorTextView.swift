@@ -334,6 +334,14 @@ public final class EditorTextView: NSTextView {
     @objc public func toggleBold(_ sender: Any?) { toggle("**") }
     @objc public func toggleItalic(_ sender: Any?) { toggle("*") }
 
+    @objc public func moveLineUp(_ sender: Any?) { moveLines(up: true) }
+    @objc public func moveLineDown(_ sender: Any?) { moveLines(up: false) }
+
+    private func moveLines(up: Bool) {
+        guard let s = plainSelection, let edit = MoveLines.move(in: storage.string as NSString, selection: s, up: up) else { return }
+        apply(edit)
+    }
+
     private func toggle(_ marker: String) {
         guard let s = plainSelection else { return }
         apply(Formatting.toggle(marker, in: storage.string as NSString, selection: s))

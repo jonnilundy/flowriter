@@ -47,6 +47,7 @@ Undo, input methods, spell check and find are the system's.
 | Option-O | Show or hide the notes drawer |
 | Shift-Option-O | Switch between the page and the notes |
 | Shift-Command-M | Move the selection to the notes |
+| Control-Command-Up, Control-Command-Down | Move the line (or the selected lines) up or down |
 | Shift-Command-F | Focus Mode |
 | Command-B, Command-I | Bold, italic: wrap the selection in the Markdown marks |
 | Command-Plus, Command-Minus, Command-0 | Bigger text, smaller text, actual size |
