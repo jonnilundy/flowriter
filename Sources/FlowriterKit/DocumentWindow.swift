@@ -252,7 +252,7 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
     }
 
     private func installTitlebarItems(in window: NSWindow) {
-        countLabel.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+        countLabel.font = Theme.mono(11, .regular)
         countLabel.textColor = Theme.mark
         countLabel.alignment = .right
         notesButton.isBordered = false
@@ -314,10 +314,10 @@ public final class DocumentWindowController: NSWindowController, NSWindowDelegat
         let name = doc?.displayName ?? window?.title ?? ""
         let unsaved = doc.map { $0.fileURL == nil ? !(editor.string.isEmpty && $0.notes.isEmpty) : $0.hasUnautosavedChanges } ?? false
         let title = NSMutableAttributedString(string: name, attributes: [
-            .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium), .foregroundColor: Theme.secondary])
+            .font: Theme.mono(12, .medium), .foregroundColor: Theme.secondary])
         if unsaved {
             title.append(NSAttributedString(string: "  \u{2022}", attributes: [
-                .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium), .foregroundColor: Theme.accent]))
+                .font: Theme.mono(12, .medium), .foregroundColor: Theme.accent]))
         }
         titleLabel.attributedStringValue = title
         titleLabel.toolTip = doc?.fileURL.map { Locations.abbreviated($0.path) + "\nClick to rename or move." } ?? "Not in a file yet. Click to save."

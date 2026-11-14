@@ -22,11 +22,10 @@ public struct Theme {
 
     public init(fontSize: CGFloat = Theme.defaultFontSize) {
         self.fontSize = fontSize
-        regular = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
-        bold = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .semibold)
-        let manager = NSFontManager.shared
-        let slanted = manager.convert(regular, toHaveTrait: .italicFontMask)
-        let boldSlanted = manager.convert(bold, toHaveTrait: .italicFontMask)
+        regular = Theme.mono(fontSize, .regular)
+        bold = Theme.mono(fontSize, .semibold)
+        let slanted = Theme.slanted(regular)
+        let boldSlanted = Theme.slanted(bold)
         let width = ("0" as NSString).size(withAttributes: [.font: regular]).width
         func sameWidth(_ f: NSFont) -> Bool { abs(("0" as NSString).size(withAttributes: [.font: f]).width - width) < 0.01 }
         italic = sameWidth(slanted) ? slanted : regular
@@ -36,6 +35,41 @@ public struct Theme {
         let box = regular.ascender - regular.descender
         baseline = ((lineHeight - box) / 2 + regular.ascender).rounded()
     }
+
+    /// Paper Mono (Resources/Fonts, SIL OFL 1.1) at a size and weight, for the page and every
+    /// piece of the app's own chrome. Falls back to the system monospaced font when the files
+    /// are missing.
+    public static func mono(_ size: CGFloat, _ weight: NSFont.Weight) -> NSFont {
+        let face = weight >= .semibold ? "SemiBold" : weight >= .medium ? "Medium" : "Regular"
+        if fontsRegistered, let font = NSFont(name: "PaperMono-\(face)", size: size) { return font }
+        return NSFont.monospacedSystemFont(ofSize: size, weight: weight)
+    }
+
+    /// Paper Mono has no italic. A sheared copy of the upright face slants without changing
+    /// the advance, so the line grid holds.
+    static func slanted(_ font: NSFont) -> NSFont {
+        let real = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask)
+        if real.fontDescriptor.symbolicTraits.contains(.italic) { return real }
+        let size = font.pointSize
+        let shear = AffineTransform(m11: size, m12: 0, m21: 0.2 * size, m22: size, tX: 0, tY: 0)
+        return NSFont(descriptor: font.fontDescriptor, textTransform: shear) ?? font
+    }
+
+    /// The bundled fonts are registered for this process only. The .app carries them in
+    /// Contents/Resources/Fonts (scripts/bundle.sh); `swift run`, the tests and the drive tool
+    /// read them from the repo's Resources/Fonts.
+    private static let fontsRegistered: Bool = {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("../../Resources/Fonts").standardized
+        let dirs = [Bundle.main.resourceURL?.appendingPathComponent("Fonts"), repo].compactMap { $0 }
+        guard let dir = dirs.first(where: { FileManager.default.fileExists(atPath: $0.appendingPathComponent("PaperMono-Regular.ttf").path) }),
+              let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+        else { return false }
+        for url in files where url.pathExtension == "ttf" {
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        }
+        return NSFont(name: "PaperMono-Regular", size: 12) != nil
+    }()
 
     public static var stored: Theme {
         let size = UserDefaults.standard.double(forKey: fontSizeKey)

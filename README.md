@@ -106,3 +106,6 @@ Altimor, itself a derivative of
 [writer-computer](https://github.com/joelbqz/writer-computer) by Joel
 ([@joelbqz](https://github.com/joelbqz)) and contributors, both GPL-3.0. The current app is
 a separate codebase and contains no code from either project. It bundles no third-party code.
+
+The text face is [Paper Mono](https://github.com/paper-design/paper-mono) by Paper, under the
+SIL Open Font License 1.1. The font files and their license are in `Resources/Fonts`.

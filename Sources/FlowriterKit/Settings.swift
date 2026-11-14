@@ -41,7 +41,7 @@ final class ChoiceButton: NSButton {
         self.target = target
         self.action = action
         isBordered = false
-        font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        font = Theme.mono(12, .regular)
         let text = (title as NSString).size(withAttributes: [.font: font!])
         frame.size = NSSize(width: width ?? (text.width + 24).rounded(.up), height: 26)
         setAccessibilityLabel(title)
@@ -57,7 +57,7 @@ final class ChoiceButton: NSButton {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineBreakMode = .byTruncatingMiddle
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedSystemFont(ofSize: 12, weight: isOn ? .semibold : .regular),
+            .font: Theme.mono(12, isOn ? .semibold : .regular),
             .foregroundColor: base.withAlphaComponent(pressed ? 0.55 : 1), .paragraphStyle: paragraph]
         let size = (title as NSString).size(withAttributes: attributes)
         var x = max(0, ((bounds.width - size.width) / 2).rounded())
@@ -138,7 +138,7 @@ public final class SettingsWindowController: NSWindowController {
 
     private func label(_ text: String, dim: Bool = true) -> NSTextField {
         let l = NSTextField(labelWithString: text)
-        l.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        l.font = Theme.mono(12, .regular)
         l.textColor = dim ? Theme.secondary : Theme.text
         l.sizeToFit()
         return l
@@ -197,7 +197,7 @@ public final class SettingsWindowController: NSWindowController {
         let plus = ChoiceButton("+", id: "\(id)-bigger", width: 30, target: self, action: bigger)
         minus.isOn = true; plus.isOn = true
         minus.setAccessibilityLabel("Smaller"); plus.setAccessibilityLabel("Bigger")
-        value.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        value.font = Theme.mono(12, .regular)
         value.textColor = Theme.text
         value.alignment = .center
         value.frame.size = NSSize(width: 56, height: 16)

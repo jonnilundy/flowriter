@@ -83,6 +83,13 @@ final class EditorViewTests: XCTestCase {
 
     // MARK: the line grid
 
+    func testTheTextFaceIsPaperMono() {
+        let t = Theme()
+        XCTAssertEqual(t.regular.fontName, "PaperMono-Regular")
+        XCTAssertEqual(t.bold.fontName, "PaperMono-SemiBold")
+        XCTAssertNotEqual(t.italic, t.regular, "italic must slant")
+    }
+
     func testEveryStyleHasTheSameAdvance() {
         let t = Theme()
         for f in [t.regular, t.bold, t.italic, t.boldItalic] {

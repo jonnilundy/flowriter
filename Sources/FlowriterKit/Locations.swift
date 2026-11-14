@@ -123,7 +123,7 @@ public final class NamePanel: NSPanel, NSTextFieldDelegate {
         super.init(contentRect: NSRect(x: 0, y: 0, width: width, height: height), styleMask: [.titled], backing: .buffered, defer: true)
         backgroundColor = Theme.background
         let content = SheetBackground(frame: NSRect(x: 0, y: 0, width: width, height: height))
-        let mono = { (size: CGFloat, weight: NSFont.Weight) in NSFont.monospacedSystemFont(ofSize: size, weight: weight) }
+        let mono = Theme.mono
 
         let title = NSTextField(labelWithString: mode == .rename ? "Rename note" : "Save note")
         title.font = mono(13, .semibold)
@@ -322,7 +322,7 @@ final class SheetButton: NSButton {
         self.target = target
         self.action = action
         isBordered = false
-        font = NSFont.monospacedSystemFont(ofSize: 12, weight: primary ? .semibold : .regular)
+        font = Theme.mono(12, primary ? .semibold : .regular)
         let text = (title as NSString).size(withAttributes: [.font: font!])
         frame.size = NSSize(width: (text.width + 2 * Self.pad).rounded(.up), height: 28)
     }
