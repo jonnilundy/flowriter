@@ -39,6 +39,47 @@ final class PrintTests: XCTestCase {
         XCTAssertEqual(PrintText.pages("\n---\n", breakAtRules: true), [""])
     }
 
+    // MARK: formatting
+
+    private func font(_ text: NSAttributedString, at needle: String) -> NSFont? {
+        let r = (text.string as NSString).range(of: needle)
+        return text.attribute(.font, at: r.location, effectiveRange: nil) as? NSFont
+    }
+
+    func testBoldItalicAndHeadingsPrintInTheirFaces() {
+        let options = PrintOptions(defaults: defaults)
+        options.fontFamily = "Times New Roman"
+        let faces = options.faces
+        let text = PrintText.paged("# Title\n\nplain **strong** and *soft* and ***both***", breakAtRules: false, faces: faces)
+        XCTAssertEqual(text.string, "# Title\n\nplain **strong** and *soft* and ***both***")
+        XCTAssertTrue(font(text, at: "Title")!.fontDescriptor.symbolicTraits.contains(.bold))
+        XCTAssertTrue(font(text, at: "#")!.fontDescriptor.symbolicTraits.contains(.bold))
+        XCTAssertFalse(font(text, at: "plain")!.fontDescriptor.symbolicTraits.contains(.bold))
+        XCTAssertTrue(font(text, at: "strong")!.fontDescriptor.symbolicTraits.contains(.bold))
+        XCTAssertTrue(font(text, at: "soft")!.fontDescriptor.symbolicTraits.contains(.italic))
+        XCTAssertFalse(font(text, at: "soft")!.fontDescriptor.symbolicTraits.contains(.bold))
+        XCTAssertTrue(font(text, at: "both")!.fontDescriptor.symbolicTraits.contains([.bold, .italic]))
+        XCTAssertEqual(text.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? NSColor, .black)
+    }
+
+    func testFormattingFollowsEachPageAndSkipsCode() {
+        let options = PrintOptions(defaults: defaults)
+        options.fontFamily = "Times New Roman"
+        let text = PrintText.paged("a\n---\n```\n**not bold**\n```\n**bold**", breakAtRules: true, faces: options.faces)
+        XCTAssertEqual(text.string, "a\u{0C}```\n**not bold**\n```\n**bold**")
+        XCTAssertFalse(font(text, at: "not bold")!.fontDescriptor.symbolicTraits.contains(.bold))
+        let last = (text.string as NSString).range(of: "bold", options: .backwards).location
+        let lastFont = text.attribute(.font, at: last, effectiveRange: nil) as? NSFont
+        XCTAssertTrue(lastFont!.fontDescriptor.symbolicTraits.contains(.bold))
+    }
+
+    func testPaperMonoBoldIsSemiBoldAndItalicKeepsTheWidth() {
+        let faces = PrintOptions(defaults: defaults).faces
+        XCTAssertEqual(faces.bold.fontName, Theme.mono(PrintOptions.defaultFontSize, .semibold).fontName)
+        let w = { (f: NSFont) in ("0" as NSString).size(withAttributes: [.font: f]).width }
+        XCTAssertEqual(w(faces.italic), w(faces.regular), accuracy: 0.01)
+    }
+
     // MARK: options
 
     func testOptionsDefaultToPaperMonoAndNoBreaks() {

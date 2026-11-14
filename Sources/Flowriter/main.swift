@@ -23,6 +23,17 @@ MainActor.assumeIsolated {
         try? png.write(to: URL(fileURLWithPath: out))
         exit(0)
     }
+    if let file = option("--print-pdf") {
+        // --print-pdf <file.md> --out <pdf> [--page-breaks] [--print-font Family] [--print-size N]: File > Print to a PDF, US Letter
+        _ = NSApplication.shared
+        let options = PrintOptions(defaults: UserDefaults(suiteName: "FlowriterPrintPDF") ?? .standard)
+        options.pageBreaks = arguments.contains("--page-breaks")
+        options.fontFamily = option("--print-font")
+        options.fontSize = option("--print-size").flatMap(Double.init).map { CGFloat($0) } ?? PrintOptions.defaultFontSize
+        let text = (try? String(contentsOfFile: file, encoding: .utf8)) ?? ""
+        guard let out = option("--out"), PrintView.writePDF(text: text, options: options, to: URL(fileURLWithPath: out)) else { exit(1) }
+        exit(0)
+    }
     if let file = option("--perf") {
         // --perf <file.md>: time per typed letter in the middle of a document, layout and drawing included
         _ = NSApplication.shared

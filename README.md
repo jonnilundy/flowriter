@@ -32,7 +32,8 @@ except Check for Updates, which runs only when you choose it.
 - **Focus Mode** keeps the caret line on the vertical centre of the window.
 - **Files.** A note saves in place soon after typing stops. A change another program makes to
   the file is loaded when there are no edits here, and is never overwritten when there are.
-- **Print** (Command-P). The text prints as you typed it, in black. The print panel's
+- **Print** (Command-P). The text prints as you typed it, in black, with headings and
+  bold text in the bold face and italic text in the italic face. The print panel's
   Flowriter section picks the font and its size, and can start a new page at each `---` rule
   (the rule itself is not printed; front matter and code blocks never break). The choices are
   kept for the next print.

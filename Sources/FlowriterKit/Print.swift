@@ -44,6 +44,38 @@ public final class PrintOptions: NSObject {
            let font = NSFontManager.shared.font(withFamily: family, traits: [], weight: 5, size: fontSize) { return font }
         return Theme.mono(fontSize, .regular)
     }
+
+    /// The faces for bold and italic text. A family with no bold face prints bold upright in
+    /// its regular face. A family with no italic face gets a slanted copy of the upright face.
+    public var faces: PrintFaces {
+        let regular = font
+        let bold: NSFont
+        if fontFamily == nil || regular.familyName == Theme.mono(fontSize, .regular).familyName {
+            bold = Theme.mono(fontSize, .semibold)
+        } else {
+            bold = NSFontManager.shared.convert(regular, toHaveTrait: .boldFontMask)
+        }
+        func italic(_ f: NSFont) -> NSFont {
+            let real = NSFontManager.shared.convert(f, toHaveTrait: .italicFontMask)
+            return real.fontDescriptor.symbolicTraits.contains(.italic) ? real : Theme.slanted(f)
+        }
+        return PrintFaces(regular: regular, bold: bold, italic: italic(regular), boldItalic: italic(bold))
+    }
+}
+
+public struct PrintFaces {
+    public let regular, bold, italic, boldItalic: NSFont
+
+    func face(for flags: StyleFlags) -> NSFont {
+        let isBold = flags.contains(.bold) || flags.contains(.heading)
+        let isItalic = flags.contains(.italic)
+        switch (isBold, isItalic) {
+        case (true, true): return boldItalic
+        case (true, false): return bold
+        case (false, true): return italic
+        case (false, false): return regular
+        }
+    }
 }
 
 /// The text as it goes to paper.
@@ -72,10 +104,34 @@ public enum PrintText {
         return kept.isEmpty ? [""] : kept
     }
 
-    /// The text with a form feed between pages: NSLayoutManager moves to the next text container
-    /// (page) at a form feed.
-    public static func paged(_ text: String, breakAtRules: Bool) -> String {
-        pages(text, breakAtRules: breakAtRules).joined(separator: "\u{0C}")
+    /// The pages in black, bold and italic where the Markdown says so, with a form feed between
+    /// pages: NSLayoutManager moves to the next text container (page) at a form feed.
+    public static func paged(_ text: String, breakAtRules: Bool, faces: PrintFaces,
+                             paragraph: NSParagraphStyle = .default) -> NSAttributedString {
+        let result = NSMutableAttributedString()
+        let attributes: [NSAttributedString.Key: Any] = [.font: faces.regular, .foregroundColor: NSColor.black, .paragraphStyle: paragraph]
+        for (index, page) in pages(text, breakAtRules: breakAtRules).enumerated() {
+            if index > 0 { result.append(NSAttributedString(string: "\u{0C}", attributes: attributes)) }
+            let start = result.length
+            result.append(NSAttributedString(string: page, attributes: attributes))
+            // a page after a break starts in normal state: breaks are only made outside fences and front matter
+            var state = BlockState.normal
+            var offset = start
+            for (i, line) in page.components(separatedBy: "\n").enumerated() {
+                let styled = MarkdownStyler.style(line, state: state, isFirstLine: index == 0 && i == 0)
+                var k = 0
+                while k < styled.flags.count {
+                    let face = faces.face(for: styled.flags[k])
+                    var end = k + 1
+                    while end < styled.flags.count, faces.face(for: styled.flags[end]) === face { end += 1 }
+                    if face !== faces.regular { result.addAttribute(.font, value: face, range: NSRange(location: offset + k, length: end - k)) }
+                    k = end
+                }
+                state = styled.endState
+                offset += (line as NSString).length + 1
+            }
+        }
+        return result
     }
 
     static func isDashRule(_ line: String) -> Bool {
@@ -129,8 +185,7 @@ public final class PrintView: NSView {
         subviews.forEach { $0.removeFromSuperview() }
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineHeightMultiple = 1.25
-        storage = NSTextStorage(string: PrintText.paged(text, breakAtRules: options.pageBreaks),
-                                attributes: [.font: options.font, .foregroundColor: NSColor.black, .paragraphStyle: paragraph])
+        storage = NSTextStorage(attributedString: PrintText.paged(text, breakAtRules: options.pageBreaks, faces: options.faces, paragraph: paragraph))
         let layout = NSLayoutManager()
         storage.addLayoutManager(layout)
 
@@ -151,6 +206,19 @@ public final class PrintView: NSView {
         } while NSMaxRange(layout.glyphRange(for: layout.textContainers.last!)) < layout.numberOfGlyphs && page < 5000
         pageCount = page
         setFrameSize(NSSize(width: pageSize.width, height: CGFloat(page) * pageSize.height))
+    }
+
+    /// Print `text` to a PDF file without a panel (the `--print-pdf` command line option).
+    public static func writePDF(text: String, options: PrintOptions, to url: URL) -> Bool {
+        let info = NSPrintInfo()
+        info.paperSize = NSSize(width: 612, height: 792)
+        info.topMargin = 72; info.bottomMargin = 72; info.leftMargin = 72; info.rightMargin = 72
+        info.jobDisposition = .save
+        info.dictionary()[NSPrintInfo.AttributeKey.jobSavingURL] = url
+        let operation = NSPrintOperation(view: PrintView(text: text, options: options), printInfo: info)
+        operation.showsPrintPanel = false
+        operation.showsProgressPanel = false
+        return operation.run()
     }
 
     public override func knowsPageRange(_ range: NSRangePointer) -> Bool {
@@ -207,9 +275,9 @@ final class PrintAccessory: NSViewController, NSPrintPanelAccessorizing {
         breaks.action = #selector(toggleBreaks)
         breaks.identifier = NSUserInterfaceItemIdentifier("print-page-breaks")
 
-        fontLabel.frame = NSRect(x: 20, y: 62, width: 60, height: 18)
+        fontLabel.frame = NSRect(x: 20, y: 59, width: 60, height: 18)
         family.frame = NSRect(x: 84, y: 56, width: 200, height: 26)
-        sizeLabel.frame = NSRect(x: 296, y: 62, width: 40, height: 18)
+        sizeLabel.frame = NSRect(x: 296, y: 59, width: 40, height: 18)
         size.frame = NSRect(x: 336, y: 56, width: 76, height: 26)
         breaks.frame = NSRect(x: 82, y: 20, width: 320, height: 20)
         for label in [fontLabel, sizeLabel] { label.alignment = .right }
