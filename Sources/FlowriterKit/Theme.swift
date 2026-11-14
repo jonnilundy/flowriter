@@ -119,7 +119,7 @@ public struct Theme {
     public static let hairline = dynamic(hex(0x302A24, 0.10), hex(0xD8D0C2, 0.09))
     /// Bone: running text.
     public static let text = dynamic(hex(0x302A24), hex(0xD8D0C2))
-    /// Headings and bold: the same bone, brighter.
+    /// Headings: the same bone, brighter.
     public static let heading = dynamic(hex(0x1D1915), hex(0xEEEAE0))
     /// Dust: quotes, finished tasks, struck text, the status in the top bar.
     public static let secondary = dynamic(hex(0x6D6359), hex(0xABA398))
@@ -127,8 +127,10 @@ public struct Theme {
     public static let mark = dynamic(hex(0x978D7F), hex(0x787166))
     /// Candle flame: heading hashes, list markers, the caret, the selection.
     public static let accent = dynamic(hex(0xA35026), hex(0xED954D))
-    /// Lantern: italic text.
-    public static let emphasis = dynamic(hex(0x7F5816), hex(0xEDCA70))
+    /// Rose: italic text.
+    public static let emphasis = dynamic(hex(0x85303F), hex(0xE9A6B0))
+    /// Lantern: bold text.
+    public static let strong = dynamic(hex(0x7F5816), hex(0xEDCA70))
     /// Moss: code.
     public static let codeText = dynamic(hex(0x4B632A), hex(0xBECFA2))
     /// Moonlight: links.
@@ -144,7 +146,7 @@ public struct Theme {
         if flags.contains(.done) || flags.contains(.strike) || flags.contains(.quote) { return Theme.secondary }
         if flags.contains(.heading) { return Theme.heading }
         if flags.contains(.italic) { return Theme.emphasis }
-        if flags.contains(.bold) { return Theme.heading }
+        if flags.contains(.bold) { return Theme.strong }
         return Theme.text
     }
 }

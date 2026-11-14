@@ -110,6 +110,10 @@ public final class Document: NSDocument {
 
     public override func writableTypes(for saveOperation: NSDocument.SaveOperationType) -> [String] { [Document.markdownType] }
     public override func fileNameExtension(forType typeName: String, saveOperation: NSDocument.SaveOperationType) -> String? { "md" }
+    public override func printOperation(withSettings printSettings: [NSPrintInfo.AttributeKey: Any]) throws -> NSPrintOperation {
+        makePrintOperation(settings: printSettings)
+    }
+
     public override func prepareSavePanel(_ savePanel: NSSavePanel) -> Bool {
         savePanel.allowsOtherFileTypes = true
         savePanel.isExtensionHidden = false

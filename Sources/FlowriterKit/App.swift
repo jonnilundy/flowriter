@@ -172,6 +172,9 @@ enum MainMenu {
         item(file, "Duplicate", #selector(NSDocument.duplicate(_:)), "s", [.command, .shift])
         file.addItem(withTitle: "Rename or Move…", action: #selector(DocumentWindowController.editName(_:)), keyEquivalent: "")
         file.addItem(withTitle: "Revert To Saved", action: #selector(NSDocument.revertToSaved(_:)), keyEquivalent: "")
+        file.addItem(.separator())
+        item(file, "Page Setup\u{2026}", #selector(NSDocument.runPageLayout(_:)), "p", [.command, .shift])
+        file.addItem(withTitle: "Print\u{2026}", action: #selector(NSDocument.printDocument(_:)), keyEquivalent: "p")
 
         let edit = submenu(main, "Edit")
         edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
