@@ -91,4 +91,13 @@ final class StylerTests: XCTestCase {
         XCTAssertEqual(flags("title: x", "title: x", state: .frontmatter), [.meta])
         XCTAssertEqual(MarkdownStyler.style("---", state: .frontmatter, isFirstLine: false).endState, .normal)
     }
+
+    func testBoldIsRoseItalicIsLanternAndHeadingsStayBone() {
+        let theme = Theme()
+        XCTAssertEqual(theme.color(for: [.bold]), Theme.strong)
+        XCTAssertEqual(theme.color(for: [.italic]), Theme.emphasis)
+        XCTAssertEqual(theme.color(for: [.bold, .italic]), Theme.emphasis)
+        XCTAssertEqual(theme.color(for: [.heading, .bold]), Theme.heading)
+        XCTAssertEqual(theme.color(for: [.mark, .bold]), Theme.mark)
+    }
 }
