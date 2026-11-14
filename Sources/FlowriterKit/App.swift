@@ -173,6 +173,8 @@ enum MainMenu {
         edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         edit.addItem(.separator())
         item(edit, "Move Selection to Notes", #selector(DocumentWindowController.moveSelectionAcross(_:)), "m", [.command, .shift])
+        item(edit, "Move Line Up", #selector(EditorTextView.moveLineUp(_:)), String(UnicodeScalar(NSUpArrowFunctionKey)!), [.command, .control])
+        item(edit, "Move Line Down", #selector(EditorTextView.moveLineDown(_:)), String(UnicodeScalar(NSDownArrowFunctionKey)!), [.command, .control])
         edit.addItem(.separator())
         let find = NSMenu(title: "Find")
         finder(find, "Find…", .showFindInterface, "f", [.command])

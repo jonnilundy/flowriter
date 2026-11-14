@@ -1,0 +1,34 @@
+# Control-Command-Up and Down move lines, on the page and in the notes, and Undo puts them back.
+size 1000 720
+type one
+key Return
+type two
+key Return
+type three
+key Cmd-Ctrl-Up
+expect page one\nthree\ntwo
+key Cmd-Ctrl-Up
+expect page three\none\ntwo
+key Cmd-Ctrl-Up
+expect page three\none\ntwo
+type !
+expect page three!\none\ntwo
+key Cmd-z
+expect page three\none\ntwo
+key Cmd-z
+expect page one\nthree\ntwo
+key Cmd-z
+expect page one\ntwo\nthree
+select page 0 7
+key Cmd-Ctrl-Down
+expect page three\none\ntwo
+shot moved-down
+key Opt-o
+key Opt-Shift-o
+type parked idea
+key Return
+type first
+key Cmd-Ctrl-Up
+expect notes first\nparked idea
+expect page three\none\ntwo
+shot notes-moved
