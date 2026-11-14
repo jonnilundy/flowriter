@@ -38,6 +38,8 @@ else
   cp "$ICON_FALLBACK" "$APP/Contents/Resources/AppIcon.icns"
 fi
 
+cp -R "$ROOT/Resources/Fonts" "$APP/Contents/Resources/Fonts"
+
 SHORT_VERSION=$(tr -d ' \n' < "$ROOT/VERSION")
 BUILD_NUMBER=${BUILD_NUMBER:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}
 cat > "$APP/Contents/Info.plist" <<PLIST
