@@ -49,10 +49,12 @@ public struct Draft: Hashable, Sendable {
 /// Unsaved notes are kept here as they are typed, so they come back after the app quits (or
 /// crashes). One plain file per note, plus one for its notes drawer.
 public enum Drafts {
-    /// `~/Library/Application Support/<app>/Drafts`. A build that is not the installed app (a
-    /// command line run, a test tool) gets a folder of its own.
+    /// `~/Library/Application Support/<app>/Drafts`. A build that is not the installed app gets a
+    /// folder of its own: an app under another bundle id uses that id, a test tool its process
+    /// name, and a command line build of the app "Flowriter-dev" (its process is also called Flowriter).
     nonisolated(unsafe) public static var directory: URL = {
-        let app = Bundle.main.bundleIdentifier == "app.flowriter.Flowriter" ? "Flowriter" : ProcessInfo.processInfo.processName
+        let id = Bundle.main.bundleIdentifier, name = ProcessInfo.processInfo.processName
+        let app = id == "app.flowriter.Flowriter" ? "Flowriter" : id ?? (name == "Flowriter" ? "Flowriter-dev" : name)
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
         return base.appendingPathComponent(app).appendingPathComponent("Drafts")

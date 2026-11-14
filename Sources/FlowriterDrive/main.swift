@@ -34,7 +34,8 @@ import FlowriterKit
 //   press <id>                  click the Settings window's button with this identifier
 //   expect-default <key> <v>    fail unless the preference holds this value ("none": not set)
 //   expect-appearance dark|light  fail unless the note's window has this appearance
-// A shot also saves <name>-sheet.png for an open sheet and <name>-settings.png for the Settings window.
+// A shot also saves <name>-sheet.png for an open sheet, <name>-settings.png for the Settings window
+// and <name>-update.png for the Software Update window.
 
 func argument(_ name: String) -> String? {
     CommandLine.arguments.first { $0.hasPrefix("--\(name)=") }.map { String($0.dropFirst(name.count + 3)) }
@@ -369,6 +370,7 @@ final class Driver {
         // a sheet is its own window: it gets its own picture
         if let sheet = window.attachedSheet { capture(name + "-sheet", sheet) }
         if let settings = SettingsWindowController.shared.window, settings.isVisible { capture(name + "-settings", settings) }
+        if let update = UpdateWindowController.shared.window, update.isVisible { capture(name + "-update", update) }
         capture(name, window)
     }
 

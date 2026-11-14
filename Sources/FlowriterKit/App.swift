@@ -75,11 +75,20 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     public func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { launchFiles.isEmpty || !documents.documents.isEmpty }
 
+    /// SIGTERM (scripts/install.sh, the updater's helper, logout) quits the normal way, so
+    /// unsaved notes are kept as drafts. Without this the process just ends.
+    private var terminateSource: DispatchSourceSignal?
+
     public func applicationDidFinishLaunching(_ notification: Notification) {
+        signal(SIGTERM, SIG_IGN)
+        terminateSource = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+        terminateSource?.setEventHandler { NSApp.terminate(nil) }
+        terminateSource?.resume()
         for url in launchFiles { documents.openDocument(withContentsOf: url, display: true) { _, _, _ in } }
         // Launched to open a file: only the drafts come back beside it. Launched bare: the files
         // that were open come back too. (This runs before applicationOpenUntitledFile.)
         restoreSession(files: launchFiles.isEmpty && !openedFiles)
+        if UpdateWindowController.installRightAway { UpdateWindowController.shared.checkForUpdates(nil) }
         if Self.offScreen, !Self.smoke { return }
         guard Self.smoke else { NSApp.activate(ignoringOtherApps: true); return }
         // --smoke: a real launch that takes no focus, reports what came up, and quits
@@ -137,6 +146,7 @@ enum MainMenu {
 
         let app = submenu(main, name)
         app.addItem(withTitle: "About \(name)", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        app.addItem(withTitle: "Check for Updates…", action: #selector(UpdateWindowController.checkForUpdates(_:)), keyEquivalent: "").target = UpdateWindowController.shared
         app.addItem(.separator())
         app.addItem(withTitle: "Settings\u{2026}", action: #selector(SettingsWindowController.show(_:)), keyEquivalent: ",").target = SettingsWindowController.shared
         app.addItem(.separator())

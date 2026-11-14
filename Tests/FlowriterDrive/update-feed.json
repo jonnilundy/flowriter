@@ -1,0 +1,6 @@
+{
+  "tag_name": "v99.0.0",
+  "html_url": "https://github.com/jonnilundy/flowriter/releases/tag/v99.0.0",
+  "body": "Flowriter 99.0.0 is a test release for the update window.\n\n- The first change, long enough to wrap onto a second line inside the notes box of the window\n- The second change\n\n**Not notarized yet: on first launch right-click the app → Open.**\n\nDownload `Flowriter-99.0.0.zip`, unzip, and move **Flowriter.app** to /Applications.",
+  "assets": [{"name": "Flowriter-99.0.0.zip", "browser_download_url": "https://example.invalid/Flowriter-99.0.0.zip"}]
+}
