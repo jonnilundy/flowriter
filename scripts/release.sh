@@ -11,6 +11,8 @@
 #    NOTARY_PROFILE is set too, notarizes + staples before zipping
 # 3. zips it (ditto -c -k --keepParent) as Flowriter-X.Y.Z.zip
 # 4. creates the GitHub release vX.Y.Z on $GH_REPO with the zip attached
+# 5. installs the released app as /Applications/Flowriter.app (scripts/install.sh: a running copy
+#    quits the normal way and reopens). INSTALL=0 skips this.
 #
 # Env: DEVELOPER_ID="Developer ID Application: Name (TEAMID)", NOTARY_PROFILE=<notarytool keychain profile>,
 #      NOTES_FILE=<markdown notes> (default: release-notes/X.Y.Z.md if present),
@@ -81,3 +83,6 @@ fi
 # 4. GitHub release
 gh release create "$TAG" "$ZIP" --repo "$GH_REPO" --title "Flowriter $VERSION" --notes-file "$GH_NOTES"
 echo "released $TAG (build $BUILD): https://github.com/$GH_REPO/releases/tag/$TAG"
+
+# 5. this Mac gets the release too
+if [[ "${INSTALL:-1}" == 1 ]]; then SRC="$APP" "$ROOT/scripts/install.sh"; fi

@@ -3,7 +3,8 @@
 A quiet, native macOS writing app for Markdown, in the spirit of a terminal or a code
 editor. One note per window, a centred column of plain text, and a notes drawer beside it.
 
-Flowriter is Swift and AppKit. It works offline: no account, no network calls, no AI.
+Flowriter is Swift and AppKit. It works offline: no account, no AI, and no network calls
+except Check for Updates, which runs only when you choose it.
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/media/flowriter-light.png">
@@ -34,6 +35,10 @@ Flowriter is Swift and AppKit. It works offline: no account, no network calls, n
 - **Light and dark.** The colours follow the system appearance, or stay light or dark.
 - **Settings** (Command-Comma). One window for the appearance, the text sizes, Focus Mode and
   the folders new notes go to.
+- **Updates.** Flowriter > Check for Updates reads the latest GitHub release and shows what
+  is new. Install and Relaunch downloads it, checks that it is the same app, the version the
+  release names and intact (its code signature), quits the normal way (unsaved notes are kept
+  as drafts) and opens the new version. It never checks on its own.
 
 Undo, input methods, spell check and find are the system's.
 
@@ -62,20 +67,25 @@ Requires macOS 14+ and Swift 6 (Xcode 16 or a matching toolchain).
 swift run Flowriter [file.md]        # run it (unbundled)
 scripts/bundle.sh                    # release build -> build/Flowriter.app
 INSTALL=1 scripts/bundle.sh          # ...and install it as /Applications/Flowriter.app
+scripts/install.sh                   # install build/Flowriter.app (SRC= for another build)
 ```
+
+`scripts/install.sh` asks a running copy to quit the normal way, so unsaved notes come back,
+and opens it again afterwards. `scripts/release.sh` installs every release it publishes.
 
 Set `THROTTLE` to a wrapper command (for example `nice -n 10`) to lower the build's
 priority. The app is ad-hoc signed unless `DEVELOPER_ID` is set (`scripts/sign.sh`). The
 bundle id is `app.flowriter.Flowriter`; set `BUNDLE_ID` to build under another one.
 
-The app does not update itself. New versions are on the releases page.
+A running app updates itself from Flowriter > Check for Updates. From a script,
+`Flowriter.app/Contents/MacOS/Flowriter --update-now` does the same without asking.
 
 ## Layout
 
 | Path | What |
 |---|---|
 | `Sources/FlowriterKit` | The app: Markdown styling, list editing rules, the text view, the document, the window with its notes drawer, drafts and locations. |
-| `Sources/Flowriter` | The executable: starts the app, and renders one picture with `--snapshot`. |
+| `Sources/Flowriter` | The executable: starts the app, and renders one picture with `--snapshot`. `--offscreen` runs the app with its windows off every screen; `--update-now` installs a newer release at launch. |
 | `Sources/FlowriterDrive` | A driver that runs the real app off screen from a script of key and mouse steps. |
 | `Tests/FlowriterKitTests` | Unit tests (XCTest). |
 | `Tests/FlowriterDrive` | The scripted sessions for the driver. |

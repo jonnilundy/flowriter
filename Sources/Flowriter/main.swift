@@ -46,5 +46,9 @@ MainActor.assumeIsolated {
                      sorted[times.count / 2], sorted[times.count * 95 / 100], sorted.last ?? 0))
         exit(0)
     }
+    // --offscreen: the normal app with every window parked off screen and no focus taken (scripted runs)
+    AppDelegate.offScreen = arguments.contains("--offscreen")
+    // --update-now: check for a newer release at launch and install it without asking (prints each step)
+    UpdateWindowController.installRightAway = arguments.contains("--update-now")
     AppDelegate.run(smoke: arguments.contains("--smoke"))
 }

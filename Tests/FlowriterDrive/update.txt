@@ -1,0 +1,12 @@
+# Flowriter > Check for Updates against a local feed with a newer version. This build is not an
+# app bundle, so the window offers the download page in place of Install and Relaunch.
+default FlowriterUpdateFeed Tests/FlowriterDrive/update-feed.json
+size 900 600
+type A note
+menu Flowriter > Check for Updates…
+wait 1
+shot available
+default FlowriterUpdateFeed Tests/FlowriterDrive/no-such-feed.json
+menu Flowriter > Check for Updates…
+wait 1
+shot failed
